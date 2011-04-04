@@ -1,0 +1,22 @@
+---
+service:
+    name:   arthemis
+    desc:   "Retrieves the list of processes"
+    target: aury[11-12]
+    actions:
+        start:
+            cmd: ps -el
+        stop:
+            cmd: echo "Arthemis is gonna stop"
+---
+service:
+    name:   chiva
+    desc:   "list all the processes of the current dir"
+    target: aury[11-12]
+    require: [arthemis]
+    actions:
+        start:
+            cmd: ls -l
+        stop:
+            cmd: echo "Chiva is gonna stop"
+---

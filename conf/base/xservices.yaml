@@ -1,0 +1,23 @@
+---
+service:
+    name: dyonisos
+    desc:   "Makes tree on the SAMPLE_PATH variable"
+    variables:
+        SAMPLE_PATH: /sbin/service 
+    target: aury13
+    actions:
+        start:
+            cmd: tree $SAMPLE_PATH
+        stop:
+            cmd: echo "Dyonisos is gonna stop"
+---
+service:
+    name:   brutus
+    desc:   "Wanna sleep all the time"
+    target: aury[21,12,26]
+    actions:
+        start:
+            cmd: sleep 15
+        stop:
+            cmd: pids=$(pgrep sleep) | kill $pids
+---
