@@ -84,13 +84,27 @@ class BaseService(BaseEntity, EventHandler):
         Analyze dependencies and returns those which have not state
         """
         remaining = []
-        for rname, cname in zip(self._requires, self._checks):
-            if rname and self._requires[rname][0].status == NO_STATUS:
-                    remaining.append(self._requires[rname])
-            if cname and self._checks[cname][0].status == NO_STATUS:
-                    remaining.append(self._checks[cname])
+        for rname in self._requires:
+            if self._requires[rname][0].status == NO_STATUS:
+                remaining.append(self._requires[rname])
+        for cname in self._checks:
+            if self._checks[cname][0].status == NO_STATUS:
+                remaining.append(self._checks[cname])
         return remaining
-    
+            
+    def _has_in_progress_dep(self):
+        """
+        Allow us to determine if the current services
+        has to wait before to start due to unterminated
+        dependencies
+        """
+        for rname in self._requires:
+            if self._requires[rname][0].status == IN_PROGRESS:
+                return True
+        for cname in self._checks:
+            if self._checks[cname][0].status == IN_PROGRESS:
+                return True
+                
     def is_check_dep(self, service):
         """
         Evaluate if the dependency given as a parameter is check
@@ -121,17 +135,21 @@ class BaseService(BaseEntity, EventHandler):
         Update the status of a service and launch his dependencies
         """
         self.status = status
+        
+        # If the current service is OK even with warnings
         if self.status in (SUCCESS, SUCCESS_WITH_WARNINGS):
-            print "%s is done" % self.name
+            # For each child try to launch it has no
+            # need to wait 
             for child in self.children:
-                if child.status == NO_STATUS:
+                if child.status == NO_STATUS and \
+                 not child._has_in_progress_dep():
+                    print  self.name+" fires "+child.name
                     child.prepare()
     
     def run(self, action_name):
         """
         Run the action_name over the current service
         """
-        self._last_action = action_name
         self.prepare(action_name)
         self.resume()
         
@@ -145,10 +163,12 @@ class BaseService(BaseEntity, EventHandler):
         """
         Called to indicate that a worker's connection has been closed.
         """
+        print "[%s] ev_hup" % self.name
     
     def ev_close(self, worker):
         """
         Called to indicate that a worker has just finished (it may already
         have failed on timeout).
         """
+        print "[%s] ev_close" % self.name
         self.update_status(SUCCESS)

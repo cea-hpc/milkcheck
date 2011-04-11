@@ -95,15 +95,7 @@ class BaseServiceTest(TestCase):
         #Test status updated
         service = BaseService("test_service")
         service.update_status(IN_PROGRESS)
-        self.assert_(service.status == IN_PROGRESS)
-        service.status = NO_STATUS
+        self.assertEqual(service.status, IN_PROGRESS)
         
-        """
-        There is a dependency between test_service and A. As soon as
-        test_service does a prepare() A status must be modified to
-        IN_PROGRESS
-        """
-        serv_a = BaseService("A")
-        service.add_dependency(serv_a)
-#        service.prepare()
-#        self._assert(serv_a.status == IN_PROGRESS, "A must be IN_PROGRESS")
+        service.update_status(SUCCESS)
+        self.assertEqual(service.status,  SUCCESS)

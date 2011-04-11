@@ -7,8 +7,17 @@ This modules defines the tests cases targeting the Action and Service objects
 
 import sys
 from unittest import TestCase
+
+# Classes
 from MilkCheck.Engine.Service import Service
 from MilkCheck.Engine.Action import Action
+
+# Exceptions
+from MilkCheck.Engine.Service import ActionAlreadyReferencedError
+from MilkCheck.Engine.Service import ActionNotFoundError
+
+# Symbols
+from MilkCheck.Engine.BaseService import SUCCESS
 
 class ActionTest(TestCase):
     """
@@ -34,5 +43,168 @@ class ServiceTest(TestCase):
         
     def test_add_action(self):
         """
-        Check add_action_behaviour
+        Check add_action's behaviour
         """
+        service = Service("brutus")
+        service.add_action(Action("start"))
+        self.assertTrue(service.has_action("start"))
+        self.assertRaises(ActionAlreadyReferencedError,
+                service.add_action,Action("start"))
+                
+    def test_remove_action(self):
+        """
+        Check remove_action behaviour
+        """
+        service = Service("brutus")
+        service.add_action(Action("start"))
+        service.remove_action("start")
+        self.assertFalse(service.has_action("start"))
+        self.assertRaises(ActionNotFoundError,
+            service.remove_action, "start")
+    
+    def test_prepare_error(self):
+        
+        """
+        Test prepare exception if action is not found
+        """
+        # Single service
+        service = Service("brutus")
+        service.add_action(Action('start'))
+        self.assertRaises(ActionNotFoundError,
+            service.prepare, "status")
+        
+        # Service with dependencies but one level
+        serv_a = Service("A")
+        serv_b = Service("B")
+        serv_a.add_action(Action("start"))
+        service.add_dependency(serv_a)
+        service.add_dependency(serv_b)
+        self.assertRaises(ActionNotFoundError,
+            service.prepare)
+            
+        #Service with dependencies and multiple levels
+        serv_b.add_action(Action("start"))
+        serv_c = Service("C")
+        serv_a.add_dependency(serv_c,"check")
+        self.assertRaises(ActionNotFoundError,
+            service.prepare)
+            
+    def test_prepare_single_service(self):
+        """
+        Test prepare without dependencies between services
+        """
+        serv_test = Service("test_service")
+        act_start = Action("start")
+        act_start.target="aury[11-12]"
+        act_start.command = "echo HelloWorld"
+        serv_test.add_action(act_start)
+        serv_test.prepare("start")
+        serv_test.resume()
+        self.assertEqual(serv_test.status, SUCCESS)
+        
+    def test_prepare_service_with_one_dependency(self):
+        """
+        Test prepare with one dependency
+        """
+        # Define the main service
+        serv_test = Service("test_service")
+        act_start = Action("start")
+        act_start.target="aury[11-12]"
+        act_start.command = "echo HelloWorld from serv_test"
+        serv_test.add_action(act_start)
+        
+        # Define the single dependency of the main service
+        serv_dep = Service("dependency")
+        act_start = Action("start")
+        act_start.target="aury[21-23]"
+        act_start.command = "echo HelloWorld from serv_dep"
+        serv_dep.add_action(act_start)
+        serv_test.add_dependency(serv_dep)
+        
+        # Start preparing of the base service
+        serv_test.prepare("start")
+        serv_test.resume()
+        self.assertEqual(serv_test.status, SUCCESS)
+        self.assertEqual(serv_dep.status, SUCCESS)
+        
+    def test_prepare_sevice_with_several_dependency(self):
+        """
+        Test prepare with several dependencies at the same level
+        """
+        # Define the main service
+        serv_test = Service("test_service")
+        act_start = Action("start")
+        act_start.target="aury[11-12]"
+        act_start.command = "echo HelloWorld from serv_test"
+        serv_test.add_action(act_start)
+        
+        # Define the dependency DEP_A 
+        serv_depa = Service("DEP_A")
+        act_start = Action("start")
+        act_start.target="fortoy[5-6]"
+        act_start.command = "echo HelloWorld from DEP_A"
+        serv_depa.add_action(act_start)
+        
+        # Define the dependency DEP_B
+        serv_depb = Service("DEP_B")
+        act_start = Action("start")
+        act_start.target="aury21"
+        act_start.command = "sleep 3"
+        serv_depb.add_action(act_start)
+        
+        serv_test.add_dependency(serv_depa)
+        serv_test.add_dependency(serv_depb)
+    
+        serv_test.prepare("start")
+        serv_test.resume()
+        self.assertEqual(serv_test.status, SUCCESS)
+        self.assertEqual(serv_depa.status, SUCCESS)
+        self.assertEqual(serv_depb.status, SUCCESS)
+        
+    def test_prepare_service_with_multiple_multilevel_dependencies(self):
+        """
+        Test prepare with multiple dependencies at different levels
+        """
+        #Service Arthemis is delcared here
+        arth = Service("arthemis")
+        arth.desc = "retrieves list of processes"
+        arth.target = "aury[11-12]"
+        arth_start = Action("start")
+        arth_start.command = "ps -el"
+        arth.add_action(arth_start)
+        
+        # Service Chiva is declared here
+        chiva = Service("chiva")
+        chiva.desc = "List all entities of the current directory"
+        chiva.target = "aury[11-12]"
+        chiva_start = Action("start")
+        chiva_start.command = "ps -el"
+        chiva.add_action(chiva_start)
+        chiva.add_dependency(arth)
+        
+        # Service Dyonisos is declared here
+        dion = Service("dionysos")
+        dion.desc = "Perform tree on directory specified"
+        dion.target = "aury13"
+        dion_start = Action("start")
+        dion_start.command = "tree /sbin/service"
+        dion.add_action(dion_start)
+        dion.add_dependency(arth)
+        
+        # Service Brutus is declared here
+        brut = Service("brutus")
+        brut.desc = "Wanna sleep all the time"
+        brut.target = "aury[21,12,26]"
+        brut_start = Action("start")
+        brut_start.command = "sleep 2"
+        brut.add_action(brut_start)
+        
+        brut.add_dependency(chiva)
+        brut.add_dependency(dion)
+        
+        brut.prepare("start")
+        brut.resume()
+        self.assertEqual(arth.status, SUCCESS)
+        self.assertEqual(chiva.status, SUCCESS)
+        self.assertEqual(dion.status, SUCCESS)
+        self.assertEqual(brut.status, SUCCESS)

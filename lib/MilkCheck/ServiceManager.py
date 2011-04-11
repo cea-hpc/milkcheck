@@ -8,7 +8,6 @@ This module contains the ServiceManager class definition
 # Classes
 from MilkCheck.Engine.Service import Service
 from MilkCheck.Engine.Action import Action
-from ClusterShell.NodeSet import NodeSet
 
 # Exceptions
 from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
@@ -34,81 +33,6 @@ class ServiceManager(object):
         
         # Variables declared in the global scope
         self._variables = {}
-        
-        self._mock_init()
-        
-    def _mock_init(self):
-        """
-        Instancitate services and actions in order to test the engine
-        """
-        # Service Arthemis is declared here
-        arth = Service("arthemis")
-        arth.desc = "retrieves list of processes"
-        arth.target = NodeSet("aury[11-12]")
-        
-        arth_start = Action("start")
-        arth_start.command = "ps -el"
-        
-        arth_stop = Action("stop")
-        arth_stop.command = "echo 'Arthemis is gonna stop'"
-    
-        arth.add_action(arth_start)
-        arth.add_action(arth_stop)
-        
-        # Service Chiva is declared here
-        chiva = Service("chiva")
-        chiva.desc = "List all entities of the current directory"
-        chiva.target = NodeSet("aury[11-12]")
-        
-        chiva_start = Action("start")
-        chiva_start.command = "ps -el"
-        
-        chiva_stop = Action("stop")
-        chiva_stop.command = "echo 'Chiva is gonna stop'"
-    
-        chiva.add_action(chiva_start)
-        chiva.add_action(chiva_stop)
-        
-        chiva.add_dependency(arth)
-        
-        # Service Dyonisos is declared here
-        dion = Service("dionysos")
-        dion.desc = "Perform tree on directory specified"
-        dion.target = NodeSet("aury13")
-        
-        dion_start = Action("start")
-        dion_start.command = "tree /sbin/service"
-        
-        dion_stop = Action("stop")
-        dion_stop.command = "Dyonisos is gonna stop"
-        
-        dion.add_action(dion_stop)
-        dion.add_action(dion_start)
-        
-        dion.add_dependency(arth)
-        
-        # Service Brutus is declared here
-        brut = Service("brutus")
-        brut.desc = "Wanna sleep all the time"
-        brut.target = NodeSet("aury[21,12,26]")
-        
-        brut_start = Action("start")
-        brut_start.command = "sleep 15"
-    
-        brut_stop = Action("stop")
-        brut_stop.command = "pids=$(pgrep sleep) | kill $pids"
-        
-        brut.add_action(brut_start)
-        brut.add_action(brut_stop)
-        
-        brut.add_dependency(chiva)
-        brut.add_dependency(dion)
-        
-        # Adds services into the main list
-        self._services[arth.name] = arth 
-        self._services[chiva.name] = chiva
-        self._services[dion.name] = dion
-        self._services[brut.name] = brut
         
     def call_services(self, services_names, action_name, params=None):
         """
