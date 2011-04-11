@@ -1,41 +1,47 @@
-#coding=utf-8
-#copyright CEA (2011)  
-#contributor: TATIBOUET Jérémie <tatibouetj@ocre.cea.fr>
+# Copyright CEA (2011)  
+# Contributor: TATIBOUET Jeremie <tatibouetj@ocre.cea.fr>
 
 """
 This module contains the ServiceManager class definition
 """
 
+# Classes
 from MilkCheck.Engine.Service import Service
-from MilkCheck.Engine.BaseService import ServiceNotFoundError
 from MilkCheck.Engine.Action import Action
 from ClusterShell.NodeSet import NodeSet
+
+# Exceptions
+from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
+
+class ServiceNotFoundError(MilkCheckEngineError):
+    """
+    Define an exception raised when you are looking for a service
+    that does not exist
+    """
+    
+    def __init__(self, message="Service is not referenced by the manager"):
+        """Constructor"""
+        MilkCheckEngineError.__init__(self, message)
 
 class ServiceManager(object):
     """
     The service manager has to handle call to services. It implements
     features allowing us to get dependencies of service and so son
     """
-    
     def __init__(self):
-        """
-        ServiceManager constructor
-        """
-        
-        #Services handled by the manager
+        # Services handled by the manager
         self._services = {}
         
-        #Variables declared in the global scope
+        # Variables declared in the global scope
         self._variables = {}
         
         self._mock_init()
         
     def _mock_init(self):
         """
-        Instancitates services and actions in order to test the engine
+        Instancitate services and actions in order to test the engine
         """
-        
-        #Service Arthemis is declared here
+        # Service Arthemis is declared here
         arth = Service("arthemis")
         arth.desc = "retrieves list of processes"
         arth.target = NodeSet("aury[11-12]")
@@ -49,7 +55,7 @@ class ServiceManager(object):
         arth.add_action(arth_start)
         arth.add_action(arth_stop)
         
-        #Service Chiva is declared here
+        # Service Chiva is declared here
         chiva = Service("chiva")
         chiva.desc = "List all entities of the current directory"
         chiva.target = NodeSet("aury[11-12]")
@@ -65,7 +71,7 @@ class ServiceManager(object):
         
         chiva.add_dependency(arth)
         
-        #Service Dyonisos is declared here
+        # Service Dyonisos is declared here
         dion = Service("dionysos")
         dion.desc = "Perform tree on directory specified"
         dion.target = NodeSet("aury13")
@@ -81,7 +87,7 @@ class ServiceManager(object):
         
         dion.add_dependency(arth)
         
-        #Service Brutus is declared here
+        # Service Brutus is declared here
         brut = Service("brutus")
         brut.desc = "Wanna sleep all the time"
         brut.target = NodeSet("aury[21,12,26]")
@@ -98,7 +104,7 @@ class ServiceManager(object):
         brut.add_dependency(chiva)
         brut.add_dependency(dion)
         
-        #Adds services into the main list
+        # Adds services into the main list
         self._services[arth.name] = arth 
         self._services[chiva.name] = chiva
         self._services[dion.name] = dion
@@ -115,4 +121,4 @@ class ServiceManager(object):
                 service = self._services[normalized_name]
                 service.run(action_name)
             else:
-                raise ServiceNotFoundError()
+                raise ServiceNotFoundError

@@ -1,6 +1,5 @@
-# coding=utf-8
 # Copyright CEA (2011) 
-# Contributor: TATIBOUET Jérémie <tatibouetj@ocre.cea.fr>
+# Contributor: TATIBOUET Jeremie <tatibouetj@ocre.cea.fr>
 
 """
 This module contains the
@@ -25,7 +24,7 @@ class Configuration(object):
 
     def _go_through(self, arg, dirname=None, names=None):
         """
-        list of files in dirname
+        List of files in dirname
         """
         for my_file in names:
             
@@ -42,7 +41,7 @@ class Configuration(object):
 
     def build_config(self):
         """
-        builds and return a list of services objects
+        Build and return a list of services objects
         """
         self.read_config()
         self.compile_config()
@@ -56,14 +55,14 @@ class Configuration(object):
                 
     def compile_config(self):
         """
-        checks the content of the services loaded
+        Check the content of the services loaded
         """
         print "Compiling configuration"
         return True
     
     def read_config(self):
         """
-        loads the files located in base and override directories
+        Load the files located in base and override directories
         """
         print "Loading Configuration"
         walk(self._filepath_base, self._go_through, None)

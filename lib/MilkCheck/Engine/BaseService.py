@@ -1,16 +1,19 @@
-# coding=utf-8
 # Copyright CEA (2011) 
-# Contributor: TATIBOUET Jérémie <tatibouetj@ocre.cea.fr>
+# Contributor: TATIBOUET Jeremie <tatibouetj@ocre.cea.fr>
 
 """
 This module contains the definition of the Base class of a service and the
 defnition of the different states that a service can go through
 """
-from exceptions import NotImplementedError, Exception, TypeError
+
+# Classes
 from MilkCheck.Engine.BaseEntity import BaseEntity
 from ClusterShell.Event import EventHandler
 from ClusterShell.Task import task_self
 
+# Exceptions
+from exceptions import Exception
+from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
 
 """
 Symbols defining the differents status of a service
@@ -22,6 +25,15 @@ SUCCESS_WITH_WARNINGS = "SUCESS_WITH_WARNINGS"
 TIMED_OUT = "TIMED_OUT"
 TOO_MANY_ERRORS = "TOO_MANY_ERRORS"
 
+class IllegalDependencyIdentifierError(MilkCheckEngineError):
+    """
+    Exception raised when you try to use another keyword than require
+    or check for a depdency
+    """
+    
+    def __init__(self, message="You have to use require or check"):
+        """Constructor"""
+        MilkCheckEngineError.__init__(self, message)
 
 class BaseService(BaseEntity, EventHandler):
     """
@@ -31,7 +43,6 @@ class BaseService(BaseEntity, EventHandler):
     """
     
     def __init__(self, name):
-        """Constructor"""
         BaseEntity.__init__(self, name)
         EventHandler.__init__(self)
         
@@ -64,7 +75,7 @@ class BaseService(BaseEntity, EventHandler):
                 self._checks[service.name] = (service, "check", True)
                 service.add_child(self)
             else:
-                raise IllegalDependencyIdentifier()
+                raise IllegalDependencyIdentifierError()
         else:
             raise TypeError("service cannot be None") 
     
@@ -110,8 +121,7 @@ class BaseService(BaseEntity, EventHandler):
         Update the status of a service and launch his dependencies
         """
         self.status = status
-        if self.status == SUCCESS or \
-            self.status == SUCCESS_WITH_WARNINGS:
+        if self.status in (SUCCESS, SUCCESS_WITH_WARNINGS):
             print "%s is done" % self.name
             for child in self.children:
                 if child.status == NO_STATUS:
@@ -142,30 +152,3 @@ class BaseService(BaseEntity, EventHandler):
         have failed on timeout).
         """
         self.update_status(SUCCESS)
-
-class MilkCheckEngineException(Exception):
-    """Base class for Engine exceptions"""
-    
-    def __init__(self, message=None):
-        """Constructor"""
-        self._msg = message
-        
-class ServiceNotFoundError(MilkCheckEngineException):
-    """
-    Define an exception raised when you are looking for a service
-    that does not exist
-    """
-    
-    def __init__(self, message="Service is not referenced by the manager"):
-        """Constructor"""
-        MilkCheckEngineException.__init__(self, message)
-
-class IllegalDependencyIdentifier(MilkCheckEngineException):
-    """
-    Exception raised when you try to use another keyword than require
-    or check for a depdency
-    """
-    
-    def __init__(self, message="You have to use require or check"):
-        """Constructor"""
-        MilkCheckEngineException.__init__(self, message)

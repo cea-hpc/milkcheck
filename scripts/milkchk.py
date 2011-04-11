@@ -1,6 +1,5 @@
-# coding=utf-8
 # Copyright CEA (2011) 
-# Contributor: TATIBOUET Jérémie <tatibouetj@ocre.cea.fr>
+# Contributor: TATIBOUET Jeremie <tatibouetj@ocre.cea.fr>
 
 """
 This is the entry point of the program

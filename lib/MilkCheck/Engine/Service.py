@@ -1,6 +1,5 @@
-# coding=utf-8
 # Copyright CEA (2011) 
-# Contributor: TATIBOUET Jérémie <tatibouetj@ocre.cea.fr>
+# Contributor: TATIBOUET Jeremie <tatibouetj@ocre.cea.fr>
 
 """
 This module contains the Service class definition
@@ -9,23 +8,37 @@ This module contains the Service class definition
 # Classes
 from MilkCheck.Engine.BaseService import BaseService
 
-# Errors
-from MilkCheck.Engine.Action import ActionAlreadyReferencedError
-from MilkCheck.Engine.Action import ActionNotFoundError
+# Exceptions
+from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
 
 # Symbols
 from MilkCheck.Engine.BaseService import NO_STATUS, SUCCESS, IN_PROGRESS
 
-class Service(BaseService):
+class ActionNotFoundError(MilkCheckEngineError):
+    """
+    Action raised as soon as the current service has not the action
+    requested by the service
+    """
     
+    def __init__(self, sname, aname):
+        """Constructor"""
+        msg = str(aname)+" not referenced in "+str(sname) 
+        MilkCheckEngineException.__init__(self, msg) 
+        
+class ActionAlreadyReferencedError(MilkCheckEngineError):
+    """
+    Action raised as soon as the current service has not the action
+    requested by the service
+    """
+    def __init__(self, sname, aname):
+        msg = str(aname)+" already referenced in "+str(sname) 
+        MilkCheckEngineException.__init__(self, msg) 
+
+class Service(BaseService):
     """
     This class models a service
     """
-    
     def __init__(self, name):
-        """
-        Service constructor
-        """
         BaseService.__init__(self, name)
         
         # Actions of the service
@@ -51,13 +64,13 @@ class Service(BaseService):
     
     def has_action(self, action_name):
         """
-        Figures out whether the service  has the specified action
+        Figure out whether the service  has the specified action
         """
         return action_name in self._actions
     
     def _schedule_task(self, action_name):
         """
-        Assigns the content of the action to ClusterShell in using
+        Assign the content of the action to ClusterShell in using
         ClusterShell Task
         """
         action = self._actions[action_name]
@@ -68,22 +81,20 @@ class Service(BaseService):
      #testing
     def prepare(self, action_name=None):
         """
-        Checks that the service has the required action
+        Prepare the the current service to be launched as soon
+        as his dependencies are solved 
         """
         if self.has_action(action_name):
-            """
-            Looks for the depencies which are not solved and 
-            adds the service to the queue of tasks
-            """
+            
+            #Looks for the depencies which are not solved and 
+            #adds the service to the queue of tasks
             print "%s is preparing" % self.name
            
             if self.status == NO_STATUS:
                 
-                
-                """
-                If some of my dependencies have no status
-                so I have to ask them to be prepared
-                """
+               
+                #If some of my dependencies have no status
+                #so I have to ask them to be prepared
                 deps = self._remaining_dependencies()
                 
                 if deps:
@@ -96,10 +107,9 @@ class Service(BaseService):
                         else:
                             service.prepare(action_name)
                 else:
-                    """
-                    All of my dependencies ar solved so I can be
-                    processed by the task
-                    """
+                    
+                    #All of my dependencies ar solved so I can be
+                    #processed by the task
                     self.update_status(IN_PROGRESS)
                     self._schedule_task(action_name)
         else:
