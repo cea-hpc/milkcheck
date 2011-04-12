@@ -24,18 +24,46 @@ class ActionTest(TestCase):
     Define the unit tests for the object action
     """
     def test_action_instanciation(self):
-        """Check instanciation of an action"""
+        """Test instanciation of an action"""
         action = Action("start")
         self.assertNotEqual(action, None, "should be none")
         self.assertEqual(action.name, "start", "wrong name")
         
+    def test_has_too_many_errors(self):
+        """
+        Test the method has_too_many_errors
+        """
+        action = Action("start")
+        action.errors = 2
+        action.command = "hostnam"
+        action.target = "aury[13,14,21]"
+        service = Service("test_service")
+        service.add_action(action)
+        service.prepare("start")
+        service.resume()
+        self.assertTrue(action.has_too_many_errors())
+        
+        act_test = Action("test")
+        action.command = "hostnam"
+        action.target = "aury[13,14,21]"
+        service.add_action(act_test)
+        service.prepare("test")
+        service.resume()
+        self.assertFalse(action.has_too_many_errors())
+        
+    def test_has_timed_out(self):
+        """
+        Test has_timed_ou_method
+        """
+        pass
+    
 class ServiceTest(TestCase):
     """
     Define the unit tests for the object service
     """
     def test_service_instanciation(self):
         """
-        Check instanciation of a service
+        Test instanciation of a service
         """
         service = Service("brutus")
         self.assertNotEqual(service, None, "should be none")
@@ -43,7 +71,7 @@ class ServiceTest(TestCase):
         
     def test_add_action(self):
         """
-        Check add_action's behaviour
+        Test add_action's behaviour
         """
         service = Service("brutus")
         service.add_action(Action("start"))
@@ -53,7 +81,7 @@ class ServiceTest(TestCase):
                 
     def test_remove_action(self):
         """
-        Check remove_action behaviour
+        Test remove_action behaviour
         """
         service = Service("brutus")
         service.add_action(Action("start"))
@@ -62,6 +90,22 @@ class ServiceTest(TestCase):
         self.assertRaises(ActionNotFoundError,
             service.remove_action, "start")
     
+    def test_last_action(self):
+        """
+        Test last_action method behaviour
+        """
+        service = Service("henry")
+        self.assertRaises(ActionNotFoundError, service.last_action)
+        
+        start = Action("start")
+        start.target = "aury12"
+        start.command = "hostname"
+        service.add_action(start)
+        self.assertRaises(ActionNotFoundError, service.last_action)
+        
+        service.prepare("start")
+        self.assertTrue(service.last_action())
+        
     def test_prepare_error(self):
         
         """
@@ -116,7 +160,7 @@ class ServiceTest(TestCase):
         # Define the single dependency of the main service
         serv_dep = Service("dependency")
         act_start = Action("start")
-        act_start.target="aury[21-23]"
+        act_start.target="aury21"
         act_start.command = "echo HelloWorld from serv_dep"
         serv_dep.add_action(act_start)
         serv_test.add_dependency(serv_dep)
@@ -167,17 +211,17 @@ class ServiceTest(TestCase):
         """
         #Service Arthemis is delcared here
         arth = Service("arthemis")
-        arth.desc = "retrieves list of processes"
-        arth.target = "aury[11-12]"
+        arth.desc = "Sleep five seconds"
         arth_start = Action("start")
-        arth_start.command = "ps -el"
+        arth_start.command = "sleep 5"
+        arth_start.target = "aury21"
         arth.add_action(arth_start)
         
         # Service Chiva is declared here
         chiva = Service("chiva")
-        chiva.desc = "List all entities of the current directory"
-        chiva.target = "aury[11-12]"
+        chiva.desc = "List all processes in details"
         chiva_start = Action("start")
+        chiva_start.target = "aury[11-12]"
         chiva_start.command = "ps -el"
         chiva.add_action(chiva_start)
         chiva.add_dependency(arth)
@@ -185,8 +229,8 @@ class ServiceTest(TestCase):
         # Service Dyonisos is declared here
         dion = Service("dionysos")
         dion.desc = "Perform tree on directory specified"
-        dion.target = "aury13"
         dion_start = Action("start")
+        dion_start.target = "aury13"
         dion_start.command = "tree /sbin/service"
         dion.add_action(dion_start)
         dion.add_dependency(arth)
@@ -194,8 +238,8 @@ class ServiceTest(TestCase):
         # Service Brutus is declared here
         brut = Service("brutus")
         brut.desc = "Wanna sleep all the time"
-        brut.target = "aury[21,12,26]"
         brut_start = Action("start")
+        brut_start.target = "aury[21,12,26]"
         brut_start.command = "sleep 2"
         brut.add_action(brut_start)
         

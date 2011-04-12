@@ -23,7 +23,8 @@ IN_PROGRESS = "IN_PROGRESS"
 SUCCESS = "SUCCESS"
 SUCCESS_WITH_WARNINGS = "SUCESS_WITH_WARNINGS"
 TIMED_OUT = "TIMED_OUT"
-TOO_MANY_ERRORS = "TOO_MANY_ERRORS"
+TOO_MANY_ERROR = "TOO_MANY_ERROR"
+ERROR = "ERROR"
 
 class IllegalDependencyIdentifierError(MilkCheckEngineError):
     """
@@ -81,14 +82,15 @@ class BaseService(BaseEntity, EventHandler):
     
     def _remaining_dependencies(self):
         """
-        Analyze dependencies and returns those which have not state
+        Analyze dependencies and returns either those which
+        have NO_STATUS and thos which are IN_PROGRESS
         """
         remaining = []
         for rname in self._requires:
-            if self._requires[rname][0].status == NO_STATUS:
+            if self._requires[rname][0].status in (NO_STATUS, IN_PROGRESS):
                 remaining.append(self._requires[rname])
         for cname in self._checks:
-            if self._checks[cname][0].status == NO_STATUS:
+            if self._checks[cname][0].status in (NO_STATUS, IN_PROGRESS):
                 remaining.append(self._checks[cname])
         return remaining
             
@@ -104,6 +106,7 @@ class BaseService(BaseEntity, EventHandler):
         for cname in self._checks:
             if self._checks[cname][0].status == IN_PROGRESS:
                 return True
+        return False
                 
     def is_check_dep(self, service):
         """
@@ -134,17 +137,22 @@ class BaseService(BaseEntity, EventHandler):
         """
         Update the status of a service and launch his dependencies
         """
-        self.status = status
-        
-        # If the current service is OK even with warnings
-        if self.status in (SUCCESS, SUCCESS_WITH_WARNINGS):
-            # For each child try to launch it has no
-            # need to wait 
+        self.status = status 
+        print "["+self.name+"] is ["+self.status+"]"
+      
+        if self.status not in (NO_STATUS, IN_PROGRESS):
+            # The action performed on the current service
+            # had some issues
             for child in self.children:
-                if child.status == NO_STATUS and \
-                 not child._has_in_progress_dep():
-                    print  self.name+" fires "+child.name
-                    child.prepare()
+                if self.status == ERROR :
+                     if child.is_check_dep(self) or \
+                        child._requires[self.name][2]:
+                        child.status = ERROR
+                else:
+                   if child.status == NO_STATUS and \
+                        not child._has_in_progress_dep():
+                        print  "** "+self.name+" fires "+child.name
+                        child.prepare()
     
     def run(self, action_name):
         """
@@ -163,12 +171,11 @@ class BaseService(BaseEntity, EventHandler):
         """
         Called to indicate that a worker's connection has been closed.
         """
-        print "[%s] ev_hup" % self.name
+        raise NotImplementedError
     
     def ev_close(self, worker):
         """
         Called to indicate that a worker has just finished (it may already
         have failed on timeout).
         """
-        print "[%s] ev_close" % self.name
-        self.update_status(SUCCESS)
+        raise NotImplementedError

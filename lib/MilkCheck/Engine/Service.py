@@ -12,7 +12,8 @@ from MilkCheck.Engine.BaseService import BaseService
 from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
 
 # Symbols
-from MilkCheck.Engine.BaseService import NO_STATUS, SUCCESS, IN_PROGRESS
+from MilkCheck.Engine.BaseService import NO_STATUS, SUCCESS
+from MilkCheck.Engine.BaseService import IN_PROGRESS, ERROR
 
 class ActionNotFoundError(MilkCheckEngineError):
     """
@@ -69,19 +70,29 @@ class Service(BaseService):
         """
         return action_name in self._actions
     
+    def last_action(self):
+        """
+        Return the last action hooked/applied to the service. This action
+        contains the worker of the last task performed
+        """
+        if self._last_action and self.has_action(self._last_action):
+            return self._actions[self._last_action]
+        else:
+            raise ActionNotFoundError(self.name, self._last_action)
+        
     def _schedule_task(self, action_name):
         """
         Assign the content of the action to ClusterShell in using
         ClusterShell Task
         """
         action = self._actions[action_name]
-        if action.timeout > 0:
-            self._task.shell(action.command, nodes=action.target,
-                handler=self)
+        if action.timeout <= 0:
+            action.worker = self._task.shell(action.command,
+                nodes=action.target,handler=self)
         else:
-             self._task.shell(action.command, nodes=action.target,
-                handler=self, timeout=action.timeout)
-
+             action.worker = self._task.shell(action.command,
+                nodes=action.target, handler=self, timeout=action.timeout)
+        print "["+self.name+"] added to the master task" 
     
      #testing
     def prepare(self, action_name=None):
@@ -97,29 +108,56 @@ class Service(BaseService):
             else:
                 raise ActionNotFoundError(self.name,action_name)
             
-        #Looks for the depencies which are not solved and 
-        #adds the service to the queue of tasks
+        # Looks for the depencies which are not solved and 
+        # adds the service to the queue of tasks
         print "[%s] is preparing" % self.name
     
         if self.status == NO_STATUS:
         
-            #If some of my dependencies have no status
-            #so I have to ask them to be prepared
+            # If some of my dependencies have no status
+            # so I have to ask them to be prepared
             
             deps = self._remaining_dependencies()
             
             if deps:
                 
-                print "[%s] has parents without status" % self.name
+                print "[%s] has uncomplete parents" % self.name
                 
-                for (service, dtype, obl) in deps:
-                    if dtype == "check":
-                        service.prepare("status")
-                    else:
-                        service.prepare(action_name)
+                for (serv, dtype, obl) in deps:
+                    
+                    # Prepare only those which have no state
+                    if serv.status == NO_STATUS:
+                        if dtype == "check":
+                            serv.prepare("status")
+                        else:
+                            serv.prepare(action_name)
             else:
                 
-                #All of my dependencies are solved so I can be
-                #processed by the task
+                # All of my dependencies are solved so I can be
+                # processed by the task
                 self.update_status(IN_PROGRESS)
                 self._schedule_task(action_name)
+                 
+    def ev_hup(self, worker):
+        """
+        Called to indicate that a worker's connection has been closed.
+        """
+        print "[%s] connection closed" % self.name
+    
+    def ev_close(self, worker):
+        """
+        Called to indicate that a worker has just finished (it may already
+        have failed on timeout).
+        """
+        
+        print "[%s] ev_close" % self.name
+       
+        cur_action = self.last_action()
+        
+        if cur_action.has_too_many_errors():
+            self.update_status(ERROR)
+        else:
+            if cur_action.has_timed_out():
+                self.update_status(ERROR)
+            else:
+                self.update_status(SUCCESS)

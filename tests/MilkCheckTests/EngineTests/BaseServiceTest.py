@@ -81,13 +81,26 @@ class BaseServiceTest(TestCase):
         
         service.cleanup_dependencies()
         
-        serv_a.status = IN_PROGRESS
+        serv_a.status = SUCCESS
         service.add_dependency(serv_a)
         service.add_dependency(serv_b,"check")
         deps = service._remaining_dependencies()
-        self.assert_(len(deps) == 1, "should have one dependencies")
-        self.assert_(serv_b.name == deps[0][0].name, "B should be in")
+        self.assertEqual(len(deps), 1, "should have one dependencies")
+        self.assertEqual(serv_b.name, deps[0][0].name, "B should be in")
 
+    def test_has_dep_in_progress(self):
+        """
+        Test the method has_dep_in_progress
+        """
+        service = BaseService("test_service")
+        serv_a = BaseService("A")
+        service.add_dependency(serv_a)
+        self.assertFalse(service._has_in_progress_dep())
+        serv_b = BaseService("B")
+        serv_b.status = IN_PROGRESS
+        service.add_dependency(serv_b)
+        self.assertTrue(service._has_in_progress_dep())
+        
     def test_update_status(self):
         """
         Test the method update_status
