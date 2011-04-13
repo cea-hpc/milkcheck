@@ -21,9 +21,9 @@ Symbols defining the differents status of a service
 NO_STATUS = "NO_STATUS"
 IN_PROGRESS = "IN_PROGRESS"
 SUCCESS = "SUCCESS"
-SUCCESS_WITH_WARNINGS = "SUCESS_WITH_WARNINGS"
+SUCCESS_WITH_WARNINGS = "SUCCESS_WITH_WARNINGS"
 TIMED_OUT = "TIMED_OUT"
-TOO_MANY_ERROR = "TOO_MANY_ERROR"
+TOO_MANY_ERRORS = "TOO_MANY_ERRORS"
 ERROR = "ERROR"
 
 class IllegalDependencyIdentifierError(MilkCheckEngineError):
@@ -49,6 +49,9 @@ class BaseService(BaseEntity, EventHandler):
         
         # Define the initial status
         self.status = NO_STATUS
+        
+        # Define whether the service has warnings
+        self.warnings = False
         
         # Define the task
         self._task = task_self()
@@ -82,15 +85,21 @@ class BaseService(BaseEntity, EventHandler):
     
     def _remaining_dependencies(self):
         """
-        Analyze dependencies and returns either those which
-        have NO_STATUS and thos which are IN_PROGRESS
+        Analyze dependencies and return thos which are
+        + ERROR
+        + TIMED_OUT
+        + TOO_MANY_ERRORS
+        + IN_PROGRESS
+        + NO_STATUS 
         """
         remaining = []
         for rname in self._requires:
-            if self._requires[rname][0].status in (NO_STATUS, IN_PROGRESS):
+            if self._requires[rname][0].status in \
+             (ERROR, TOO_MANY_ERRORS, TIMED_OUT, IN_PROGRESS, NO_STATUS):
                 remaining.append(self._requires[rname])
         for cname in self._checks:
-            if self._checks[cname][0].status in (NO_STATUS, IN_PROGRESS):
+            if self._checks[cname][0].status in \
+             (ERROR, TOO_MANY_ERRORS, TIMED_OUT, IN_PROGRESS, NO_STATUS):
                 remaining.append(self._checks[cname])
         return remaining
             
@@ -107,7 +116,7 @@ class BaseService(BaseEntity, EventHandler):
             if self._checks[cname][0].status == IN_PROGRESS:
                 return True
         return False
-                
+        
     def is_check_dep(self, service):
         """
         Evaluate if the dependency given as a parameter is check
@@ -144,15 +153,10 @@ class BaseService(BaseEntity, EventHandler):
             # The action performed on the current service
             # had some issues
             for child in self.children:
-                if self.status == ERROR :
-                     if child.is_check_dep(self) or \
-                        child._requires[self.name][2]:
-                        child.status = ERROR
-                else:
-                   if child.status == NO_STATUS and \
-                        not child._has_in_progress_dep():
-                        print  "** "+self.name+" fires "+child.name
-                        child.prepare()
+                if child.status == NO_STATUS and \
+                    not child._has_in_progress_dep():
+                    print  "*** "+self.name+" triggers "+child.name
+                    child.prepare()
     
     def run(self, action_name):
         """

@@ -17,7 +17,9 @@ from MilkCheck.Engine.Service import ActionAlreadyReferencedError
 from MilkCheck.Engine.Service import ActionNotFoundError
 
 # Symbols
-from MilkCheck.Engine.BaseService import SUCCESS
+from MilkCheck.Engine.BaseService import SUCCESS, TIMED_OUT, ERROR
+from MilkCheck.Engine.BaseService import TOO_MANY_ERRORS
+from MilkCheck.Engine.BaseService import SUCCESS_WITH_WARNINGS
 
 class ActionTest(TestCase):
     """
@@ -213,7 +215,7 @@ class ServiceTest(TestCase):
         arth = Service("arthemis")
         arth.desc = "Sleep five seconds"
         arth_start = Action("start")
-        arth_start.command = "sleep 5"
+        arth_start.command = "sleep 2"
         arth_start.target = "aury21"
         arth.add_action(arth_start)
         
@@ -252,3 +254,176 @@ class ServiceTest(TestCase):
         self.assertEqual(chiva.status, SUCCESS)
         self.assertEqual(dion.status, SUCCESS)
         self.assertEqual(brut.status, SUCCESS)
+        
+    def test_prepare_with_require_weak_error(self):
+        """
+        Test weak require dependency error
+        """
+        serv = Service("BASE")
+        serv_a = Service("DEP_A")
+        serv_b = Service("DEP_B")
+        
+        act = Action("start")
+        act.target = "aury12"
+        act.command = "hostname"
+        
+        act_a = Action("start")
+        act_a.target = "banode"
+        act_a.command = "hostname"
+        
+        act_b = Action("start")
+        act_b.target = "aury21"
+        act_b.command = "echo $SHELL"
+        
+        serv.add_action(act)
+        serv_a.add_action(act_a)
+        serv_b.add_action(act_b)
+        
+        serv.add_dependency(serv_b)
+        serv.add_dependency(serv_a,"require",False)
+        
+        serv.prepare("start")
+        serv.resume()
+        
+        self.assertEqual(serv.status, SUCCESS_WITH_WARNINGS)
+        self.assertEqual(serv_a.status, TOO_MANY_ERRORS)
+        self.assertEqual(serv_b.status, SUCCESS)
+        
+    def test_prepare_with_require_strong_error(self):
+        """
+        Test strong require dependency error
+        """
+        serv = Service("BASE")
+        serv_a = Service("DEP_A")
+        serv_b = Service("DEP_B")
+        
+        act = Action("start")
+        act.target = "aury12"
+        act.command = "hostname"
+        
+        act_a = Action("start")
+        act_a.target = "banode"
+        act_a.command = "hostname"
+        
+        act_b = Action("start")
+        act_b.target = "aury21"
+        act_b.command = "echo $SHELL"
+        
+        serv.add_action(act)
+        serv_a.add_action(act_a)
+        serv_b.add_action(act_b)
+        
+        serv.add_dependency(serv_b)
+        serv.add_dependency(serv_a)
+        
+        serv.prepare("start")
+        serv.resume()
+        
+        self.assertEqual(serv.status, ERROR)
+        self.assertEqual(serv_a.status, TOO_MANY_ERRORS)
+        self.assertEqual(serv_b.status, SUCCESS)
+   
+    def test_prepare_with_multiple_require_errors(self):
+        """
+        Test multiple require dependencies errors at different levels
+        """
+        base = Service("STAR_TREK")
+        serv_a = Service("KURK")
+        serv_b = Service("SPOCK")
+        serv_c = Service("ENTREPRISE")
+        
+        action_base = Action("start")
+        action_a = Action("start")
+        action_b = Action("start")
+        action_c = Action("start")
+        
+        action_base.target = "aury1"
+        action_a.target = "aury12"
+        action_b.target = "aury[21,13]"
+        action_c.target = "fortoy5"
+        
+        action_base.command = "echo STAR_TREK"
+        action_a.command = "echo KURK"
+        action_b.command = "echo SPOCK"
+        action_c.command = "sleep 3"
+        action_c.timeout = 2
+        
+        base.add_action(action_base)
+        serv_a.add_action(action_a)
+        serv_b.add_action(action_b)
+        serv_c.add_action(action_c)
+        
+        base.add_dependency(serv_a)
+        base.add_dependency(serv_b)
+        serv_a.add_dependency(serv_c, "require", False)
+        serv_b.add_dependency(serv_c)
+        
+        base.prepare("start")
+        base.resume()
+        
+        self.assertEqual(base.status, ERROR)
+        self.assertEqual(serv_a.status, SUCCESS_WITH_WARNINGS)
+        self.assertEqual(serv_b.status, ERROR)
+        self.assertEqual(serv_c.status, TIMED_OUT)
+        
+    def test_prepare_with_multiple_dependencies_error(self):
+        """
+        Test prepare with check and require deps with errors
+        """
+        serv_a = Service("BASE")
+        serv_b = Service("DEP_B")
+        serv_c = Service("DEP_C")
+        serv_d = Service("DEP_D")
+        serv_x = Service("DEP_VX")
+        serv_k = Service("DEP_K")
+        
+        action_a = Action("start")
+        action_b = Action("start")
+        action_c = Action("start")
+        action_d_start = Action("start")
+        action_d_status = Action("status")
+        action_x = Action("start")
+        action_k = Action("status")
+        
+        action_a.target = "aury1"
+        action_b.target = "aury12"
+        action_c.target = "aury[21,13]"
+        action_d_start.target = "fortoy5"
+        action_d_status.target = "fortoy[32,33]"
+        action_x.target = "fortoy40"
+        action_k.target = "aury12"
+        
+        action_a.command = "hostname"
+        action_b.command = "echo hello world"
+        action_c.command = "ls -l"
+        action_d_start.command = "ps"
+        action_d_status.command = "echo goodstatus"
+        action_x.command = "sleep 2"
+        action_k.command = "bad command"
+        
+        serv_a.add_action(action_a)
+        serv_b.add_action(action_b)
+        serv_c.add_action(action_c)
+        serv_d.add_action(action_d_start)
+        serv_d.add_action(action_d_status)
+        serv_x.add_action(action_x)
+        serv_k.add_action(action_k)
+        
+        serv_a.add_dependency(serv_x)
+        serv_a.add_dependency(serv_b)
+        serv_a.add_dependency(serv_c, "require", False)
+        
+        serv_b.add_dependency(serv_d, "check")
+        
+        serv_c.add_dependency(serv_d)
+        serv_c.add_dependency(serv_k, "check")
+        
+        serv_a.prepare("start")
+        serv_a.resume()
+       
+        self.assertEqual(serv_d.status, SUCCESS)
+        self.assertEqual(serv_k.status, TOO_MANY_ERRORS)
+        self.assertEqual(serv_c.status, ERROR)
+        self.assertEqual(serv_b.status, SUCCESS)
+        self.assertEqual(serv_x.status, SUCCESS)
+        self.assertEqual(serv_a.status, SUCCESS_WITH_WARNINGS)

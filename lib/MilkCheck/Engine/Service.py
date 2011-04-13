@@ -13,7 +13,8 @@ from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
 
 # Symbols
 from MilkCheck.Engine.BaseService import NO_STATUS, SUCCESS
-from MilkCheck.Engine.BaseService import IN_PROGRESS, ERROR
+from MilkCheck.Engine.BaseService import IN_PROGRESS, ERROR, TIMED_OUT
+from MilkCheck.Engine.BaseService import TOO_MANY_ERRORS, SUCCESS_WITH_WARNINGS
 
 class ActionNotFoundError(MilkCheckEngineError):
     """
@@ -121,8 +122,6 @@ class Service(BaseService):
             
             if deps:
                 
-                print "[%s] has uncomplete parents" % self.name
-                
                 for (serv, dtype, obl) in deps:
                     
                     # Prepare only those which have no state
@@ -131,6 +130,13 @@ class Service(BaseService):
                             serv.prepare("status")
                         else:
                             serv.prepare(action_name)
+                    elif serv.status in (ERROR, TIMED_OUT, TOO_MANY_ERRORS):
+                        if obl:
+                            self.update_status(ERROR)
+                        else:
+                            self.warnings = True
+                            self.update_status(IN_PROGRESS)
+                            self._schedule_task(action_name)
             else:
                 
                 # All of my dependencies are solved so I can be
@@ -142,7 +148,7 @@ class Service(BaseService):
         """
         Called to indicate that a worker's connection has been closed.
         """
-        print "[%s] connection closed" % self.name
+        pass
     
     def ev_close(self, worker):
         """
@@ -155,9 +161,12 @@ class Service(BaseService):
         cur_action = self.last_action()
         
         if cur_action.has_too_many_errors():
-            self.update_status(ERROR)
+            self.update_status(TOO_MANY_ERRORS)
         else:
             if cur_action.has_timed_out():
-                self.update_status(ERROR)
+                self.update_status(TIMED_OUT)
             else:
-                self.update_status(SUCCESS)
+                if self.warnings:
+                    self.update_status(SUCCESS_WITH_WARNINGS)
+                else:
+                    self.update_status(SUCCESS)
