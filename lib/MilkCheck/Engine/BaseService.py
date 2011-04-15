@@ -8,12 +8,12 @@ defnition of the different states that a service can go through
 
 # Classes
 from MilkCheck.Engine.BaseEntity import BaseEntity
+from MilkCheck.Engine.Dependency import Dependency
 from ClusterShell.Event import EventHandler
 from ClusterShell.Task import task_self
 
-# Exceptions
-from exceptions import Exception
-from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
+# Symbols
+from MilkCheck.Engine.Dependency import REQUIRE
 
 """
 Symbols defining the differents status of a service
@@ -25,16 +25,6 @@ SUCCESS_WITH_WARNINGS = "SUCCESS_WITH_WARNINGS"
 TIMED_OUT = "TIMED_OUT"
 TOO_MANY_ERRORS = "TOO_MANY_ERRORS"
 ERROR = "ERROR"
-
-class IllegalDependencyIdentifierError(MilkCheckEngineError):
-    """
-    Exception raised when you try to use another keyword than require
-    or check for a depdency
-    """
-    
-    def __init__(self, message="You have to use require or check"):
-        """Constructor"""
-        MilkCheckEngineError.__init__(self, message)
 
 class BaseService(BaseEntity, EventHandler):
     """
@@ -57,124 +47,81 @@ class BaseService(BaseEntity, EventHandler):
         self._task = task_self()
         
         # Define the last action called on the service
-        self._last_action = "unknow"
+        self._last_action = None
         
-        # Require type dependencies 
-        self._requires = {}
-        
-        # Check type dependencies
-        self._checks = {}
-       
+        # Define a dictionnary of dependencies
+        # key: Dependency object 
+        self._deps = {}
     
-    def add_dependency(self, service, dep_type="require", obl=True):
-        """
-        Add the dependency in the right dictionnary
-        """
+    def add_dependency(self, service, dep_type=REQUIRE):
+        """Add a new dependency to a the current base service."""
         if service:
-            dep_type = dep_type.lower()
-            if dep_type == "require":
-                self._requires[service.name] = (service, "require", obl)
-                service.add_child(self)
-            elif dep_type == "check":
-                self._checks[service.name] = (service, "check", True)
-                service.add_child(self)
-            else:
-                raise IllegalDependencyIdentifierError()
+            self._deps[service.name] = Dependency(service, dep_type)
+            service.add_child(self)
         else:
-            raise TypeError("service cannot be None") 
+            raise TypeError("service cannot be None")
     
-    def _remaining_dependencies(self):
+    def has_dependency(self, dep_name):
+        """Return true if the service own this dependency"""
+        return dep_name in self._deps
+    
+    def remaining_dependencies(self):
         """
         Analyze dependencies and return thos which are
-        + ERROR
-        + TIMED_OUT
-        + TOO_MANY_ERRORS
-        + IN_PROGRESS
-        + NO_STATUS 
+        ERROR, TIMED_OUT, TOO_MANY_ERRORS, IN_PROGRESS, NO_STATUS .
         """
         remaining = []
-        for rname in self._requires:
-            if self._requires[rname][0].status in \
-             (ERROR, TOO_MANY_ERRORS, TIMED_OUT, IN_PROGRESS, NO_STATUS):
-                remaining.append(self._requires[rname])
-        for cname in self._checks:
-            if self._checks[cname][0].status in \
-             (ERROR, TOO_MANY_ERRORS, TIMED_OUT, IN_PROGRESS, NO_STATUS):
-                remaining.append(self._checks[cname])
+        for dep_name in self._deps:
+            if self._deps[dep_name].target.status in \
+                (ERROR, TOO_MANY_ERRORS, TIMED_OUT, IN_PROGRESS, NO_STATUS):
+                remaining.append(self._deps[dep_name])
         return remaining
             
-    def _has_in_progress_dep(self):
+    def has_in_progress_dep(self):
         """
-        Allow us to determine if the current services
-        has to wait before to start due to unterminated
-        dependencies
+        Allow us to determine if the current services has to wait before to
+        start due to unterminated dependencies.
         """
-        for rname in self._requires:
-            if self._requires[rname][0].status == IN_PROGRESS:
-                return True
-        for cname in self._checks:
-            if self._checks[cname][0].status == IN_PROGRESS:
+        for dep_name in self._deps:
+            if self._deps[dep_name].target.status == IN_PROGRESS:
                 return True
         return False
-        
-    def is_check_dep(self, service):
-        """
-        Evaluate if the dependency given as a parameter is check
-        """
-        return service.name in self._checks
-        
-    def is_require_dep(self, service):
-        """
-        Evaluate if the dependency given as a parameter is require
-        """
-        return service.name in self._requires
 
-    def cleanup_dependencies(self):
-        """
-        Clean check and require dependencies
-        """
-        self._requires.clear()
-        self._checks.clear()
+    def clear_deps(self):
+        """Clear dependencies."""
+        self._deps.clear()
         
-    def prepare(self, action_name = None):
+    def prepare(self, action_name=None):
         """
-        Abstract method which will be overriden in Service and ServiceGroup
+        Abstract method which will be overriden in Service and ServiceGroup.
         """
         raise NotImplementedError
 
     def update_status(self, status):
-        """
-        Update the status of a service and launch his dependencies
-        """
+        """Update the status of a service and launch his dependencies."""
         self.status = status 
-        print "["+self.name+"] is ["+self.status+"]"
+        print "[%s] is [%s]" % (self.name, self.status)
       
         if self.status not in (NO_STATUS, IN_PROGRESS):
             # The action performed on the current service
             # had some issues
             for child in self.children:
                 if child.status == NO_STATUS and \
-                    not child._has_in_progress_dep():
-                    print  "*** "+self.name+" triggers "+child.name
+                    not child.has_in_progress_dep():
+                    print  "*** %s triggers %s" % (self.name, child.name)
                     child.prepare()
     
     def run(self, action_name):
-        """
-        Run the action_name over the current service
-        """
+        """Run the action_name over the current service."""
         self.prepare(action_name)
         self.resume()
         
     def resume(self):
-        """
-        Start the execution of the tasks on the nodes specified
-        """
+        """Start the execution of the tasks on the nodes specified."""
         self._task.resume()
     
     def ev_hup(self, worker):
-        """
-        Called to indicate that a worker's connection has been closed.
-        """
+        """Called to indicate that a worker's connection has been closed."""
         raise NotImplementedError
     
     def ev_close(self, worker):

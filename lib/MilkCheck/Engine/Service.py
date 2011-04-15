@@ -18,28 +18,25 @@ from MilkCheck.Engine.BaseService import TOO_MANY_ERRORS, SUCCESS_WITH_WARNINGS
 
 class ActionNotFoundError(MilkCheckEngineError):
     """
-    Action raised as soon as the current service has not the action
-    requested by the service
+    Error raised as soon as the current service has not the action
+    requested by the service.
     """
     
     def __init__(self, sname, aname):
-        """Constructor"""
-        msg = str(aname)+" not referenced in "+str(sname) 
+        msg = "%s not referenced in %s" % (aname, sname) 
         MilkCheckEngineError.__init__(self, msg) 
         
 class ActionAlreadyReferencedError(MilkCheckEngineError):
     """
-    Action raised as soon as the current service has not the action
-    requested by the service
+    Error raised whether the current service already has an action
+    with the same name.
     """
     def __init__(self, sname, aname):
-        msg = str(aname)+" already referenced in "+str(sname) 
+        msg = "%s already referenced in %s" % (aname, sname) 
         MilkCheckEngineError.__init__(self, msg) 
 
 class Service(BaseService):
-    """
-    This class models a service
-    """
+    """This class models a service ."""
     def __init__(self, name):
         BaseService.__init__(self, name)
         
@@ -48,33 +45,27 @@ class Service(BaseService):
         self._last_action = None
      
     def add_action(self, action):
-        """
-        Add a new action for the current service
-        """
+        """Add a new action for the current service"""
         if action.name in self._actions:
-            raise ActionAlreadyReferencedError(self.name, action)
+            raise ActionAlreadyReferencedError(self.name, action.name)
         else:
             self._actions[action.name] = action
             
     def remove_action(self, action_name):
-        """
-        Remove the specified action from those available in the service
-        """
+        """Remove the specified action from those available in the service."""
         if action_name in self._actions:
             del self._actions[action_name]
         else:
             raise ActionNotFoundError(self.name, action_name)
     
     def has_action(self, action_name):
-        """
-        Figure out whether the service  has the specified action
-        """
+        """Figure out whether the service has the specified action."""
         return action_name in self._actions
     
     def last_action(self):
         """
         Return the last action hooked/applied to the service. This action
-        contains the worker of the last task performed
+        contain the worker of the last task performed.
         """
         if self._last_action and self.has_action(self._last_action):
             return self._actions[self._last_action]
@@ -84,22 +75,18 @@ class Service(BaseService):
     def _schedule_task(self, action_name):
         """
         Assign the content of the action to ClusterShell in using
-        ClusterShell Task
+        ClusterShell Task.
         """
         action = self._actions[action_name]
-        if action.timeout <= 0:
-            action.worker = self._task.shell(action.command,
-                nodes=action.target,handler=self)
-        else:
-             action.worker = self._task.shell(action.command,
-                nodes=action.target, handler=self, timeout=action.timeout)
-        print "["+self.name+"] added to the master task" 
+        action.worker = self._task.shell(action.command,
+        nodes=action.target, handler=self, timeout=action.timeout)
+        print "[%s] added to the master task" % self.name 
     
      #testing
     def prepare(self, action_name=None):
         """
         Prepare the the current service to be launched as soon
-        as his dependencies are solved 
+        as his dependencies are solved. 
         """
         if not action_name and self.has_action(self._last_action):
             action_name = self._last_action
@@ -107,31 +94,30 @@ class Service(BaseService):
             if self.has_action(action_name):
                 self._last_action = action_name
             else:
-                raise ActionNotFoundError(self.name,action_name)
+                raise ActionNotFoundError(self.name, action_name)
             
         # Looks for the depencies which are not solved and 
         # adds the service to the queue of tasks
         print "[%s] is preparing" % self.name
     
         if self.status == NO_STATUS:
-        
             # If some of my dependencies have no status
             # so I have to ask them to be prepared
-            
-            deps = self._remaining_dependencies()
+            deps = self.remaining_dependencies()
             
             if deps:
                 
-                for (serv, dtype, obl) in deps:
+                for dep in deps:
                     
                     # Prepare only those which have no state
-                    if serv.status == NO_STATUS:
-                        if dtype == "check":
-                            serv.prepare("status")
+                    if dep.target.status == NO_STATUS:
+                        if dep.is_check():
+                            dep.target.prepare("status")
                         else:
-                            serv.prepare(action_name)
-                    elif serv.status in (ERROR, TIMED_OUT, TOO_MANY_ERRORS):
-                        if obl:
+                            dep.target.prepare(action_name)
+                    elif dep.target.status in \
+                        (ERROR, TIMED_OUT, TOO_MANY_ERRORS):
+                        if dep.is_strong():
                             self.update_status(ERROR)
                         else:
                             self.warnings = True
@@ -145,9 +131,7 @@ class Service(BaseService):
                 self._schedule_task(action_name)
                  
     def ev_hup(self, worker):
-        """
-        Called to indicate that a worker's connection has been closed.
-        """
+        """Called to indicate that a worker's connection has been closed."""
         pass
     
     def ev_close(self, worker):
@@ -155,7 +139,6 @@ class Service(BaseService):
         Called to indicate that a worker has just finished (it may already
         have failed on timeout).
         """
-        
         print "[%s] ev_close" % self.name
        
         cur_action = self.last_action()

@@ -2,10 +2,8 @@
 # Contributor: TATIBOUET Jeremie <tatibouetj@ocre.cea.fr>
 
 """
-This modules defines the tests cases targeting the Action and Service objects
+This modules defines the tests cases targeting the Action and Service objects.
 """
-
-import sys
 from unittest import TestCase
 
 # Classes
@@ -20,61 +18,50 @@ from MilkCheck.Engine.Service import ActionNotFoundError
 from MilkCheck.Engine.BaseService import SUCCESS, TIMED_OUT, ERROR
 from MilkCheck.Engine.BaseService import TOO_MANY_ERRORS
 from MilkCheck.Engine.BaseService import SUCCESS_WITH_WARNINGS
+from MilkCheck.Engine.Dependency import CHECK, REQUIRE, REQUIRE_WEAK
 
 class ActionTest(TestCase):
-    """
-    Define the unit tests for the object action
-    """
+    """Define the unit tests for the object action."""
     def test_action_instanciation(self):
-        """Test instanciation of an action"""
+        """Test instanciation of an action."""
         action = Action("start")
         self.assertNotEqual(action, None, "should be none")
         self.assertEqual(action.name, "start", "wrong name")
+        action = Action(name="start", target="fortoy5", command="/bin/true")
+        self.assertEqual(action.target, "fortoy5", "wrong target")
+        self.assertEqual(action.command, "/bin/true", "wrong command")
         
     def test_has_too_many_errors(self):
-        """
-        Test the method has_too_many_errors
-        """
-        action = Action("start")
+        """Test the method has_too_many_errors."""
+        action = Action(name="start", target="aury[12,13,21]",
+                    command="/bin/false")
         action.errors = 2
-        action.command = "hostnam"
-        action.target = "aury[13,14,21]"
         service = Service("test_service")
         service.add_action(action)
         service.prepare("start")
         service.resume()
         self.assertTrue(action.has_too_many_errors())
         
-        act_test = Action("test")
-        action.command = "hostnam"
-        action.target = "aury[13,14,21]"
+        act_test = Action(name="test", target="fortoy5", command="/bin/true")
         service.add_action(act_test)
         service.prepare("test")
         service.resume()
         self.assertFalse(action.has_too_many_errors())
         
     def test_has_timed_out(self):
-        """
-        Test has_timed_ou_method
-        """
+        """Test has_timed_ou_method."""
         pass
     
 class ServiceTest(TestCase):
-    """
-    Define the unit tests for the object service
-    """
+    """Define the unit tests for the object service."""
     def test_service_instanciation(self):
-        """
-        Test instanciation of a service
-        """
+        """Test instanciation of a service."""
         service = Service("brutus")
         self.assertNotEqual(service, None, "should be none")
         self.assertEqual(service.name, "brutus", "wrong name")
         
     def test_add_action(self):
-        """
-        Test add_action's behaviour
-        """
+        """Test add_action's behaviour."""
         service = Service("brutus")
         service.add_action(Action("start"))
         self.assertTrue(service.has_action("start"))
@@ -82,9 +69,7 @@ class ServiceTest(TestCase):
                 service.add_action,Action("start"))
                 
     def test_remove_action(self):
-        """
-        Test remove_action behaviour
-        """
+        """Test remove_action behaviour."""
         service = Service("brutus")
         service.add_action(Action("start"))
         service.remove_action("start")
@@ -93,9 +78,7 @@ class ServiceTest(TestCase):
             service.remove_action, "start")
     
     def test_last_action(self):
-        """
-        Test last_action method behaviour
-        """
+        """Test last_action method behaviour."""
         service = Service("henry")
         self.assertRaises(ActionNotFoundError, service.last_action)
         
@@ -107,12 +90,9 @@ class ServiceTest(TestCase):
         
         service.prepare("start")
         self.assertTrue(service.last_action())
-        
+       
     def test_prepare_error(self):
-        
-        """
-        Test prepare exception if action is not found
-        """
+        """Test prepare exception if action is not found."""
         # Single service
         service = Service("brutus")
         service.add_action(Action('start'))
@@ -131,40 +111,29 @@ class ServiceTest(TestCase):
         #Service with dependencies and multiple levels
         serv_b.add_action(Action("start"))
         serv_c = Service("C")
-        serv_a.add_dependency(serv_c,"check")
+        serv_a.add_dependency(serv_c, CHECK)
         self.assertRaises(ActionNotFoundError,
             service.prepare)
             
     def test_prepare_single_service(self):
-        """
-        Test prepare without dependencies between services
-        """
+        """Test prepare without dependencies between services."""
         serv_test = Service("test_service")
-        act_start = Action("start")
-        act_start.target="aury[11-12]"
-        act_start.command = "echo HelloWorld"
-        serv_test.add_action(act_start)
+        ac_start = Action(name="start", target="localhost", command="/bin/true")
+        serv_test.add_action(ac_start)
         serv_test.prepare("start")
         serv_test.resume()
         self.assertEqual(serv_test.status, SUCCESS)
         
-    def test_prepare_service_with_one_dependency(self):
-        """
-        Test prepare with one dependency
-        """
+    def test_prepare_one_dependency(self):
+        """Test prepare with one dependency."""
         # Define the main service
         serv_test = Service("test_service")
-        act_start = Action("start")
-        act_start.target="aury[11-12]"
-        act_start.command = "echo HelloWorld from serv_test"
-        serv_test.add_action(act_start)
+        ac_start = Action(name="start", target="localhost", command="/bin/true")
+        serv_test.add_action(ac_start)
         
         # Define the single dependency of the main service
         serv_dep = Service("dependency")
-        act_start = Action("start")
-        act_start.target="aury21"
-        act_start.command = "echo HelloWorld from serv_dep"
-        serv_dep.add_action(act_start)
+        serv_dep.add_action(ac_start)
         serv_test.add_dependency(serv_dep)
         
         # Start preparing of the base service
@@ -173,30 +142,20 @@ class ServiceTest(TestCase):
         self.assertEqual(serv_test.status, SUCCESS)
         self.assertEqual(serv_dep.status, SUCCESS)
         
-    def test_prepare_sevice_with_several_dependency(self):
-        """
-        Test prepare with several dependencies at the same level
-        """
+    def test_prepare_several_dependencies(self):
+        """Test prepare with several dependencies at the same level."""
         # Define the main service
         serv_test = Service("test_service")
-        act_start = Action("start")
-        act_start.target="aury[11-12]"
-        act_start.command = "echo HelloWorld from serv_test"
-        serv_test.add_action(act_start)
+        ac_start = Action(name="start", target="localhost", command="/bin/true")
+        serv_test.add_action(ac_start)
         
         # Define the dependency DEP_A 
         serv_depa = Service("DEP_A")
-        act_start = Action("start")
-        act_start.target="fortoy[5-6]"
-        act_start.command = "echo HelloWorld from DEP_A"
-        serv_depa.add_action(act_start)
+        serv_depa.add_action(ac_start)
         
         # Define the dependency DEP_B
         serv_depb = Service("DEP_B")
-        act_start = Action("start")
-        act_start.target="aury21"
-        act_start.command = "sleep 3"
-        serv_depb.add_action(act_start)
+        serv_depb.add_action(ac_start)
         
         serv_test.add_dependency(serv_depa)
         serv_test.add_dependency(serv_depb)
@@ -207,43 +166,30 @@ class ServiceTest(TestCase):
         self.assertEqual(serv_depa.status, SUCCESS)
         self.assertEqual(serv_depb.status, SUCCESS)
         
-    def test_prepare_service_with_multiple_multilevel_dependencies(self):
-        """
-        Test prepare with multiple dependencies at different levels
-        """
+    def test_prepare_multilevel_dependencies(self):
+        """Test prepare with multiple dependencies at different levels."""
         #Service Arthemis is delcared here
         arth = Service("arthemis")
         arth.desc = "Sleep five seconds"
-        arth_start = Action("start")
-        arth_start.command = "sleep 2"
-        arth_start.target = "aury21"
-        arth.add_action(arth_start)
+        ac_start = Action(name="start", target="localhost", command="/bin/true")
+        arth.add_action(ac_start)
         
         # Service Chiva is declared here
         chiva = Service("chiva")
         chiva.desc = "List all processes in details"
-        chiva_start = Action("start")
-        chiva_start.target = "aury[11-12]"
-        chiva_start.command = "ps -el"
-        chiva.add_action(chiva_start)
+        chiva.add_action(ac_start)
         chiva.add_dependency(arth)
         
         # Service Dyonisos is declared here
         dion = Service("dionysos")
         dion.desc = "Perform tree on directory specified"
-        dion_start = Action("start")
-        dion_start.target = "aury13"
-        dion_start.command = "tree /sbin/service"
-        dion.add_action(dion_start)
+        dion.add_action(ac_start)
         dion.add_dependency(arth)
         
         # Service Brutus is declared here
         brut = Service("brutus")
         brut.desc = "Wanna sleep all the time"
-        brut_start = Action("start")
-        brut_start.target = "aury[21,12,26]"
-        brut_start.command = "sleep 2"
-        brut.add_action(brut_start)
+        brut.add_action(ac_start)
         
         brut.add_dependency(chiva)
         brut.add_dependency(dion)
@@ -255,32 +201,21 @@ class ServiceTest(TestCase):
         self.assertEqual(dion.status, SUCCESS)
         self.assertEqual(brut.status, SUCCESS)
         
-    def test_prepare_with_require_weak_error(self):
-        """
-        Test weak require dependency error
-        """
+    def test_prepare_require_weak(self):
+        """Test weak require dependency error."""
         serv = Service("BASE")
         serv_a = Service("DEP_A")
         serv_b = Service("DEP_B")
         
-        act = Action("start")
-        act.target = "aury12"
-        act.command = "hostname"
+        ac_suc = Action(name="start", target="localhost", command="/bin/true")
+        ac_err = Action(name="start", target="localhost", command="/bin/false")
         
-        act_a = Action("start")
-        act_a.target = "banode"
-        act_a.command = "hostname"
-        
-        act_b = Action("start")
-        act_b.target = "aury21"
-        act_b.command = "echo $SHELL"
-        
-        serv.add_action(act)
-        serv_a.add_action(act_a)
-        serv_b.add_action(act_b)
+        serv.add_action(ac_suc)
+        serv_a.add_action(ac_err)
+        serv_b.add_action(ac_suc)
         
         serv.add_dependency(serv_b)
-        serv.add_dependency(serv_a,"require",False)
+        serv.add_dependency(serv_a, REQUIRE_WEAK)
         
         serv.prepare("start")
         serv.resume()
@@ -289,29 +224,18 @@ class ServiceTest(TestCase):
         self.assertEqual(serv_a.status, TOO_MANY_ERRORS)
         self.assertEqual(serv_b.status, SUCCESS)
         
-    def test_prepare_with_require_strong_error(self):
-        """
-        Test strong require dependency error
-        """
+    def test_prepare_require_strong(self):
+        """Test strong require dependency error."""
         serv = Service("BASE")
         serv_a = Service("DEP_A")
         serv_b = Service("DEP_B")
         
-        act = Action("start")
-        act.target = "aury12"
-        act.command = "hostname"
+        ac_suc = Action(name="start", target="localhost", command="/bin/true")
+        ac_err = Action(name="start", target="localhost", command="/bin/false")
         
-        act_a = Action("start")
-        act_a.target = "banode"
-        act_a.command = "hostname"
-        
-        act_b = Action("start")
-        act_b.target = "aury21"
-        act_b.command = "echo $SHELL"
-        
-        serv.add_action(act)
-        serv_a.add_action(act_a)
-        serv_b.add_action(act_b)
+        serv.add_action(ac_suc)
+        serv_a.add_action(ac_err)
+        serv_b.add_action(ac_suc)
         
         serv.add_dependency(serv_b)
         serv.add_dependency(serv_a)
@@ -324,52 +248,36 @@ class ServiceTest(TestCase):
         self.assertEqual(serv_b.status, SUCCESS)
    
     def test_prepare_with_multiple_require_errors(self):
-        """
-        Test multiple require dependencies errors at different levels
-        """
-        base = Service("STAR_TREK")
-        serv_a = Service("KURK")
-        serv_b = Service("SPOCK")
-        serv_c = Service("ENTREPRISE")
+        """Test multiple require dependencies errors at different levels."""
+        serv_base_error = Service("STAR_TREK")
+        serv_ok_warnings = Service("KURK")
+        serv_error = Service("SPOCK")
+        serv_timed_out = Service("ENTREPRISE")
         
-        action_base = Action("start")
-        action_a = Action("start")
-        action_b = Action("start")
-        action_c = Action("start")
+        ac_suc = Action(name="start", target="localhost", command="/bin/true")
+        ac_tim = Action(name="start", target="localhost",
+                     command="sleep 3", timeout=2)
         
-        action_base.target = "aury1"
-        action_a.target = "aury12"
-        action_b.target = "aury[21,13]"
-        action_c.target = "fortoy5"
+        serv_base_error.add_action(ac_suc)
+        serv_ok_warnings.add_action(ac_suc)
+        serv_error.add_action(ac_suc)
+        serv_timed_out.add_action(ac_tim)
         
-        action_base.command = "echo STAR_TREK"
-        action_a.command = "echo KURK"
-        action_b.command = "echo SPOCK"
-        action_c.command = "sleep 3"
-        action_c.timeout = 2
+        serv_base_error.add_dependency(serv_ok_warnings)
+        serv_base_error.add_dependency(serv_error)
+        serv_ok_warnings.add_dependency(serv_timed_out, REQUIRE_WEAK)
+        serv_error.add_dependency(serv_timed_out)
         
-        base.add_action(action_base)
-        serv_a.add_action(action_a)
-        serv_b.add_action(action_b)
-        serv_c.add_action(action_c)
+        serv_base_error.prepare("start")
+        serv_base_error.resume()
         
-        base.add_dependency(serv_a)
-        base.add_dependency(serv_b)
-        serv_a.add_dependency(serv_c, "require", False)
-        serv_b.add_dependency(serv_c)
+        self.assertEqual(serv_base_error.status, ERROR)
+        self.assertEqual(serv_ok_warnings.status, SUCCESS_WITH_WARNINGS)
+        self.assertEqual(serv_error.status, ERROR)
+        self.assertEqual(serv_timed_out.status, TIMED_OUT)
         
-        base.prepare("start")
-        base.resume()
-        
-        self.assertEqual(base.status, ERROR)
-        self.assertEqual(serv_a.status, SUCCESS_WITH_WARNINGS)
-        self.assertEqual(serv_b.status, ERROR)
-        self.assertEqual(serv_c.status, TIMED_OUT)
-        
-    def test_prepare_with_multiple_dependencies_error(self):
-        """
-        Test prepare with check and require deps with errors
-        """
+    def test_prepare_multiple_errors(self):
+        """Test prepare with check and require deps with errors."""
         serv_a = Service("BASE")
         serv_b = Service("DEP_B")
         serv_c = Service("DEP_C")
@@ -411,12 +319,12 @@ class ServiceTest(TestCase):
         
         serv_a.add_dependency(serv_x)
         serv_a.add_dependency(serv_b)
-        serv_a.add_dependency(serv_c, "require", False)
+        serv_a.add_dependency(serv_c, REQUIRE_WEAK)
         
-        serv_b.add_dependency(serv_d, "check")
+        serv_b.add_dependency(serv_d, CHECK)
         
         serv_c.add_dependency(serv_d)
-        serv_c.add_dependency(serv_k, "check")
+        serv_c.add_dependency(serv_k, CHECK)
         
         serv_a.prepare("start")
         serv_a.resume()

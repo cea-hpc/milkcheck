@@ -14,9 +14,7 @@ class ServiceFactory(object):
     _instance = None
    
     def __new__(self, *args, **kwargs):
-        """
-        Control of singleton pattern
-        """
+        """Control of singleton pattern."""
         if self._instance is None:
             self._instance = super(ServiceFactory, self).__new__(
                                 self, *args, **kwargs)
@@ -26,12 +24,7 @@ class ServiceFactory(object):
         pass
     
     def create_service(serialized_service):
-        """
-        Return the created service based on the provided dictionnary.
-        """
-        
+        """Return the created service based on the provided dictionnary."""
         
     def create_service_group(service):
-        """
-        returns the created service group
-        """
+        """Returns the created service group."""

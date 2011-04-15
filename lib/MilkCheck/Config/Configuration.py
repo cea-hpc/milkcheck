@@ -23,9 +23,7 @@ class Configuration(object):
         self._config = {}
 
     def _go_through(self, arg, dirname=None, names=None):
-        """
-        List of files in dirname
-        """
+        """List the files in dirname"""
         for my_file in names:
             
             if isfile(self._filepath_base + my_file) and \
@@ -40,9 +38,7 @@ class Configuration(object):
                         service["service"]
 
     def build_config(self):
-        """
-        Build and return a list of services objects
-        """
+        """Build and return a list of services objects"""
         self.read_config()
         self.compile_config()
         services = {}
@@ -54,16 +50,12 @@ class Configuration(object):
                 print "Create service named %s" % name
                 
     def compile_config(self):
-        """
-        Check the content of the services loaded
-        """
+        """Check the content of the services loaded"""
         print "Compiling configuration"
         return True
     
     def read_config(self):
-        """
-        Load the files located in base and override directories
-        """
+        """Load the files located in base and override directories"""
         print "Loading Configuration"
         walk(self._filepath_base, self._go_through, None)
         return True
