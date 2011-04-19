@@ -15,6 +15,7 @@ from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
 from MilkCheck.Engine.BaseService import NO_STATUS, SUCCESS
 from MilkCheck.Engine.BaseService import IN_PROGRESS, ERROR, TIMED_OUT
 from MilkCheck.Engine.BaseService import TOO_MANY_ERRORS, SUCCESS_WITH_WARNINGS
+from MilkCheck.Engine.Dependency import CHECK, REQUIRE, REQUIRE_WEAK
 
 class ActionNotFoundError(MilkCheckEngineError):
     """
@@ -33,7 +34,7 @@ class ActionAlreadyReferencedError(MilkCheckEngineError):
     """
     def __init__(self, sname, aname):
         msg = "%s already referenced in %s" % (aname, sname) 
-        MilkCheckEngineError.__init__(self, msg) 
+        MilkCheckEngineError.__init__(self, msg)
 
 class Service(BaseService):
     """This class models a service ."""
@@ -71,7 +72,12 @@ class Service(BaseService):
             return self._actions[self._last_action]
         else:
             raise ActionNotFoundError(self.name, self._last_action)
-        
+    
+    def add_dependency(self, service, dep_type=REQUIRE, internal=False):
+        """Overrides the original behaviour of BaseService.add_dependency()"""
+        assert not internal, "Cannot add an internal dependency to a Service"
+        BaseService.add_dependency(self,service, dep_type)
+           
     def _schedule_task(self, action_name):
         """
         Assign the content of the action to ClusterShell in using
@@ -80,9 +86,8 @@ class Service(BaseService):
         action = self._actions[action_name]
         action.worker = self._task.shell(action.command,
         nodes=action.target, handler=self, timeout=action.timeout)
-        print "[%s] added to the master task" % self.name 
-    
-     #testing
+        print "[%s] added to the master task" % self.name
+       
     def prepare(self, action_name=None):
         """
         Prepare the the current service to be launched as soon
@@ -91,45 +96,41 @@ class Service(BaseService):
         if not action_name and self.has_action(self._last_action):
             action_name = self._last_action
         else:
+            print "%s %s" %( self.name, action_name) 
             if self.has_action(action_name):
                 self._last_action = action_name
             else:
                 raise ActionNotFoundError(self.name, action_name)
+        
+        deps_status= self.eval_deps_status()
+        
+        # NO_STATUS and not any dep in progress for the current service
+        if self.status == NO_STATUS and not deps_status == IN_PROGRESS:
+            print "[%s] is preparing" % self.name
             
-        # Looks for the depencies which are not solved and 
-        # adds the service to the queue of tasks
-        print "[%s] is preparing" % self.name
-    
-        if self.status == NO_STATUS:
-            # If some of my dependencies have no status
-            # so I have to ask them to be prepared
-            deps = self.remaining_dependencies()
-            
-            if deps:
+            # If dependencies failed the current service will fail
+            if deps_status == ERROR:
+                self.update_status(ERROR)
+            else:
+                # Just flag if dependencies encounter problem
+                if deps_status == SUCCESS_WITH_WARNINGS:
+                    self.warnings = True
                 
-                for dep in deps:
-                    
-                    # Prepare only those which have no state
-                    if dep.target.status == NO_STATUS:
+                # Look for uncompleted dependencies 
+                deps = self.search_deps([NO_STATUS])
+                
+                # For each existing deps just prepare it
+                if deps:
+                    for dep in deps:
                         if dep.is_check():
                             dep.target.prepare("status")
                         else:
                             dep.target.prepare(action_name)
-                    elif dep.target.status in \
-                        (ERROR, TIMED_OUT, TOO_MANY_ERRORS):
-                        if dep.is_strong():
-                            self.update_status(ERROR)
-                        else:
-                            self.warnings = True
-                            self.update_status(IN_PROGRESS)
-                            self._schedule_task(action_name)
-            else:
+                else:
+                    # It's time to be processed
+                    self.update_status(IN_PROGRESS)
+                    self._schedule_task(action_name)
                 
-                # All of my dependencies are solved so I can be
-                # processed by the task
-                self.update_status(IN_PROGRESS)
-                self._schedule_task(action_name)
-                 
     def ev_hup(self, worker):
         """Called to indicate that a worker's connection has been closed."""
         pass

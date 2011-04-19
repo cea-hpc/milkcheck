@@ -13,7 +13,11 @@ from ClusterShell.Event import EventHandler
 from ClusterShell.Task import task_self
 
 # Symbols
-from MilkCheck.Engine.Dependency import REQUIRE
+from MilkCheck.Engine.Dependency import CHECK, REQUIRE, REQUIRE_WEAK
+
+# Exceptions
+from MilkCheck.Engine.Dependency import IllegalDependencyTypeError
+from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
 
 """
 Symbols defining the differents status of a service
@@ -25,6 +29,12 @@ SUCCESS_WITH_WARNINGS = "SUCCESS_WITH_WARNINGS"
 TIMED_OUT = "TIMED_OUT"
 TOO_MANY_ERRORS = "TOO_MANY_ERRORS"
 ERROR = "ERROR"
+
+class DependencyAlreadyReferenced(MilkCheckEngineError):
+    """
+    This exception is raised if you try to add two times the same
+    depedency to the same service.
+    """
 
 class BaseService(BaseEntity, EventHandler):
     """
@@ -53,30 +63,55 @@ class BaseService(BaseEntity, EventHandler):
         # key: Dependency object 
         self._deps = {}
     
-    def add_dependency(self, service, dep_type=REQUIRE):
+    def add_dependency(self, service, dep_type=REQUIRE, internal=False):
         """Add a new dependency to a the current base service."""
         if service:
-            self._deps[service.name] = Dependency(service, dep_type)
-            service.add_child(self)
+            if service.name in self._deps:
+                raise DependencyAlreadyReferenced()
+            else:
+                if dep_type in (CHECK, REQUIRE, REQUIRE_WEAK):
+                    self._deps[service.name] = Dependency(service,
+                                                    dep_type, internal)
+                    service.add_child(self)
+                else:
+                    raise IllegalDependencyTypeError()
         else:
             raise TypeError("service cannot be None")
     
     def has_dependency(self, dep_name):
         """Return true if the service own this dependency"""
         return dep_name in self._deps
-    
-    def remaining_dependencies(self):
+            
+    def search_deps(self, symbols=None):
+        """Search the dependencies matching one of the symbol."""
+        matching = []
+        for dep_name in self._deps:
+            if symbols:
+                if self._deps[dep_name].target.status in symbols:
+                    matching.append(self._deps[dep_name])
+            else:
+                matching.append(self._deps[dep_name])
+        return matching
+            
+    def eval_deps_status(self):
         """
-        Analyze dependencies and return thos which are
-        ERROR, TIMED_OUT, TOO_MANY_ERRORS, IN_PROGRESS, NO_STATUS .
+        Evaluate the result of the dependencies in order to check
+        if we have to continue in normal mode or in a degraded mode.
         """
-        remaining = []
+        temp_dep_status = SUCCESS
         for dep_name in self._deps:
             if self._deps[dep_name].target.status in \
-                (ERROR, TOO_MANY_ERRORS, TIMED_OUT, IN_PROGRESS, NO_STATUS):
-                remaining.append(self._deps[dep_name])
-        return remaining
-            
+                (TOO_MANY_ERRORS, TIMED_OUT, ERROR):
+                if self._deps[dep_name].is_strong():
+                    return ERROR
+                else:
+                   temp_dep_status = SUCCESS_WITH_WARNINGS
+            elif self._deps[dep_name].target.status == IN_PROGRESS:
+                return IN_PROGRESS
+            elif self._deps[dep_name].target.status == NO_STATUS:
+                temp_dep_status = NO_STATUS
+        return temp_dep_status
+    
     def has_in_progress_dep(self):
         """
         Allow us to determine if the current services has to wait before to

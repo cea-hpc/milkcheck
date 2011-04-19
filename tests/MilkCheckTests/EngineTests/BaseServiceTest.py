@@ -10,8 +10,15 @@ from unittest import TestCase
 from MilkCheck.Engine.BaseService import BaseService
 
 # Symbols
-from MilkCheck.Engine.Dependency import CHECK
-from MilkCheck.Engine.BaseService import SUCCESS, IN_PROGRESS
+from MilkCheck.Engine.Dependency import CHECK, REQUIRE_WEAK
+from MilkCheck.Engine.BaseService import NO_STATUS, SUCCESS, IN_PROGRESS
+from MilkCheck.Engine.BaseService import TIMED_OUT, TOO_MANY_ERRORS
+from MilkCheck.Engine.BaseService import SUCCESS_WITH_WARNINGS, ERROR
+
+# Exceptions
+from MilkCheck.Engine.Dependency import IllegalDependencyTypeError
+from MilkCheck.Engine.BaseService import DependencyAlreadyReferenced 
+
 
 class BaseServiceTest(TestCase):
     """
@@ -34,34 +41,12 @@ class BaseServiceTest(TestCase):
         self.assertRaises(TypeError, service.add_dependency, None)
             
         # Dependency with bad name identifier
-        self.assertRaises(AssertionError,
-            service.add_dependency, BaseService("dep3"), "hello")
-    
-    def test_remaining_dep_one(self):
-        """Test the method remaining dependencies with one dependency."""
-        service = BaseService("test_service")
-        serv_a = BaseService("A")
-        serv_b = BaseService("B")
-        serv_a.status = SUCCESS
-        service.add_dependency(serv_a)
-        service.add_dependency(serv_b, CHECK)
-        deps = service.remaining_dependencies()
-        self.assertEqual(len(deps), 1, "should have one dependencies")
-        self.assertTrue(serv_b.name == deps[0].target.name, "B should be in")
-        
-    def test_remaining_dep_several(self):
-        """Test the method remaining dependencies with several dependencies."""
-        service = BaseService("test_service")
-        serv_a = BaseService("A")
-        serv_b = BaseService("B")
-        service.add_dependency(serv_a)
-        service.add_dependency(serv_b, CHECK)
-        deps = service.remaining_dependencies()
-        
-        self.assertEqual(len(deps), 2, "should have two dependencies")
-        self.assertTrue(serv_a.name == deps[0].target.name, "A should be in")
-        self.assertTrue(serv_b.name == deps[1].target.name, "B should be in")
-
+        self.assertRaises(IllegalDependencyTypeError,
+            service.add_dependency, BaseService("A"), "BAD")
+        #Already referenced dependency 
+        self.assertRaises(DependencyAlreadyReferenced,
+            service.add_dependency, rdep)
+       
     def test_has_dep_in_progress(self):
         """Test the method has_dep_in_progress."""
         service = BaseService("test_service")
@@ -86,3 +71,60 @@ class BaseServiceTest(TestCase):
     def test_update_status_children(self):
         """Test the method update_status with children."""
         pass
+    
+    def test_search_deps(self):
+        """Test the method search dep."""
+        service = BaseService("test_service")
+        serv_a = BaseService("A")
+        serv_b = BaseService("B")
+        service.add_dependency(serv_a)
+        service.add_dependency(serv_b, CHECK)
+        self.assertEqual(len(service.search_deps()), 2)
+        self.assertEqual(len(service.search_deps([NO_STATUS])), 2)
+        serv_c = BaseService("C")
+        serv_c.status = SUCCESS
+        service.add_dependency(serv_c)
+        self.assertEqual(len(service.search_deps([NO_STATUS])), 2)
+        self.assertEqual(len(service.search_deps([NO_STATUS, SUCCESS])), 3)
+        
+    def test_eval_deps_no_status(self):
+        """Test that eval_deps_status return NO_STATUS"""
+        service = BaseService("test_service")
+        serv_a = BaseService("A")
+        serv_b = BaseService("B")
+        serv_a.status = SUCCESS_WITH_WARNINGS
+        service.add_dependency(serv_a)
+        service.add_dependency(serv_b, CHECK)
+        self.assertEqual(service.eval_deps_status(), NO_STATUS)
+    
+    def test_eval_deps_in_progress(self):
+        """Test that eval_deps_status return IN_PROGRESS"""
+        service = BaseService("test_service")
+        serv_a = BaseService("A")
+        serv_b = BaseService("B")
+        service.add_dependency(serv_a)
+        service.add_dependency(serv_b, CHECK)
+        serv_a.status = IN_PROGRESS
+        self.assertEqual(service.eval_deps_status(), IN_PROGRESS)
+        
+    def test_eval_deps_error(self):
+        """Test that eval_deps_status return ERROR"""
+        service = BaseService("test_service")
+        serv_a = BaseService("A")
+        serv_b = BaseService("B")
+        service.add_dependency(serv_a)
+        service.add_dependency(serv_b, CHECK)
+        serv_b.status = SUCCESS
+        serv_a.status = TIMED_OUT
+        self.assertEqual(service.eval_deps_status(), ERROR)
+      
+    def test_eval_deps_warnings(self):
+        """Test that eval_deps_status return SUCCESS_WITH_WARNINGS"""
+        service = BaseService("test_service")
+        serv_a = BaseService("A")
+        serv_b = BaseService("B")
+        service.add_dependency(serv_a, REQUIRE_WEAK)
+        service.add_dependency(serv_b, REQUIRE_WEAK)
+        serv_b.status = TOO_MANY_ERRORS
+        serv_a.status = TIMED_OUT
+        self.assertEqual(service.eval_deps_status(), SUCCESS_WITH_WARNINGS)

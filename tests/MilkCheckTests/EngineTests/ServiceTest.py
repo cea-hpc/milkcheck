@@ -90,7 +90,16 @@ class ServiceTest(TestCase):
         
         service.prepare("start")
         self.assertTrue(service.last_action())
-       
+    
+    def test_add_dependency(self):
+        """
+        Test that you are not allowed to add an internal dependency
+        to a service
+        """
+        ser = Service("SERVICE")
+        self.assertRaises(AssertionError,ser.add_dependency,
+            Service("A"), CHECK, True)
+      
     def test_prepare_error(self):
         """Test prepare exception if action is not found."""
         # Single service
@@ -247,6 +256,34 @@ class ServiceTest(TestCase):
         self.assertEqual(serv_a.status, TOO_MANY_ERRORS)
         self.assertEqual(serv_b.status, SUCCESS)
    
+    def test_prepare_errors_same_level(self):
+        """Test prepare behaviour with two errors at the same level"""
+        serv = Service("BASE")
+        serv_a = Service("DEP_A")
+        serv_b = Service("DEP_B")
+        serv_c = Service("DEP_C")
+        
+        ac_suc = Action(name="start", target="localhost", command="/bin/true")
+        ac_err = Action(name="start", target="localhost", command="/bin/false")
+        ac_err2 = Action(name="start", target="localhost", command="dlvlfvlf")
+        
+        serv.add_action(ac_suc)
+        serv_a.add_action(ac_suc)
+        serv_b.add_action(ac_err)
+        serv_c.add_action(ac_err2)
+        
+        serv.add_dependency(serv_a)
+        serv_a.add_dependency(serv_b)
+        serv_a.add_dependency(serv_c)
+        
+        serv.prepare("start")
+        serv.resume()
+        
+        self.assertEqual(serv.status, ERROR)
+        self.assertEqual(serv_a.status, ERROR)
+        self.assertEqual(serv_b.status, TOO_MANY_ERRORS)
+        self.assertEqual(serv_c.status, TOO_MANY_ERRORS)
+         
     def test_prepare_with_multiple_require_errors(self):
         """Test multiple require dependencies errors at different levels."""
         serv_base_error = Service("STAR_TREK")
