@@ -16,24 +16,6 @@ from MilkCheck.Engine.BaseService import SUCCESS_WITH_WARNINGS
 # Exceptions
 from MilkCheck.Engine.BaseEntity import MilkCheckEngineError 
 
-class ServiceAlreadyReferencedError(MilkCheckEngineError):
-    """
-    This error is raised if you attempt to add a service to group
-    and this service is already referenced in it
-    """
-    def __init__(self, gname, sname):
-        msg = "%s already has subservice named %s"  % (gname, sname)
-        MilkCheckEngineError.__init__(self, msg)
-
-class ServiceNotFoundError(MilkCheckEngineError):
-    """
-    This error is raised if the service that you are looking for is not
-    referenced in the group
-    """
-    def __init__(self, gname, sname):
-        msg = "%s cannot be found in %s"  % (sname, gname)
-        MilkCheckEngineError.__init__(self, msg)
-
 class ServiceGroup(BaseService):
     """
     This class models a group of service. A group of service
@@ -115,17 +97,7 @@ class ServiceGroup(BaseService):
                                 internal.target.prepare(self._last_action)
                 else:
                     # The group node is a fake we just change his status
-                    self.update_status(SUCCESS)
-                
-    def ev_hup(self, worker):
-        """
-        Called to indicate that a worker's connection has been closed.
-        """
-        pass
-        
-    def ev_close(self, worker):
-        """
-        Called to indicate that a worker has just finished (it may already
-        have failed on timeout).
-        """
-        pass
+                    if self.warnings:
+                        self.update_status(SUCCESS_WITH_WARNINGS)
+                    else:
+                        self.update_status(SUCCESS)

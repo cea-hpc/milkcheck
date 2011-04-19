@@ -7,6 +7,7 @@ This module contains the Service class definition
 
 # Classes
 from MilkCheck.Engine.BaseService import BaseService
+from MilkCheck.Engine.Action import Action
 
 # Exceptions
 from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
@@ -47,10 +48,18 @@ class Service(BaseService):
      
     def add_action(self, action):
         """Add a new action for the current service"""
-        if action.name in self._actions:
-            raise ActionAlreadyReferencedError(self.name, action.name)
+        if isinstance(action, Action):
+            if action.name in self._actions:
+                raise ActionAlreadyReferencedError(self.name, action.name)
+            else:
+                    self._actions[action.name] = action
         else:
-            self._actions[action.name] = action
+            raise TypeError()
+     
+    def add_actions(self, *args):
+        """Add multiple actions at the same type"""
+        for action in args:
+            self.add_action(action)
             
     def remove_action(self, action_name):
         """Remove the specified action from those available in the service."""

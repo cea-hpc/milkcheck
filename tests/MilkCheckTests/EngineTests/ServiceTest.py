@@ -67,7 +67,20 @@ class ServiceTest(TestCase):
         self.assertTrue(service.has_action("start"))
         self.assertRaises(ActionAlreadyReferencedError,
                 service.add_action,Action("start"))
+        self.assertRaises(TypeError,
+                service.add_action,None)
                 
+    def test_add_actions(self):
+        """Test the possibility to add multiple actions at the same time"""
+        service = Service("SERV")
+        act_a = Action("start", "localhost", "/bin/true")
+        act_b = Action("stop", "localhost", "/bin/true")
+        act_c = Action("status", "localhost", "/bin/true")
+        service.add_actions(act_a, act_b, act_c)
+        self.assertTrue(service.has_action("start"))
+        self.assertTrue(service.has_action("stop"))
+        self.assertTrue(service.has_action("status"))
+        
     def test_remove_action(self):
         """Test remove_action behaviour."""
         service = Service("brutus")
