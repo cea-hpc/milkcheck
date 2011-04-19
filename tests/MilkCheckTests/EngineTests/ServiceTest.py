@@ -385,3 +385,45 @@ class ServiceTest(TestCase):
         self.assertEqual(serv_b.status, SUCCESS)
         self.assertEqual(serv_x.status, SUCCESS)
         self.assertEqual(serv_a.status, SUCCESS_WITH_WARNINGS)
+        
+    def test_prepare_delayed_action(self):
+        """Test prepare Service with a delayed action"""
+        serv = Service("DELAYED_SERVICE")
+        act_suc = ac_suc = Action(name="start",
+                    target="localhost", command="/bin/true")
+        act_suc.delay = 5
+        serv.add_action(act_suc)
+        serv.prepare("start")
+        serv.resume()
+        self.assertEqual(serv.status, SUCCESS)
+        self.assertTrue(serv.delayed)
+        
+    def test_prepared_multiple_delay(self):
+        """Test prepare with dependencies and multiple delay"""
+        serv = Service("BASE_DELAYED")
+        serv_a = Service("A_NOT_DELAYED")
+        serv_b = Service("B_DELAYED")
+        serv_c = Service("C_DELAYED")
+        act_a = ac_suc = Action(name="start",
+                    target="localhost", command="/bin/true")
+        act_others = ac_suc = Action(name="start",
+                    target="localhost", command="/bin/true")
+        act_others.delay = 3
+        serv.add_action(act_others)
+        serv_a.add_action(act_a)
+        serv_b.add_action(act_others)
+        serv_c.add_action(act_others)
+        serv.add_dependency(serv_a)
+        serv.add_dependency(serv_b)
+        serv_a.add_dependency(serv_c)
+        serv_b.add_dependency(serv_c)
+        serv.prepare("start")
+        serv.resume()
+        self.assertEqual(serv.status, SUCCESS)
+        self.assertTrue(serv.delayed)
+        self.assertEqual(serv_a.status, SUCCESS)
+        self.assertFalse(serv_a.delayed)
+        self.assertEqual(serv_b.status, SUCCESS)
+        self.assertTrue(serv_b.delayed)
+        self.assertEqual(serv_c.status, SUCCESS)
+        self.assertTrue(serv_c.delayed)

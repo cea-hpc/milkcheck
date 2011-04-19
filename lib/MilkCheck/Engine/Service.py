@@ -5,6 +5,8 @@
 This module contains the Service class definition
 """
 
+import sys
+
 # Classes
 from MilkCheck.Engine.BaseService import BaseService
 from MilkCheck.Engine.Action import Action
@@ -45,6 +47,7 @@ class Service(BaseService):
         # Actions of the service
         self._actions = {}
         self._last_action = None
+        self.delayed = False
      
     def add_action(self, action):
         """Add a new action for the current service"""
@@ -92,10 +95,16 @@ class Service(BaseService):
         Assign the content of the action to ClusterShell in using
         ClusterShell Task.
         """
+        #Retrieve targeted action
         action = self._actions[action_name]
-        action.worker = self._task.shell(action.command,
-        nodes=action.target, handler=self, timeout=action.timeout)
-        print "[%s] added to the master task" % self.name
+        
+        if action.delay > 0:
+            self._task.timer(handler=self, fire=action.delay)
+            print "[%s] delayed action scheduled" % self.name
+        else:
+            action.worker = self._task.shell(action.command,
+            nodes=action.target, handler=self, timeout=action.timeout)
+            print "[%s] added to the master task" % self.name
        
     def prepare(self, action_name=None):
         """
@@ -139,9 +148,18 @@ class Service(BaseService):
                     self.update_status(IN_PROGRESS)
                     self._schedule_task(action_name)
                 
-    def ev_hup(self, worker):
-        """Called to indicate that a worker's connection has been closed."""
-        pass
+    def ev_timer(self, timer):
+        """
+        Handle firing timer. Here this event is used in order to authorize
+        a dependency to be delayed. As soon as the timer fires this one will
+        be triggered like any other dependencies
+        """
+        print "[%s] ev_timer" % self.name
+        action = self.last_action()
+        action.worker = self._task.shell(action.command,
+        nodes=action.target, handler=self, timeout=action.timeout)
+        print "[%s] delayed action added to the master task" % self.name
+        self.delayed = True
     
     def ev_close(self, worker):
         """

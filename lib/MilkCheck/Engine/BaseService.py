@@ -155,8 +155,8 @@ class BaseService(BaseEntity, EventHandler):
         """Start the execution of the tasks on the nodes specified."""
         self._task.resume()
     
-    def ev_hup(self, worker):
-        """Called to indicate that a worker's connection has been closed."""
+    def ev_timer(self, timer):
+        """Handle firing timer."""
         raise NotImplementedError
     
     def ev_close(self, worker):
