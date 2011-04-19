@@ -96,7 +96,6 @@ class Service(BaseService):
         if not action_name and self.has_action(self._last_action):
             action_name = self._last_action
         else:
-            print "%s %s" %( self.name, action_name) 
             if self.has_action(action_name):
                 self._last_action = action_name
             else:

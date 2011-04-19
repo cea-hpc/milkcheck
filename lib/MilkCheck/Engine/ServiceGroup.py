@@ -10,9 +10,8 @@ from MilkCheck.Engine.BaseService import BaseService
 
 # Symbols
 from MilkCheck.Engine.BaseService import NO_STATUS, SUCCESS
-from MilkCheck.Engine.BaseService import IN_PROGRESS, ERROR, TIMED_OUT
-from MilkCheck.Engine.BaseService import TOO_MANY_ERRORS, SUCCESS_WITH_WARNINGS
-from MilkCheck.Engine.Dependency import CHECK, REQUIRE, REQUIRE_WEAK
+from MilkCheck.Engine.BaseService import IN_PROGRESS, ERROR
+from MilkCheck.Engine.BaseService import SUCCESS_WITH_WARNINGS
 
 # Exceptions
 from MilkCheck.Engine.BaseEntity import MilkCheckEngineError 
@@ -71,6 +70,11 @@ class ServiceGroup(BaseService):
         Prepare the the current group to be launched as soon
         as his dependencies are solved
         """
+        
+        # Remember last action called
+        if action_name:
+            self._last_action = action_name
+        
         # Eval the status of the dependencies
         deps_status = self.eval_deps_status()
         
@@ -91,15 +95,24 @@ class ServiceGroup(BaseService):
                 deps = self.search_deps([NO_STATUS])
 
                 if deps['external'] or deps['internal']:
-                    # First resolve external then internal dependencies
-                    for priority in ['external','internal']:
-                        for dep in deps[priority]:
-                            print "[%s] %s dep of %s" % \
-                            (dep.target.name, priority, self.name)
-                            if dep.is_check():
-                                dep.target.prepare('status')
+                    # Before to start internal dependencies we have to be sure
+                    # that all external dependencies are solve
+                    if deps['external']:
+                        for external in deps['external']:
+                            print "[%s] external dep of %s" % \
+                            (external.target.name, self.name)
+                            if external.is_check():
+                                external.target.prepare('status')
                             else:
-                                dep.target.prepare(action_name)
+                                external.target.prepare(self._last_action)
+                    elif deps['internal']:
+                        for internal in deps['internal']:
+                            print "[%s] internal dep of %s" % \
+                            (internal.target.name, self.name)
+                            if internal.is_check():
+                                internal.target.prepare('status')
+                            else:
+                                internal.target.prepare(self._last_action)
                 else:
                     # The group node is a fake we just change his status
                     self.update_status(SUCCESS)

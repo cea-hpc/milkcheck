@@ -24,14 +24,14 @@ class ServiceGroupTest(TestCase):
     """Define the test cases of a ServiceGroup."""
     
     def test_instanciation_service_group(self):
-        """Test instanciation of a ServiceGroup"""
+        """Test instanciation of a ServiceGroup."""
         ser_group = ServiceGroup("GROUP")
         self.assertTrue(ser_group)
         self.assertTrue(isinstance(ser_group, ServiceGroup))
         self.assertEqual(ser_group.name, "GROUP")
         
     def test_search_deps(self):
-        """Test the method search deps overriden from BaseService"""
+        """Test the method search deps overriden from BaseService."""
         group = ServiceGroup("GROUP")
         serv = Service("SERVICE")
         group_dep =  ServiceGroup("GROUP2")
@@ -47,13 +47,13 @@ class ServiceGroupTest(TestCase):
         self.assertEqual(len(deps["external"]),2)
        
     def test_prepare_empty_group(self):
-        """Test method prepare with an single empty ServiceGroup"""
+        """Test method prepare with a single empty ServiceGroup."""
         group = ServiceGroup("GROUP")
         group.prepare("start")
         self.assertEqual(group.status, SUCCESS)
         
     def test_prepare_group_subservice(self):
-        """Test prepare group with an internal dependency"""
+        """Test prepare group with an internal dependency."""
         group = ServiceGroup("GROUP")
         subserv = Service("SUB1")
         subserv.add_action(Action("start", "localhost", "/bin/true"))
@@ -64,7 +64,7 @@ class ServiceGroupTest(TestCase):
         self.assertEqual(subserv.status, SUCCESS)
         
     def test_prepare_group_subservices(self):
-        """Test prepare group with multiple internal dependencies"""
+        """Test prepare group with multiple internal dependencies."""
         group = ServiceGroup("GROUP")
         ac_suc = Action("start", "localhost", "/bin/true")
         
@@ -87,3 +87,49 @@ class ServiceGroupTest(TestCase):
         self.assertEqual(subserv_a.status, SUCCESS)
         self.assertEqual(subserv_b.status, SUCCESS)
         self.assertEqual(subserv_c.status, SUCCESS)
+     
+    def test_prepare_empty_group_external_deps(self):
+        """Test prepare an empty group with a single external dependency."""
+        group = ServiceGroup("GROUP")
+        ext_serv = Service("EXT_SERV")
+        ac_suc = Action("start", "localhost", "/bin/true")
+        ext_serv.add_action(ac_suc)
+        group.add_dependency(ext_serv)
+        group.prepare("start")
+        group.resume()
+        self.assertEqual(group.status, SUCCESS)
+        self.assertEqual(ext_serv.status, SUCCESS)
+        
+    def test_prepare_group_internal_external_deps(self):
+        """Test prepare a group with internal and external dependencies"""
+        # Group
+        group = ServiceGroup("GROUP")
+        # Internal
+        inter_serv1 = Service("INT_SERV1") 
+        inter_serv2 = Service("INT_SERV2")
+        inter_serv3 = Service("INT_SERV3")
+        # External
+        ext_serv1 =  Service("EXT_SERV1")
+        ext_serv2 = Service("EXT_SERV2")
+        ac_suc = Action("start", "localhost", "/bin/true")
+        # Add actions
+        inter_serv1.add_action(ac_suc)
+        inter_serv2.add_action(ac_suc)
+        inter_serv3.add_action(ac_suc)
+        ext_serv1.add_action(ac_suc)
+        ext_serv2.add_action(ac_suc)
+        # Add dependencies
+        group.add_dependency(service=inter_serv1, internal=True)
+        group.add_dependency(service=inter_serv2, internal=True)
+        inter_serv2.add_dependency(inter_serv3)
+        group.add_dependency(ext_serv1)
+        group.add_dependency(ext_serv2)
+        # Prepare group
+        group.prepare("start")
+        group.resume()
+        self.assertEqual(group.status, SUCCESS)
+        self.assertEqual(ext_serv1.status, SUCCESS)
+        self.assertEqual(ext_serv2.status, SUCCESS)
+        self.assertEqual(inter_serv1.status, SUCCESS)
+        self.assertEqual(inter_serv2.status, SUCCESS)
+        self.assertEqual(inter_serv3.status, SUCCESS)
