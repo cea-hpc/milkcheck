@@ -14,23 +14,26 @@ class Action(BaseEntity):
     action or service.
     """
     
-    def __init__(self, name, target=None, command=None, timeout=0):
+    def __init__(self, name, target=None, command=None, timeout=0, delay=0):
         BaseEntity.__init__(self, name=name, target=target)
         
         # Action's timeout in seconds
         self.timeout = timeout
         
         # Action's delay in seconds
-        self.delay = 0
+        self.delay = delay
         
         # Number of action's retry
-        self.retry = 0
+        self._retry = 0
         
         # Command lines that we would like to run 
         self.command = command
         
         # Results and retcodes
         self.worker = None
+        
+        # Flag to certify that an action was delayed
+        self.delayed = False
         
     def has_timed_out(self):
         """Return true if this action timed."""
@@ -53,3 +56,14 @@ class Action(BaseEntity):
                     if error_count > self.errors:
                         too_many_errors = True
         return too_many_errors
+                    
+    def set_retry(self, retry):
+        """constraint retry property setter"""
+        assert self.delay > 0 , "No way to specify retry without a delay"
+        self._retry = retry
+        
+    def get_retry(self):
+        """retry property getter"""
+        return self._retry
+    
+    retry = property(fget=get_retry, fset=set_retry)

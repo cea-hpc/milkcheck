@@ -5,8 +5,6 @@
 This module contains the Service class definition
 """
 
-import sys
-
 # Classes
 from MilkCheck.Engine.BaseService import BaseService
 from MilkCheck.Engine.Action import Action
@@ -18,7 +16,7 @@ from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
 from MilkCheck.Engine.BaseService import NO_STATUS, SUCCESS
 from MilkCheck.Engine.BaseService import IN_PROGRESS, ERROR, TIMED_OUT
 from MilkCheck.Engine.BaseService import TOO_MANY_ERRORS, SUCCESS_WITH_WARNINGS
-from MilkCheck.Engine.Dependency import CHECK, REQUIRE, REQUIRE_WEAK
+from MilkCheck.Engine.Dependency import REQUIRE
 
 class ActionNotFoundError(MilkCheckEngineError):
     """
@@ -47,7 +45,6 @@ class Service(BaseService):
         # Actions of the service
         self._actions = {}
         self._last_action = None
-        self.delayed = False
      
     def add_action(self, action):
         """Add a new action for the current service"""
@@ -55,7 +52,7 @@ class Service(BaseService):
             if action.name in self._actions:
                 raise ActionAlreadyReferencedError(self.name, action.name)
             else:
-                    self._actions[action.name] = action
+                self._actions[action.name] = action
         else:
             raise TypeError()
      
@@ -88,8 +85,8 @@ class Service(BaseService):
     def add_dependency(self, service, dep_type=REQUIRE, internal=False):
         """Overrides the original behaviour of BaseService.add_dependency()"""
         assert not internal, "Cannot add an internal dependency to a Service"
-        BaseService.add_dependency(self,service, dep_type)
-           
+        BaseService.add_dependency(self, service, dep_type)
+    
     def _schedule_task(self, action_name):
         """
         Assign the content of the action to ClusterShell in using
@@ -119,7 +116,7 @@ class Service(BaseService):
             else:
                 raise ActionNotFoundError(self.name, action_name)
         
-        deps_status= self.eval_deps_status()
+        deps_status = self.eval_deps_status()
         
         # NO_STATUS and not any dep in progress for the current service
         if self.status == NO_STATUS and not deps_status == IN_PROGRESS:
@@ -156,10 +153,10 @@ class Service(BaseService):
         """
         print "[%s] ev_timer" % self.name
         action = self.last_action()
+        action.delayed = True
         action.worker = self._task.shell(action.command,
         nodes=action.target, handler=self, timeout=action.timeout)
         print "[%s] delayed action added to the master task" % self.name
-        self.delayed = True
     
     def ev_close(self, worker):
         """
@@ -171,10 +168,20 @@ class Service(BaseService):
         cur_action = self.last_action()
         
         if cur_action.has_too_many_errors():
-            self.update_status(TOO_MANY_ERRORS)
+            if cur_action.retry > 0:
+                cur_action.retry -= 1
+                self._task.timer(handler=self, fire=cur_action.delay)
+                print "[%s] is re-scheduled" % self.name
+            else:
+                self.update_status(TOO_MANY_ERRORS)
         else:
             if cur_action.has_timed_out():
-                self.update_status(TIMED_OUT)
+                if cur_action.retry > 0:
+                    cur_action.retry -= 1
+                    self._task.timer(handler=self, fire=cur_action.delay)
+                    print "[%s] is re-scheduled" % self.name
+                else:
+                    self.update_status(TIMED_OUT)
             else:
                 if self.warnings:
                     self.update_status(SUCCESS_WITH_WARNINGS)

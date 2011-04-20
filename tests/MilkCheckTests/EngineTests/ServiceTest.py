@@ -22,6 +22,7 @@ from MilkCheck.Engine.Dependency import CHECK, REQUIRE, REQUIRE_WEAK
 
 class ActionTest(TestCase):
     """Define the unit tests for the object action."""
+    
     def test_action_instanciation(self):
         """Test instanciation of an action."""
         action = Action("start")
@@ -30,6 +31,10 @@ class ActionTest(TestCase):
         action = Action(name="start", target="fortoy5", command="/bin/true")
         self.assertEqual(action.target, "fortoy5", "wrong target")
         self.assertEqual(action.command, "/bin/true", "wrong command")
+        action = Action(name="start", target="fortoy5", command="/bin/true",
+                    timeout=10, delay=5)
+        self.assertEqual(action.timeout, 10, "wrong timeout")
+        self.assertEqual(action.delay, 5, "wrong delay")
         
     def test_has_too_many_errors(self):
         """Test the method has_too_many_errors."""
@@ -50,8 +55,23 @@ class ActionTest(TestCase):
         
     def test_has_timed_out(self):
         """Test has_timed_ou_method."""
-        pass
-    
+        action = Action(name="start", target="localhost",
+                    command="sleep 3", timeout=2)
+        service = Service("test_service")
+        service.add_action(action)
+        service.prepare("start")
+        service.resume()
+        self.assertTrue(action.has_timed_out())
+        
+    def test_set_retry(self):
+        """Test retry assignement"""
+        action =  Action(name="start", target="localhost", command="sleep 3")
+        self.assertRaises(AssertionError, action.set_retry, 5)
+        action =  Action(name="start", target="localhost", command="sleep 3",
+                    delay=3)
+        action.retry = 5
+        self.assertEqual(action.retry, 5)
+        
 class ServiceTest(TestCase):
     """Define the unit tests for the object service."""
     def test_service_instanciation(self):
@@ -390,15 +410,14 @@ class ServiceTest(TestCase):
         """Test prepare Service with a delayed action"""
         serv = Service("DELAYED_SERVICE")
         act_suc = ac_suc = Action(name="start",
-                    target="localhost", command="/bin/true")
-        act_suc.delay = 5
+                    target="localhost", command="/bin/true", delay=5)
         serv.add_action(act_suc)
         serv.prepare("start")
         serv.resume()
         self.assertEqual(serv.status, SUCCESS)
-        self.assertTrue(serv.delayed)
+        self.assertTrue(serv.last_action().delayed)
         
-    def test_prepared_multiple_delay(self):
+    def test_prepare_multiple_delay(self):
         """Test prepare with dependencies and multiple delay"""
         serv = Service("BASE_DELAYED")
         serv_a = Service("A_NOT_DELAYED")
@@ -406,13 +425,16 @@ class ServiceTest(TestCase):
         serv_c = Service("C_DELAYED")
         act_a = ac_suc = Action(name="start",
                     target="localhost", command="/bin/true")
-        act_others = ac_suc = Action(name="start",
-                    target="localhost", command="/bin/true")
-        act_others.delay = 3
-        serv.add_action(act_others)
+        act_serv = ac_suc = Action(name="start",
+                    target="localhost", command="/bin/true", delay=1)
+        act_b = ac_suc = Action(name="start",
+                    target="localhost", command="/bin/true", delay=1)
+        act_c = ac_suc = Action(name="start",
+                    target="localhost", command="/bin/true", delay=2)
+        serv.add_action(act_serv)
         serv_a.add_action(act_a)
-        serv_b.add_action(act_others)
-        serv_c.add_action(act_others)
+        serv_b.add_action(act_b)
+        serv_c.add_action(act_c)
         serv.add_dependency(serv_a)
         serv.add_dependency(serv_b)
         serv_a.add_dependency(serv_c)
@@ -420,10 +442,26 @@ class ServiceTest(TestCase):
         serv.prepare("start")
         serv.resume()
         self.assertEqual(serv.status, SUCCESS)
-        self.assertTrue(serv.delayed)
+        self.assertTrue(serv.last_action().delayed)
         self.assertEqual(serv_a.status, SUCCESS)
-        self.assertFalse(serv_a.delayed)
+        self.assertFalse(serv_a.last_action().delayed)
         self.assertEqual(serv_b.status, SUCCESS)
-        self.assertTrue(serv_b.delayed)
+        self.assertTrue(serv_b.last_action().delayed)
         self.assertEqual(serv_c.status, SUCCESS)
-        self.assertTrue(serv_c.delayed)
+        self.assertTrue(serv_c.last_action().delayed)
+        
+    def test_prepare_with_action_retry(self):
+        """Test prepare with services that try to be retried"""
+        serv = Service("BASE")
+        serv_a = Service("NORMAL")
+        serv_b = Service("RETRIED")
+        suc = Action("start", "localhost", "/bin/true")
+        ret = Action("start", "localhost", "/bin/false", delay=2)
+        ret.retry = 4
+        serv.add_action(suc)
+        serv_a.add_action(suc)
+        serv_b.add_action(ret)
+        serv.add_dependency(serv_a)
+        serv.add_dependency(serv_b)
+        serv.prepare("start")
+        serv.resume()
