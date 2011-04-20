@@ -15,7 +15,7 @@ from MilkCheck.Engine.Service import ActionAlreadyReferencedError
 from MilkCheck.Engine.Service import ActionNotFoundError
 
 # Symbols
-from MilkCheck.Engine.BaseService import SUCCESS, TIMED_OUT, ERROR
+from MilkCheck.Engine.BaseService import NO_STATUS, SUCCESS, TIMED_OUT, ERROR
 from MilkCheck.Engine.BaseService import TOO_MANY_ERRORS
 from MilkCheck.Engine.BaseService import SUCCESS_WITH_WARNINGS
 from MilkCheck.Engine.Dependency import CHECK, REQUIRE, REQUIRE_WEAK
@@ -451,7 +451,7 @@ class ServiceTest(TestCase):
         self.assertTrue(serv_c.last_action().delayed)
         
     def test_prepare_with_action_retry(self):
-        """Test prepare with services that try to be retried"""
+        """Test prepare with services that try to be retried."""
         serv = Service("BASE")
         serv_a = Service("NORMAL")
         serv_b = Service("RETRIED")
@@ -465,3 +465,22 @@ class ServiceTest(TestCase):
         serv.add_dependency(serv_b)
         serv.prepare("start")
         serv.resume()
+        
+    def test_run_partial_deps(self):
+        """Test stop algorithm as soon as the calling point is done."""
+        serv = Service("NOT_CALLED")
+        serv_a = Service("CALLING_POINT")
+        serv_b = Service("SERV_1")
+        serv_c = Service("SERV_2")
+        act_suc = Action("start", "localhost", "/bin/true")
+        serv_a.add_action(act_suc)
+        serv_b.add_action(act_suc)
+        serv_c.add_action(act_suc)
+        serv.add_dependency(serv_a)
+        serv_a.add_dependency(serv_b)
+        serv_a.add_dependency(serv_c)
+        serv_a.run("start")
+        self.assertEqual(serv.status, NO_STATUS)
+        self.assertEqual(serv_a.status, SUCCESS)
+        self.assertEqual(serv_b.status, SUCCESS)
+        self.assertEqual(serv_c.status, SUCCESS)

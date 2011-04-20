@@ -59,6 +59,11 @@ class BaseService(BaseEntity, EventHandler):
         # Define the last action called on the service
         self._last_action = None
         
+        # Define a flag allowing us to specify that this service
+        # is the original caller so we do not have to start his
+        # children 
+        self.origin = False
+        
         # Define a dictionnary of dependencies
         # key: Dependency object 
         self._deps = {}
@@ -133,13 +138,17 @@ class BaseService(BaseEntity, EventHandler):
         raise NotImplementedError
 
     def update_status(self, status):
-        """Update the status of a service and launch his dependencies."""
+        """
+        Update the current service's status and can trigger his dependencies.
+        """
         self.status = status 
         print "[%s] is [%s]" % (self.name, self.status)
-      
-        if self.status not in (NO_STATUS, IN_PROGRESS):
-            # The action performed on the current service
-            # had some issues
+        
+        # I got a status so I'm SUCCESS or ERROR and I'm not the calling point
+        if self.status not in (NO_STATUS, IN_PROGRESS) and not self.origin:
+            
+            # Trigger each service which depend on me as soon as it does not
+            # have IN_PROGRESS parents 
             for child in self.children:
                 if child.status == NO_STATUS and \
                     not child.has_in_progress_dep():
@@ -148,6 +157,9 @@ class BaseService(BaseEntity, EventHandler):
     
     def run(self, action_name):
         """Run the action_name over the current service."""
+        # A service using run become the calling point
+        self.origin = True
+        # Prepare the service and start the master task
         self.prepare(action_name)
         self.resume()
         

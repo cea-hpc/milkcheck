@@ -38,8 +38,11 @@ class ServiceManager(object):
         for name in services_names:
             service = None
             normalized_name = name.lower()
-            if self._services.has_key(normalized_name) is True:
+            if self._services.has_key(normalized_name):
                 service = self._services[normalized_name]
                 service.run(action_name)
             else:
                 raise ServiceNotFoundError
+            
+    def dependencies(self, service_name):
+        pass

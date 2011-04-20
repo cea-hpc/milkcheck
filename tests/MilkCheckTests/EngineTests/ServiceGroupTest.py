@@ -212,3 +212,21 @@ class ServiceGroupTest(TestCase):
         self.assertEqual(inter_serv1.status, SUCCESS)
         self.assertEqual(inter_serv2.status, ERROR)
         self.assertEqual(inter_serv3.status, TOO_MANY_ERRORS)
+        
+    def test_run_partial_deps(self):
+        """Test stop algorithm as soon as the calling point is done."""
+        serv = Service("NOT_CALLED")
+        serv_a = ServiceGroup("CALLING_GROUP")
+        serv_b = Service("SERV_1")
+        serv_c = Service("SERV_2")
+        act_suc = Action("start", "localhost", "/bin/true")
+        serv_b.add_action(act_suc)
+        serv_c.add_action(act_suc)
+        serv.add_dependency(serv_a)
+        serv_a.add_dependency(service=serv_b)
+        serv_a.add_dependency(service=serv_c, internal=True)
+        serv_a.run("start")
+        self.assertEqual(serv.status, NO_STATUS)
+        self.assertEqual(serv_a.status, SUCCESS)
+        self.assertEqual(serv_b.status, SUCCESS)
+        self.assertEqual(serv_c.status, SUCCESS)

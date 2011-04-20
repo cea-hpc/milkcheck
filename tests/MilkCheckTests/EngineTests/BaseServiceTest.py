@@ -70,8 +70,19 @@ class BaseServiceTest(TestCase):
         
     def test_update_status_children(self):
         """Test the method update_status with children."""
-        pass
-    
+        serv_a = BaseService("HIGHER_POINT")
+        serv_b = BaseService("LEFT_POINT")
+        serv_c = BaseService("RIGHT_POINT")
+        serv_b.add_dependency(serv_a)
+        serv_c.add_dependency(serv_a)
+        self.assertRaises(NotImplementedError, serv_a.update_status, SUCCESS)
+        
+    def test_run(self):
+        """Test the method run"""
+        serv_a = BaseService("HIGHER_POINT")
+        self.assertRaises(NotImplementedError, serv_a.run, 'fake')
+        self.assertTrue(serv_a.origin)
+        
     def test_search_deps(self):
         """Test the method search dep."""
         service = BaseService("test_service")
