@@ -9,7 +9,6 @@ defnition of the different states that a service can go through
 # Classes
 from MilkCheck.Engine.BaseEntity import BaseEntity
 from MilkCheck.Engine.Dependency import Dependency
-from ClusterShell.Event import EventHandler
 from ClusterShell.Task import task_self
 
 # Symbols
@@ -36,7 +35,7 @@ class DependencyAlreadyReferenced(MilkCheckEngineError):
     depedency to the same service.
     """
 
-class BaseService(BaseEntity, EventHandler):
+class BaseService(BaseEntity):
     """
     This class is abstract and define the method that a service or a 
     group of service has to implement. In implementing an EventHandler
@@ -45,16 +44,12 @@ class BaseService(BaseEntity, EventHandler):
     
     def __init__(self, name):
         BaseEntity.__init__(self, name)
-        EventHandler.__init__(self)
         
         # Define the initial status
         self.status = NO_STATUS
         
         # Define whether the service has warnings
         self.warnings = False
-        
-        # Define the task
-        self._task = task_self()
         
         # Define the last action called on the service
         self._last_action = None
@@ -63,6 +58,9 @@ class BaseService(BaseEntity, EventHandler):
         # is the original caller so we do not have to start his
         # children 
         self.origin = False
+        
+        # Define the master task
+        self._task = task_self()
         
         # Define a dictionnary of dependencies
         # key: Dependency object 
@@ -110,7 +108,7 @@ class BaseService(BaseEntity, EventHandler):
                 if self._deps[dep_name].is_strong():
                     return ERROR
                 else:
-                   temp_dep_status = SUCCESS_WITH_WARNINGS
+                    temp_dep_status = SUCCESS_WITH_WARNINGS
             elif self._deps[dep_name].target.status == IN_PROGRESS:
                 return IN_PROGRESS
             elif self._deps[dep_name].target.status == NO_STATUS:
@@ -136,7 +134,13 @@ class BaseService(BaseEntity, EventHandler):
         Abstract method which will be overriden in Service and ServiceGroup.
         """
         raise NotImplementedError
-
+    
+    def prepare_stop(self):
+        """
+        Abstract metho which will be overriden in Service and ServiceGroup.
+        """
+        raise NotImplementedError
+        
     def update_status(self, status):
         """
         Update the current service's status and can trigger his dependencies.
@@ -166,14 +170,3 @@ class BaseService(BaseEntity, EventHandler):
     def resume(self):
         """Start the execution of the tasks on the nodes specified."""
         self._task.resume()
-    
-    def ev_timer(self, timer):
-        """Handle firing timer."""
-        raise NotImplementedError
-    
-    def ev_close(self, worker):
-        """
-        Called to indicate that a worker has just finished (it may already
-        have failed on timeout).
-        """
-        raise NotImplementedError

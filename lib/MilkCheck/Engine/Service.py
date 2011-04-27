@@ -6,8 +6,11 @@ This module contains the Service class definition
 """
 
 # Classes
+from copy import copy
 from MilkCheck.Engine.BaseService import BaseService
 from MilkCheck.Engine.Action import Action
+from MilkCheck.Engine.Handlers import ActionEventHandler
+from MilkCheck.Engine.Handlers import SubActionEventHandler
 
 # Exceptions
 from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
@@ -52,7 +55,8 @@ class Service(BaseService):
             if action.name in self._actions:
                 raise ActionAlreadyReferencedError(self.name, action.name)
             else:
-                self._actions[action.name] = action
+                action.parent = self
+                self._actions[action.name] = copy(action)
         else:
             raise TypeError()
      
@@ -95,13 +99,33 @@ class Service(BaseService):
         #Retrieve targeted action
         action = self._actions[action_name]
         
-        if action.delay > 0:
-            self._task.timer(handler=self, fire=action.delay)
-            print "[%s] delayed action scheduled" % self.name
+        if action.children:
+            for child_action in action.children:
+                if child_action.delay > 0:
+                    self._task.timer(
+                        handler=SubActionEventHandler(action, child_action),
+                        fire=child_action.delay)
+                    print "[%s] [%s] sub-action [%s] delayed" % (self.name,
+                        child_action.name, action_name)
+                else:
+                    child_action.worker = self._task.shell(child_action.command,
+                        nodes=child_action.target,
+                        handler=SubActionEventHandler(action, child_action),
+                        timeout=child_action.timeout)
+                    print "[%s] [%s] sub-action of [%s] in Task " % (self.name,
+                        child_action.name, action_name)
         else:
-            action.worker = self._task.shell(action.command,
-            nodes=action.target, handler=self, timeout=action.timeout)
-            print "[%s] added to the master task" % self.name
+            assert action.parent.name == self.name, "%s != %s" \
+                % (action.parent.name, self.name)
+            if action.delay > 0:
+                self._task.timer(handler=ActionEventHandler(action),
+                    fire=action.delay)
+                print "[%s] action [%s] delayed" % (self.name, action_name)
+            else:
+                self._task.shell(action.command,
+                    nodes=action.target, handler=ActionEventHandler(action),
+                        timeout=action.timeout)
+                print "[%s] action [%s] in Task " % (self.name, action_name)
        
     def prepare(self, action_name=None):
         """
@@ -126,13 +150,13 @@ class Service(BaseService):
             if deps_status == ERROR:
                 self.update_status(ERROR)
             else:
-                # Just flag if dependencies encounter problem
+                # Just flag if dependencies encountered problem
                 if deps_status == SUCCESS_WITH_WARNINGS:
                     self.warnings = True
                 
                 # Look for uncompleted dependencies 
                 deps = self.search_deps([NO_STATUS])
-                
+               
                 # For each existing deps just prepare it
                 if deps:
                     for dep in deps:
@@ -144,46 +168,9 @@ class Service(BaseService):
                     # It's time to be processed
                     self.update_status(IN_PROGRESS)
                     self._schedule_task(action_name)
-                
-    def ev_timer(self, timer):
+                    
+    def prepare_stop(self):
         """
-        Handle firing timer. Here this event is used in order to authorize
-        a dependency to be delayed. As soon as the timer fires this one will
-        be triggered like any other dependencies
+        Prepare reversed is deicated to perform a stop on dependencies
         """
-        print "[%s] ev_timer" % self.name
-        action = self.last_action()
-        action.delayed = True
-        action.worker = self._task.shell(action.command,
-        nodes=action.target, handler=self, timeout=action.timeout)
-        print "[%s] delayed action added to the master task" % self.name
-    
-    def ev_close(self, worker):
-        """
-        Called to indicate that a worker has just finished (it may already
-        have failed on timeout).
-        """
-        print "[%s] ev_close" % self.name
-       
-        cur_action = self.last_action()
-        
-        if cur_action.has_too_many_errors():
-            if cur_action.retry > 0:
-                cur_action.retry -= 1
-                self._task.timer(handler=self, fire=cur_action.delay)
-                print "[%s] is re-scheduled" % self.name
-            else:
-                self.update_status(TOO_MANY_ERRORS)
-        else:
-            if cur_action.has_timed_out():
-                if cur_action.retry > 0:
-                    cur_action.retry -= 1
-                    self._task.timer(handler=self, fire=cur_action.delay)
-                    print "[%s] is re-scheduled" % self.name
-                else:
-                    self.update_status(TIMED_OUT)
-            else:
-                if self.warnings:
-                    self.update_status(SUCCESS_WITH_WARNINGS)
-                else:
-                    self.update_status(SUCCESS)
+        pass

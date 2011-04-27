@@ -45,7 +45,8 @@ class ActionTest(TestCase):
         service.add_action(action)
         service.prepare("start")
         service.resume()
-        self.assertTrue(action.has_too_many_errors())
+        last_action = service.last_action()
+        self.assertTrue(last_action.has_too_many_errors())
         
         act_test = Action(name="test", target="fortoy5", command="/bin/true")
         service.add_action(act_test)
@@ -61,7 +62,8 @@ class ActionTest(TestCase):
         service.add_action(action)
         service.prepare("start")
         service.resume()
-        self.assertTrue(action.has_timed_out())
+        last_action = service.last_action()
+        self.assertTrue(last_action.has_timed_out())
         
     def test_set_retry(self):
         """Test retry assignement"""
@@ -355,37 +357,19 @@ class ServiceTest(TestCase):
         serv_x = Service("DEP_VX")
         serv_k = Service("DEP_K")
         
-        action_a = Action("start")
-        action_b = Action("start")
-        action_c = Action("start")
-        action_d_start = Action("start")
-        action_d_status = Action("status")
-        action_x = Action("start")
-        action_k = Action("status")
+        act_suc = Action(name="start", target="localhost", command="/bin/true")
+        act_status_failed = Action(name="status", target="localhost",
+            command="/bin/false")
+        act_status = Action(name="status", target="localhost",
+                            command="/bin/true")
         
-        action_a.target = "aury1"
-        action_b.target = "aury12"
-        action_c.target = "aury[21,13]"
-        action_d_start.target = "fortoy5"
-        action_d_status.target = "fortoy[32,33]"
-        action_x.target = "fortoy40"
-        action_k.target = "aury12"
-        
-        action_a.command = "hostname"
-        action_b.command = "echo hello world"
-        action_c.command = "ls -l"
-        action_d_start.command = "ps"
-        action_d_status.command = "echo goodstatus"
-        action_x.command = "sleep 2"
-        action_k.command = "bad command"
-        
-        serv_a.add_action(action_a)
-        serv_b.add_action(action_b)
-        serv_c.add_action(action_c)
-        serv_d.add_action(action_d_start)
-        serv_d.add_action(action_d_status)
-        serv_x.add_action(action_x)
-        serv_k.add_action(action_k)
+        serv_a.add_action(act_suc)
+        serv_b.add_action(act_suc)
+        serv_c.add_action(act_suc)
+        serv_d.add_action(act_suc)
+        serv_d.add_action(act_status)
+        serv_x.add_action(act_suc)
+        serv_k.add_action(act_status_failed)
         
         serv_a.add_dependency(serv_x)
         serv_a.add_dependency(serv_b)
@@ -484,3 +468,45 @@ class ServiceTest(TestCase):
         self.assertEqual(serv_a.status, SUCCESS)
         self.assertEqual(serv_b.status, SUCCESS)
         self.assertEqual(serv_c.status, SUCCESS)
+        
+    def test_run_action_with_subaction(self):
+        """Test with an action running a sub action (start-> status)"""
+        serv = Service("BASE")
+        act_start = Action("start", "localhost", "/bin/true")
+        act_status = Action("status", "localhost", "/bin/true")
+        act_status_fail = Action("status", "localhost", "/bin/false")
+        act_start.add_child(act_status)
+        serv.add_actions(act_start, act_status)
+        serv.run("start")
+        self.assertFalse(serv.last_action().worker)
+        
+        serv = Service("BASE")
+        act_start.remove_child(act_status)
+        act_start.add_child(act_status_fail)
+        serv.add_actions(act_start, act_status_fail)
+        serv.run("start")
+        self.assertTrue(serv.last_action().worker)
+        
+    def test_run_multiple_action_with_subaction(self):
+        """Test with multiple actions running a sub action (start-> status)"""
+        nemesis = Service("NEMESIS")
+        zombie_one = Service("ZOMBIE_ONE")
+        zombie_two = Service("ZOMBIE_TWO")
+        hive = Service("THE_HIVE")
+        
+        act_suc = Action("start", "localhost", "/bin/true")
+        act_sta = Action("status", "localhost", "/bin/true")
+        act_sta_fai = Action("status", "localhost", "/bin/false")
+      
+        nemesis.add_action(act_suc)
+        zombie_one.add_actions(act_suc, act_sta_fai)
+        zombie_two.add_action(act_suc)
+        hive.add_actions(act_suc, act_sta)
+        
+        zombie_one.add_dependency(hive)
+        zombie_two.add_dependency(hive)
+        nemesis.add_dependency(zombie_one)
+        nemesis.add_dependency(zombie_two)
+        
+        nemesis.run("start")
+        self.assertTrue(zombie_one.last_action().worker)

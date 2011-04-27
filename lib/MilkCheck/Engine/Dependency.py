@@ -56,11 +56,10 @@ class Dependency(object):
         """Return the value of the internal attribute"""
         return self._internal
 
-    def  set_dep_type(self, d_type):
+    @property
+    def dep_type(self, d_type):
         """Change the type of the dependency"""
         if d_type in (CHECK, REQUIRE, REQUIRE_WEAK):
             self._dep_type = d_type
         else:
             raise IllegalDependencyTypeError()
-       
-    dep_type = property(fset=set_dep_type)
