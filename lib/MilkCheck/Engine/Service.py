@@ -16,9 +16,9 @@ from MilkCheck.Engine.Handlers import SubActionEventHandler
 from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
 
 # Symbols
-from MilkCheck.Engine.BaseService import NO_STATUS, SUCCESS
-from MilkCheck.Engine.BaseService import IN_PROGRESS, ERROR, TIMED_OUT
-from MilkCheck.Engine.BaseService import TOO_MANY_ERRORS, SUCCESS_WITH_WARNINGS
+from MilkCheck.Engine.BaseEntity import NO_STATUS
+from MilkCheck.Engine.BaseEntity import WAITING_STATUS, ERROR
+from MilkCheck.Engine.BaseEntity import RUNNING_WITH_WARNINGS
 from MilkCheck.Engine.Dependency import REQUIRE
 
 class ActionNotFoundError(MilkCheckEngineError):
@@ -86,10 +86,10 @@ class Service(BaseService):
         else:
             raise ActionNotFoundError(self.name, self._last_action)
     
-    def add_dependency(self, service, dep_type=REQUIRE, internal=False):
+    def add_dep(self, target, sgth=REQUIRE, parent=True, inter=False):
         """Overrides the original behaviour of BaseService.add_dependency()"""
-        assert not internal, "Cannot add an internal dependency to a Service"
-        BaseService.add_dependency(self, service, dep_type)
+        assert not inter, "Cannot add an internal dependency to a Service"
+        BaseService.add_dep(self, target, sgth, parent)
     
     def _schedule_task(self, action_name):
         """
@@ -127,7 +127,7 @@ class Service(BaseService):
                         timeout=action.timeout)
                 print "[%s] action [%s] in Task " % (self.name, action_name)
        
-    def prepare(self, action_name=None):
+    def prepare(self, action_name=None, reverse=False):
         """
         Prepare the the current service to be launched as soon
         as his dependencies are solved. 
@@ -143,7 +143,7 @@ class Service(BaseService):
         deps_status = self.eval_deps_status()
         
         # NO_STATUS and not any dep in progress for the current service
-        if self.status == NO_STATUS and not deps_status == IN_PROGRESS:
+        if self.status == NO_STATUS and not deps_status == WAITING_STATUS:
             print "[%s] is preparing" % self.name
             
             # If dependencies failed the current service will fail
@@ -151,7 +151,7 @@ class Service(BaseService):
                 self.update_status(ERROR)
             else:
                 # Just flag if dependencies encountered problem
-                if deps_status == SUCCESS_WITH_WARNINGS:
+                if deps_status == RUNNING_WITH_WARNINGS:
                     self.warnings = True
                 
                 # Look for uncompleted dependencies 
@@ -166,11 +166,5 @@ class Service(BaseService):
                             dep.target.prepare(action_name)
                 else:
                     # It's time to be processed
-                    self.update_status(IN_PROGRESS)
+                    self.update_status(WAITING_STATUS)
                     self._schedule_task(action_name)
-                    
-    def prepare_stop(self):
-        """
-        Prepare reversed is deicated to perform a stop on dependencies
-        """
-        pass

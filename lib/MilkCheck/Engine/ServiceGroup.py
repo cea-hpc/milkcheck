@@ -6,30 +6,33 @@ This module contains the ServiceGroup class definition
 """
 
 # Classes
-from MilkCheck.Engine.BaseService import BaseService
+from MilkCheck.Engine.Service import Service
+from MilkCheck.Engine.BaseEntity import BaseEntity
 
 # Symbols
-from MilkCheck.Engine.BaseService import NO_STATUS, SUCCESS
-from MilkCheck.Engine.BaseService import IN_PROGRESS, ERROR
-from MilkCheck.Engine.BaseService import SUCCESS_WITH_WARNINGS
+from MilkCheck.Engine.Dependency import REQUIRE
+from MilkCheck.Engine.BaseEntity import NO_STATUS, RUNNING
+from MilkCheck.Engine.BaseEntity import WAITING_STATUS, ERROR
+from MilkCheck.Engine.BaseEntity import RUNNING_WITH_WARNINGS
 
-# Exceptions
-from MilkCheck.Engine.BaseEntity import MilkCheckEngineError 
-
-class ServiceGroup(BaseService):
+class ServiceGroup(Service):
     """
     This class models a group of service. A group of service
-    does not own actions, but subservices which are instances
-    of Service or ServiceGroup.
+    can own actions it's no mandatory. However it shall have
+    subservices
     """
         
     def has_subservice(self, name):
         """
         Check if the service is referenced within the group
         """
-        return (name in self._deps and self._deps[name].is_internal())
-        
-    def search_deps(self, symbols=None):
+        return (name in self.parents and self.parents[name].is_internal())
+    
+    def add_dep(self, target, sgth=REQUIRE, parent=True, inter=False):
+        """Overrides the behaviour imposed by Service"""
+        BaseEntity.add_dep(self, target, sgth, parent, inter)
+    
+    def search_deps(self, symbols=None, reverse=False):
         """
         Return a dictionnary of dependencies both external and internal.
         In order to be in the dictionnary the dependencies must have one
@@ -39,15 +42,15 @@ class ServiceGroup(BaseService):
         depmap["external"] = []
         depmap["internal"] = []
         
-        for depname in self._deps:
-            if self._deps[depname].target.status in symbols:
-                if self._deps[depname].is_internal():
-                    depmap["internal"].append(self._deps[depname])
+        for depname in self.parents:
+            if self.parents[depname].target.status in symbols:
+                if self.parents[depname].is_internal():
+                    depmap["internal"].append(self.parents[depname])
                 else:
-                    depmap["external"].append(self._deps[depname])
+                    depmap["external"].append(self.parents[depname])
         return depmap
                     
-    def prepare(self, action_name=None):
+    def prepare(self, action_name=None, reverse=False):
         """
         Prepare the the current group to be launched as soon
         as his dependencies are solved
@@ -61,7 +64,7 @@ class ServiceGroup(BaseService):
         deps_status = self.eval_deps_status()
         
         # The group has no status and not any dep in progress
-        if self.status == NO_STATUS and not deps_status == IN_PROGRESS:
+        if self.status == NO_STATUS and not deps_status == WAITING_STATUS:
             
             print "[%s] is preparing" % self.name
             
@@ -70,7 +73,7 @@ class ServiceGroup(BaseService):
                 self.update_status(ERROR)
             else:
                 # Just flag that dependencies encountered some issues
-                if deps_status == SUCCESS_WITH_WARNINGS:
+                if deps_status == RUNNING_WITH_WARNINGS:
                     self.warnings = True
                 
                 # Look for deps without status (external and internal)
@@ -98,6 +101,6 @@ class ServiceGroup(BaseService):
                 else:
                     # The group node is a fake we just change his status
                     if self.warnings:
-                        self.update_status(SUCCESS_WITH_WARNINGS)
+                        self.update_status(RUNNING_WITH_WARNINGS)
                     else:
-                        self.update_status(SUCCESS)
+                        self.update_status(RUNNING)

@@ -14,9 +14,9 @@ from MilkCheck.Engine.Service import Service
 from MilkCheck.Engine.Action import Action
 
 # Symbols
-from MilkCheck.Engine.BaseService import SUCCESS, NO_STATUS
+from MilkCheck.Engine.BaseService import RUNNING, NO_STATUS
 from MilkCheck.Engine.BaseService import TOO_MANY_ERRORS, ERROR
-from MilkCheck.Engine.BaseService import SUCCESS_WITH_WARNINGS
+from MilkCheck.Engine.BaseService import RUNNING_WITH_WARNINGS
 from MilkCheck.Engine.Dependency import CHECK, REQUIRE_WEAK
 
 class ServiceGroupTest(TestCase):
@@ -34,7 +34,7 @@ class ServiceGroupTest(TestCase):
         group = ServiceGroup("group")
         serv = Service("intern_service")
         self.assertFalse(group.has_subservice(serv.name))
-        group.add_dependency(service=serv, internal=True)
+        group.add_dep(target=serv, inter=True)
         self.assertTrue(group.has_subservice(serv.name))
         
     def test_search_deps(self):
@@ -42,33 +42,33 @@ class ServiceGroupTest(TestCase):
         group = ServiceGroup("GROUP")
         serv = Service("SERVICE")
         group_dep =  ServiceGroup("GROUP2")
-        group.add_dependency(service=serv, internal=True)
-        group.add_dependency(group_dep)
+        group.add_dep(target=serv, inter=True)
+        group.add_dep(group_dep)
         deps = group.search_deps([NO_STATUS])
         self.assertEqual(len(deps["external"]),1)
         self.assertEqual(len(deps["internal"]),1)
         serva = Service("A")
-        serva.status = SUCCESS
-        group.add_dependency(serva)
-        deps = group.search_deps([NO_STATUS, SUCCESS])
+        serva.status = RUNNING
+        group.add_dep(serva)
+        deps = group.search_deps([NO_STATUS, RUNNING])
         self.assertEqual(len(deps["external"]),2)
        
     def test_prepare_empty_group(self):
         """Test method prepare with a single empty ServiceGroup."""
         group = ServiceGroup("GROUP")
         group.prepare("start")
-        self.assertEqual(group.status, SUCCESS)
+        self.assertEqual(group.status, RUNNING)
         
     def test_prepare_group_subservice(self):
         """Test prepare group with an internal dependency."""
         group = ServiceGroup("GROUP")
         subserv = Service("SUB1")
         subserv.add_action(Action("start", "localhost", "/bin/true"))
-        group.add_dependency(service=subserv, internal=True)
+        group.add_dep(target=subserv, inter=True)
         group.prepare("start")
         group.resume()
-        self.assertEqual(group.status, SUCCESS)
-        self.assertEqual(subserv.status, SUCCESS)
+        self.assertEqual(group.status, RUNNING)
+        self.assertEqual(subserv.status, RUNNING)
         
     def test_prepare_group_subservices(self):
         """Test prepare group with multiple internal dependencies."""
@@ -83,17 +83,17 @@ class ServiceGroupTest(TestCase):
         subserv_b.add_action(ac_suc)
         subserv_c.add_action(ac_suc)
         
-        subserv_a.add_dependency(subserv_c)
-        subserv_b.add_dependency(subserv_c)
-        group.add_dependency(service=subserv_a, internal=True)
-        group.add_dependency(service=subserv_b, internal=True)
+        subserv_a.add_dep(subserv_c)
+        subserv_b.add_dep(subserv_c)
+        group.add_dep(target=subserv_a, inter=True)
+        group.add_dep(target=subserv_b, inter=True)
         
         group.prepare("start")
         group.resume()
-        self.assertEqual(group.status, SUCCESS)
-        self.assertEqual(subserv_a.status, SUCCESS)
-        self.assertEqual(subserv_b.status, SUCCESS)
-        self.assertEqual(subserv_c.status, SUCCESS)
+        self.assertEqual(group.status, RUNNING)
+        self.assertEqual(subserv_a.status, RUNNING)
+        self.assertEqual(subserv_b.status, RUNNING)
+        self.assertEqual(subserv_c.status, RUNNING)
      
     def test_prepare_empty_group_external_deps(self):
         """Test prepare an empty group with a single external dependency."""
@@ -101,11 +101,11 @@ class ServiceGroupTest(TestCase):
         ext_serv = Service("EXT_SERV")
         ac_suc = Action("start", "localhost", "/bin/true")
         ext_serv.add_action(ac_suc)
-        group.add_dependency(ext_serv)
+        group.add_dep(ext_serv)
         group.prepare("start")
         group.resume()
-        self.assertEqual(group.status, SUCCESS)
-        self.assertEqual(ext_serv.status, SUCCESS)
+        self.assertEqual(group.status, RUNNING)
+        self.assertEqual(ext_serv.status, RUNNING)
         
     def test_prepare_group_internal_external_deps(self):
         """Test prepare a group with internal and external dependencies"""
@@ -126,23 +126,23 @@ class ServiceGroupTest(TestCase):
         ext_serv1.add_action(ac_suc)
         ext_serv2.add_action(ac_suc)
         # Add dependencies
-        group.add_dependency(service=inter_serv1, internal=True)
-        group.add_dependency(service=inter_serv2, internal=True)
-        inter_serv2.add_dependency(inter_serv3)
-        group.add_dependency(ext_serv1)
-        group.add_dependency(ext_serv2)
+        group.add_dep(target=inter_serv1, inter=True)
+        group.add_dep(target=inter_serv2, inter=True)
+        inter_serv2.add_dep(inter_serv3)
+        group.add_dep(ext_serv1)
+        group.add_dep(ext_serv2)
         # Prepare group
         group.prepare("start")
         group.resume()
-        self.assertEqual(group.status, SUCCESS)
-        self.assertEqual(ext_serv1.status, SUCCESS)
-        self.assertEqual(ext_serv2.status, SUCCESS)
-        self.assertEqual(inter_serv1.status, SUCCESS)
-        self.assertEqual(inter_serv2.status, SUCCESS)
-        self.assertEqual(inter_serv3.status, SUCCESS)
+        self.assertEqual(group.status, RUNNING)
+        self.assertEqual(ext_serv1.status, RUNNING)
+        self.assertEqual(ext_serv2.status, RUNNING)
+        self.assertEqual(inter_serv1.status, RUNNING)
+        self.assertEqual(inter_serv2.status, RUNNING)
+        self.assertEqual(inter_serv3.status, RUNNING)
         
     def test_prepare_group_with_errors(self):
-        """Test prepare a group terminated by SUCCESS_WITH_WARNINGS"""
+        """Test prepare a group terminated by RUNNING_WITH_WARNINGS"""
         # Group
         group = ServiceGroup("GROUP")
         # Internal
@@ -162,19 +162,19 @@ class ServiceGroupTest(TestCase):
         ext_serv1.add_action(ac_suc)
         ext_serv2.add_action(ac_err)
         # Add dependencies
-        group.add_dependency(service=inter_serv1, internal=True)
-        group.add_dependency(service=inter_serv2, internal=True)
-        inter_serv2.add_dependency(inter_serv3, dep_type=REQUIRE_WEAK)
-        group.add_dependency(ext_serv1)
-        group.add_dependency(service=ext_serv2, dep_type=REQUIRE_WEAK)
+        group.add_dep(target=inter_serv1, inter=True)
+        group.add_dep(target=inter_serv2, inter=True)
+        inter_serv2.add_dep(inter_serv3, dtype=REQUIRE_WEAK)
+        group.add_dep(ext_serv1)
+        group.add_dep(service=ext_serv2, dtype=REQUIRE_WEAK)
         # Prepare group
         group.prepare("start")
         group.resume()
-        self.assertEqual(group.status, SUCCESS_WITH_WARNINGS)
-        self.assertEqual(ext_serv1.status, SUCCESS)
+        self.assertEqual(group.status, RUNNING_WITH_WARNINGS)
+        self.assertEqual(ext_serv1.status, RUNNING)
         self.assertEqual(ext_serv2.status, TOO_MANY_ERRORS)
-        self.assertEqual(inter_serv1.status, SUCCESS)
-        self.assertEqual(inter_serv2.status, SUCCESS_WITH_WARNINGS)
+        self.assertEqual(inter_serv1.status, RUNNING)
+        self.assertEqual(inter_serv2.status, RUNNING_WITH_WARNINGS)
         self.assertEqual(inter_serv3.status, TOO_MANY_ERRORS)
         
     def test_prepare_group_with_errors(self):
@@ -198,18 +198,18 @@ class ServiceGroupTest(TestCase):
         ext_serv1.add_action(ac_suc)
         ext_serv2.add_action(ac_err)
         # Add dependencies
-        group.add_dependency(service=inter_serv1, internal=True)
-        group.add_dependency(service=inter_serv2, internal=True)
-        inter_serv2.add_dependency(inter_serv3, dep_type=CHECK)
-        group.add_dependency(ext_serv1)
-        group.add_dependency(service=ext_serv2, dep_type=REQUIRE_WEAK)
+        group.add_dep(target=inter_serv1, inter=True)
+        group.add_dep(target=inter_serv2, inter=True)
+        inter_serv2.add_dep(target=inter_serv3, sgth=CHECK)
+        group.add_dep(ext_serv1)
+        group.add_dep(target=ext_serv2, sgth=REQUIRE_WEAK)
         # Prepare group
         group.prepare("start")
         group.resume()
         self.assertEqual(group.status, ERROR)
-        self.assertEqual(ext_serv1.status, SUCCESS)
+        self.assertEqual(ext_serv1.status, RUNNING)
         self.assertEqual(ext_serv2.status, TOO_MANY_ERRORS)
-        self.assertEqual(inter_serv1.status, SUCCESS)
+        self.assertEqual(inter_serv1.status, RUNNING)
         self.assertEqual(inter_serv2.status, ERROR)
         self.assertEqual(inter_serv3.status, TOO_MANY_ERRORS)
         
@@ -222,11 +222,11 @@ class ServiceGroupTest(TestCase):
         act_suc = Action("start", "localhost", "/bin/true")
         serv_b.add_action(act_suc)
         serv_c.add_action(act_suc)
-        serv.add_dependency(serv_a)
-        serv_a.add_dependency(service=serv_b)
-        serv_a.add_dependency(service=serv_c, internal=True)
+        serv.add_dep(serv_a)
+        serv_a.add_dep(target=serv_b)
+        serv_a.add_dep(target=serv_c, inter=True)
         serv_a.run("start")
         self.assertEqual(serv.status, NO_STATUS)
-        self.assertEqual(serv_a.status, SUCCESS)
-        self.assertEqual(serv_b.status, SUCCESS)
-        self.assertEqual(serv_c.status, SUCCESS)
+        self.assertEqual(serv_a.status, RUNNING)
+        self.assertEqual(serv_b.status, RUNNING)
+        self.assertEqual(serv_c.status, RUNNING)

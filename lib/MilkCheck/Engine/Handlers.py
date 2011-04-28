@@ -11,8 +11,8 @@ from ClusterShell.Event import EventHandler
 from ClusterShell.Task import task_self
 
 # Symbols
-from MilkCheck.Engine.BaseService import SUCCESS, TIMED_OUT, TOO_MANY_ERRORS
-from MilkCheck.Engine.BaseService import SUCCESS_WITH_WARNINGS
+from MilkCheck.Engine.BaseService import RUNNING, TIMED_OUT, TOO_MANY_ERRORS
+from MilkCheck.Engine.BaseService import RUNNING_WITH_WARNINGS
 
 class MilkCheckEventHandler(EventHandler):
     """Defines the basic event handler available for MilkCheck"""
@@ -60,12 +60,12 @@ class ActionEventHandler(MilkCheckEventHandler):
                 else:
                     self._action.parent.update_status(TIMED_OUT)
             else:
-                # Action is SUCCESS but parent's dependency could have
+                # Action is RUNNING but parent's dependency could have
                 # encountered problems
                 if self._action.parent.warnings:
-                    self._action.parent.update_status(SUCCESS_WITH_WARNINGS)
+                    self._action.parent.update_status(RUNNING_WITH_WARNINGS)
                 else:
-                    self._action.parent.update_status(SUCCESS)
+                    self._action.parent.update_status(RUNNING)
     
     def ev_timer(self, timer):
         """An action was waiting for the timer"""
@@ -96,7 +96,7 @@ class SubActionEventHandler(MilkCheckEventHandler):
         # the main action
         if not self._sub_action.has_too_many_errors() and \
             not self._sub_action.has_timed_out():
-            self._action.parent.update_status(SUCCESS)
+            self._action.parent.update_status(RUNNING)
         else:
             # The sub action can be retried
             if self._sub_action.retry > 0:

@@ -22,7 +22,8 @@ class DependencyTest(TestCase):
     
     def test_dependency_instanciation(self):
         """Test instanciation of a dependency."""
-        service = Service("BASE")
+        service = Service("PARENT")
+        service = Service("CHILD")
         self.assertRaises(AssertionError, Dependency, None)
         self.assertRaises(AssertionError, Dependency, service, "TEST")
         self.assertTrue(Dependency(service))

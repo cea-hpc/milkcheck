@@ -8,32 +8,17 @@ defnition of the different states that a service can go through
 
 # Classes
 from MilkCheck.Engine.BaseEntity import BaseEntity
-from MilkCheck.Engine.Dependency import Dependency
 from ClusterShell.Task import task_self
 
 # Symbols
 from MilkCheck.Engine.Dependency import CHECK, REQUIRE, REQUIRE_WEAK
-
-# Exceptions
-from MilkCheck.Engine.Dependency import IllegalDependencyTypeError
-from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
+from MilkCheck.Engine.BaseEntity import TIMED_OUT, TOO_MANY_ERRORS
+from MilkCheck.Engine.BaseEntity import RUNNING, RUNNING_WITH_WARNINGS
+from MilkCheck.Engine.BaseEntity import NO_STATUS, WAITING_STATUS, ERROR
 
 """
 Symbols defining the differents status of a service
 """
-NO_STATUS = "NO_STATUS"
-IN_PROGRESS = "IN_PROGRESS"
-SUCCESS = "SUCCESS"
-SUCCESS_WITH_WARNINGS = "SUCCESS_WITH_WARNINGS"
-TIMED_OUT = "TIMED_OUT"
-TOO_MANY_ERRORS = "TOO_MANY_ERRORS"
-ERROR = "ERROR"
-
-class DependencyAlreadyReferenced(MilkCheckEngineError):
-    """
-    This exception is raised if you try to add two times the same
-    depedency to the same service.
-    """
 
 class BaseService(BaseEntity):
     """
@@ -44,9 +29,6 @@ class BaseService(BaseEntity):
     
     def __init__(self, name):
         BaseEntity.__init__(self, name)
-        
-        # Define the initial status
-        self.status = NO_STATUS
         
         # Define whether the service has warnings
         self.warnings = False
@@ -61,112 +43,76 @@ class BaseService(BaseEntity):
         
         # Define the master task
         self._task = task_self()
-        
-        # Define a dictionnary of dependencies
-        # key: Dependency object 
-        self._deps = {}
-    
-    def add_dependency(self, service, dep_type=REQUIRE, internal=False):
-        """Add a new dependency to a the current base service."""
-        if service:
-            if service.name in self._deps:
-                raise DependencyAlreadyReferenced()
-            else:
-                if dep_type in (CHECK, REQUIRE, REQUIRE_WEAK):
-                    self._deps[service.name] = Dependency(service,
-                                                    dep_type, internal)
-                    service.add_child(self)
-                else:
-                    raise IllegalDependencyTypeError()
-        else:
-            raise TypeError("service cannot be None")
-    
-    def has_dependency(self, dep_name):
-        """Return true if the service own this dependency"""
-        return dep_name in self._deps
+                   
             
-    def search_deps(self, symbols=None):
-        """Search the dependencies matching one of the symbol."""
-        matching = []
-        for dep_name in self._deps:
-            if symbols:
-                if self._deps[dep_name].target.status in symbols:
-                    matching.append(self._deps[dep_name])
-            else:
-                matching.append(self._deps[dep_name])
-        return matching
-            
-    def eval_deps_status(self):
+    def eval_deps_status(self, reverse=False):
         """
         Evaluate the result of the dependencies in order to check
         if we have to continue in normal mode or in a degraded mode.
         """
-        temp_dep_status = SUCCESS
-        for dep_name in self._deps:
-            if self._deps[dep_name].target.status in \
+        deps = self.parents
+        if reverse:
+            deps = self.children
+            
+        temp_dep_status = RUNNING
+        for dep_name in deps:
+            if deps[dep_name].target.status in \
                 (TOO_MANY_ERRORS, TIMED_OUT, ERROR):
-                if self._deps[dep_name].is_strong():
+                if deps[dep_name].is_strong():
                     return ERROR
                 else:
-                    temp_dep_status = SUCCESS_WITH_WARNINGS
-            elif self._deps[dep_name].target.status == IN_PROGRESS:
-                return IN_PROGRESS
-            elif self._deps[dep_name].target.status == NO_STATUS:
+                    temp_dep_status = RUNNING_WITH_WARNINGS
+            elif deps[dep_name].target.status == WAITING_STATUS:
+                return WAITING_STATUS
+            elif deps[dep_name].target.status == NO_STATUS:
                 temp_dep_status = NO_STATUS
         return temp_dep_status
-    
-    def has_in_progress_dep(self):
-        """
-        Allow us to determine if the current services has to wait before to
-        start due to unterminated dependencies.
-        """
-        for dep_name in self._deps:
-            if self._deps[dep_name].target.status == IN_PROGRESS:
-                return True
-        return False
-
-    def clear_deps(self):
-        """Clear dependencies."""
-        self._deps.clear()
         
-    def prepare(self, action_name=None):
-        """
-        Abstract method which will be overriden in Service and ServiceGroup.
-        """
-        raise NotImplementedError
-    
-    def prepare_stop(self):
-        """
-        Abstract metho which will be overriden in Service and ServiceGroup.
-        """
-        raise NotImplementedError
-        
-    def update_status(self, status):
+    def update_status(self, status, reverse=False):
         """
         Update the current service's status and can trigger his dependencies.
         """
+        assert status in (TIMED_OUT, TOO_MANY_ERRORS, RUNNING, \
+                            RUNNING_WITH_WARNINGS, NO_STATUS, WAITING_STATUS, \
+                                ERROR) 
         self.status = status 
         print "[%s] is [%s]" % (self.name, self.status)
         
-        # I got a status so I'm SUCCESS or ERROR and I'm not the calling point
-        if self.status not in (NO_STATUS, IN_PROGRESS) and not self.origin:
+        # I got a status so I'm RUNNING or ERROR and I'm not the calling point
+        if self.status not in (NO_STATUS, WAITING_STATUS) and not self.origin:
             
             # Trigger each service which depend on me as soon as it does not
-            # have IN_PROGRESS parents 
-            for child in self.children:
-                if child.status == NO_STATUS and \
-                    not child.has_in_progress_dep():
-                    print  "*** %s triggers %s" % (self.name, child.name)
-                    child.prepare()
+            # have WAITING_STATUS parents 
+            deps = self.children
+            if reverse:
+                deps = self.parents
+                
+            for depname in deps:
+                if deps[depname].target.status == NO_STATUS and \
+                    not deps[depname].target.has_waiting_deps(reverse):
+                    print  "*** %s triggers %s" % (self.name, \
+                        deps[depname].target.name)
+                    deps[depname].target.prepare()
     
     def run(self, action_name):
         """Run the action_name over the current service."""
+        
         # A service using run become the calling point
         self.origin = True
+        
         # Prepare the service and start the master task
-        self.prepare(action_name)
+        if action_name == 'stop':   
+            self.prepare(action_name, reverse=True)
+        else:
+            self.prepare(action_name)
         self.resume()
         
     def resume(self):
         """Start the execution of the tasks on the nodes specified."""
         self._task.resume()
+        
+    def prepare(self, action_name=None, reverse=False):
+        """
+        Abstract method which will be overriden in Service and ServiceGroup.
+        """
+        raise NotImplementedError

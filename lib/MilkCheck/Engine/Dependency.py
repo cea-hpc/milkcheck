@@ -6,39 +6,32 @@ This module contains the definition of the Dependency object and the
 symbols linked.
 """
 
-# Exceptions
-from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
-
-# Symbols
+# Symbols - strength of a dependency
 CHECK = "CHECK"
 REQUIRE = "REQUIRE"
 REQUIRE_WEAK = "REQUIRE_WEAK"
 
-class IllegalDependencyTypeError(MilkCheckEngineError):
-    """
-    Exception raised when you try to assign another identifier than
-    CHECK, REQUIRE OR REQUIRE_WEAK to dep_type
-    """
-
 class Dependency(object):
-    """This class define the structure of a dependency."""
+    """
+    This class define the structure of a dependency. A dependency can
+    point both on parent and children. It models an edge between the
+    two object whithout considering their types
+    """
     
-    def __init__(self, target, dep_type=REQUIRE, internal=False):
+    def __init__(self, target, dtype=REQUIRE, intr=False):
+       
+        # object pointed by the dependency
+        assert target, "Dependency target shall not be None"
+        self.target = target 
         
-        
-        # Object of caracterised by the dependency
-        assert target, "should not be be None"
-        self.target = target
-        
-        # The type of the dependency can be
-        # - CHECK (always strong)
-        # - REQUIRE (either strong or weak)
-        assert dep_type in (CHECK, REQUIRE, REQUIRE_WEAK), \
+        # Define the type of the dependency
+        assert dtype in (CHECK, REQUIRE, REQUIRE_WEAK), \
             "Invalid dependency identifier"
-        self._dep_type = dep_type
+        self._dep_type = dtype
         
-        # An dependency can be internal (ServiceGroup)
-        self._internal = internal
+        # Allow us to consider the dependency as an internal
+        # environment (e.g ServiceGroup)
+        self._internal = intr
         
     def is_weak(self):
         """ Return True if the dependency is weak."""
@@ -57,9 +50,8 @@ class Dependency(object):
         return self._internal
 
     @property
-    def dep_type(self, d_type):
+    def dep_type(self, dtype):
         """Change the type of the dependency"""
-        if d_type in (CHECK, REQUIRE, REQUIRE_WEAK):
-            self._dep_type = d_type
-        else:
-            raise IllegalDependencyTypeError()
+        assert dtype in (CHECK, REQUIRE, REQUIRE_CHECK), \
+        "Invalid dependency type"
+        self._dep_type = dtype
