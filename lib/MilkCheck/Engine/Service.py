@@ -9,8 +9,6 @@ This module contains the Service class definition
 from copy import copy
 from MilkCheck.Engine.BaseService import BaseService
 from MilkCheck.Engine.Action import Action
-from MilkCheck.Engine.Handlers import ActionEventHandler
-from MilkCheck.Engine.Handlers import SubActionEventHandler
 
 # Exceptions
 from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
@@ -93,39 +91,18 @@ class Service(BaseService):
     
     def _schedule_task(self, action_name):
         """
-        Assign the content of the action to ClusterShell in using
-        ClusterShell Task.
+        Schedule all required actions to perform the action
         """
-        #Retrieve targeted action
+        # Retrieve targeted action
         action = self._actions[action_name]
         
-        if action.children:
-            for child_action in action.children:
-                if child_action.delay > 0:
-                    self._task.timer(
-                        handler=SubActionEventHandler(action, child_action),
-                        fire=child_action.delay)
-                    print "[%s] [%s] sub-action [%s] delayed" % (self.name,
-                        child_action.name, action_name)
-                else:
-                    child_action.worker = self._task.shell(child_action.command,
-                        nodes=child_action.target,
-                        handler=SubActionEventHandler(action, child_action),
-                        timeout=child_action.timeout)
-                    print "[%s] [%s] sub-action of [%s] in Task " % (self.name,
-                        child_action.name, action_name)
+        # Fire all actions depending in action
+        if action.parents:
+            for chi_action_name in action.children:
+                action.parents[chi_action_name].target.schedule()
         else:
-            assert action.parent.name == self.name, "%s != %s" \
-                % (action.parent.name, self.name)
-            if action.delay > 0:
-                self._task.timer(handler=ActionEventHandler(action),
-                    fire=action.delay)
-                print "[%s] action [%s] delayed" % (self.name, action_name)
-            else:
-                self._task.shell(action.command,
-                    nodes=action.target, handler=ActionEventHandler(action),
-                        timeout=action.timeout)
-                print "[%s] action [%s] in Task " % (self.name, action_name)
+            # Fire the main action
+            action.schedule()
        
     def prepare(self, action_name=None, reverse=False):
         """

@@ -40,9 +40,6 @@ class BaseService(BaseEntity):
         # is the original caller so we do not have to start his
         # children 
         self.origin = False
-        
-        # Define the master task
-        self._task = task_self()
                    
             
     def eval_deps_status(self, reverse=False):
@@ -109,7 +106,7 @@ class BaseService(BaseEntity):
         
     def resume(self):
         """Start the execution of the tasks on the nodes specified."""
-        self._task.resume()
+        task_self().resume()
         
     def prepare(self, action_name=None, reverse=False):
         """
