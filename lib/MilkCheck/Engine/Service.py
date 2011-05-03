@@ -16,7 +16,7 @@ from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
 # Symbols
 from MilkCheck.Engine.BaseEntity import NO_STATUS
 from MilkCheck.Engine.BaseEntity import WAITING_STATUS, ERROR
-from MilkCheck.Engine.BaseEntity import RUNNING_WITH_WARNINGS
+from MilkCheck.Engine.BaseEntity import DONE_WITH_WARNINGS
 from MilkCheck.Engine.Dependency import REQUIRE
 
 class ActionNotFoundError(MilkCheckEngineError):
@@ -98,8 +98,8 @@ class Service(BaseService):
         
         # Fire all actions depending in action
         if action.parents:
-            for chi_action_name in action.children:
-                action.parents[chi_action_name].target.schedule()
+            for child in action.parents.values():
+                child.target.schedule(paction=action)
         else:
             # Fire the main action
             action.schedule()
@@ -128,7 +128,7 @@ class Service(BaseService):
                 self.update_status(ERROR)
             else:
                 # Just flag if dependencies encountered problem
-                if deps_status == RUNNING_WITH_WARNINGS:
+                if deps_status == DONE_WITH_WARNINGS:
                     self.warnings = True
                 
                 # Look for uncompleted dependencies 

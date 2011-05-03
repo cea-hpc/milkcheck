@@ -13,7 +13,7 @@ from ClusterShell.Task import task_self
 # Symbols
 from MilkCheck.Engine.Dependency import CHECK, REQUIRE, REQUIRE_WEAK
 from MilkCheck.Engine.BaseEntity import TIMED_OUT, TOO_MANY_ERRORS
-from MilkCheck.Engine.BaseEntity import RUNNING, RUNNING_WITH_WARNINGS
+from MilkCheck.Engine.BaseEntity import DONE, DONE_WITH_WARNINGS
 from MilkCheck.Engine.BaseEntity import NO_STATUS, WAITING_STATUS, ERROR
 
 """
@@ -51,14 +51,14 @@ class BaseService(BaseEntity):
         if reverse:
             deps = self.children
             
-        temp_dep_status = RUNNING
+        temp_dep_status = DONE
         for dep_name in deps:
             if deps[dep_name].target.status in \
                 (TOO_MANY_ERRORS, TIMED_OUT, ERROR):
                 if deps[dep_name].is_strong():
                     return ERROR
                 else:
-                    temp_dep_status = RUNNING_WITH_WARNINGS
+                    temp_dep_status = DONE_WITH_WARNINGS
             elif deps[dep_name].target.status == WAITING_STATUS:
                 return WAITING_STATUS
             elif deps[dep_name].target.status == NO_STATUS:
@@ -69,13 +69,13 @@ class BaseService(BaseEntity):
         """
         Update the current service's status and can trigger his dependencies.
         """
-        assert status in (TIMED_OUT, TOO_MANY_ERRORS, RUNNING, \
-                            RUNNING_WITH_WARNINGS, NO_STATUS, WAITING_STATUS, \
+        assert status in (TIMED_OUT, TOO_MANY_ERRORS, DONE, \
+                            DONE_WITH_WARNINGS, NO_STATUS, WAITING_STATUS, \
                                 ERROR) 
         self.status = status 
         print "[%s] is [%s]" % (self.name, self.status)
         
-        # I got a status so I'm RUNNING or ERROR and I'm not the calling point
+        # I got a status so I'm DONE or ERROR and I'm not the calling point
         if self.status not in (NO_STATUS, WAITING_STATUS) and not self.origin:
             
             # Trigger each service which depend on me as soon as it does not

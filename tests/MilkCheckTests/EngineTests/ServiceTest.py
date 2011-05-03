@@ -15,9 +15,9 @@ from MilkCheck.Engine.Service import ActionAlreadyReferencedError
 from MilkCheck.Engine.Service import ActionNotFoundError
 
 # Symbols
-from MilkCheck.Engine.BaseEntity import NO_STATUS, RUNNING, TIMED_OUT, ERROR
+from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, TIMED_OUT, ERROR
 from MilkCheck.Engine.BaseEntity import TOO_MANY_ERRORS
-from MilkCheck.Engine.BaseEntity import RUNNING_WITH_WARNINGS
+from MilkCheck.Engine.BaseEntity import DONE_WITH_WARNINGS
 from MilkCheck.Engine.Dependency import CHECK, REQUIRE, REQUIRE_WEAK
 
 class ActionTest(TestCase):
@@ -73,6 +73,8 @@ class ActionTest(TestCase):
                     delay=3)
         action.retry = 5
         self.assertEqual(action.retry, 5)
+        
+    #def test_eval_deps_status(self)
         
 class ServiceTest(TestCase):
     """Define the unit tests for the object service."""
@@ -166,7 +168,7 @@ class ServiceTest(TestCase):
         serv_test.add_action(ac_start)
         serv_test.prepare("start")
         serv_test.resume()
-        self.assertEqual(serv_test.status, RUNNING)
+        self.assertEqual(serv_test.status, DONE)
         
     def test_prepare_one_dependency(self):
         """Test prepare with one dependency."""
@@ -183,8 +185,8 @@ class ServiceTest(TestCase):
         # Start preparing of the base service
         serv_test.prepare("start")
         serv_test.resume()
-        self.assertEqual(serv_test.status, RUNNING)
-        self.assertEqual(serv_dep.status, RUNNING)
+        self.assertEqual(serv_test.status, DONE)
+        self.assertEqual(serv_dep.status, DONE)
         
     def test_prepare_several_dependencies(self):
         """Test prepare with several dependencies at the same level."""
@@ -206,9 +208,9 @@ class ServiceTest(TestCase):
     
         serv_test.prepare("start")
         serv_test.resume()
-        self.assertEqual(serv_test.status, RUNNING)
-        self.assertEqual(serv_depa.status, RUNNING)
-        self.assertEqual(serv_depb.status, RUNNING)
+        self.assertEqual(serv_test.status, DONE)
+        self.assertEqual(serv_depa.status, DONE)
+        self.assertEqual(serv_depb.status, DONE)
         
     def test_prepare_multilevel_dependencies(self):
         """Test prepare with multiple dependencies at different levels."""
@@ -240,10 +242,10 @@ class ServiceTest(TestCase):
         
         brut.prepare("start")
         brut.resume()
-        self.assertEqual(arth.status, RUNNING)
-        self.assertEqual(chiva.status, RUNNING)
-        self.assertEqual(dion.status, RUNNING)
-        self.assertEqual(brut.status, RUNNING)
+        self.assertEqual(arth.status, DONE)
+        self.assertEqual(chiva.status, DONE)
+        self.assertEqual(dion.status, DONE)
+        self.assertEqual(brut.status, DONE)
         
     def test_prepare_require_weak(self):
         """Test weak require dependency error."""
@@ -264,9 +266,9 @@ class ServiceTest(TestCase):
         serv.prepare("start")
         serv.resume()
         
-        self.assertEqual(serv.status, RUNNING_WITH_WARNINGS)
+        self.assertEqual(serv.status, DONE_WITH_WARNINGS)
         self.assertEqual(serv_a.status, TOO_MANY_ERRORS)
-        self.assertEqual(serv_b.status, RUNNING)
+        self.assertEqual(serv_b.status, DONE)
         
     def test_prepare_require_strong(self):
         """Test strong require dependency error."""
@@ -289,7 +291,7 @@ class ServiceTest(TestCase):
         
         self.assertEqual(serv.status, ERROR)
         self.assertEqual(serv_a.status, TOO_MANY_ERRORS)
-        self.assertEqual(serv_b.status, RUNNING)
+        self.assertEqual(serv_b.status, DONE)
    
     def test_prepare_errors_same_level(self):
         """Test prepare behaviour with two errors at the same level"""
@@ -344,7 +346,7 @@ class ServiceTest(TestCase):
         serv_base_error.resume()
         
         self.assertEqual(serv_base_error.status, ERROR)
-        self.assertEqual(serv_ok_warnings.status, RUNNING_WITH_WARNINGS)
+        self.assertEqual(serv_ok_warnings.status, DONE_WITH_WARNINGS)
         self.assertEqual(serv_error.status, ERROR)
         self.assertEqual(serv_timed_out.status, TIMED_OUT)
         
@@ -383,12 +385,12 @@ class ServiceTest(TestCase):
         serv_a.prepare("start")
         serv_a.resume()
        
-        self.assertEqual(serv_d.status, RUNNING)
+        self.assertEqual(serv_d.status, DONE)
         self.assertEqual(serv_k.status, TOO_MANY_ERRORS)
         self.assertEqual(serv_c.status, ERROR)
-        self.assertEqual(serv_b.status, RUNNING)
-        self.assertEqual(serv_x.status, RUNNING)
-        self.assertEqual(serv_a.status, RUNNING_WITH_WARNINGS)
+        self.assertEqual(serv_b.status, DONE)
+        self.assertEqual(serv_x.status, DONE)
+        self.assertEqual(serv_a.status, DONE_WITH_WARNINGS)
         
     def test_prepare_delayed_action(self):
         """Test prepare Service with a delayed action"""
@@ -398,7 +400,7 @@ class ServiceTest(TestCase):
         serv.add_action(act_suc)
         serv.prepare("start")
         serv.resume()
-        self.assertEqual(serv.status, RUNNING)
+        self.assertEqual(serv.status, DONE)
         print "done in %ss" % serv.last_action().duration
         #self.assertTrue(serv.last_action().delayed)
         
@@ -426,13 +428,13 @@ class ServiceTest(TestCase):
         serv_b.add_dep(serv_c)
         serv.prepare("start")
         serv.resume()
-        self.assertEqual(serv.status, RUNNING)
+        self.assertEqual(serv.status, DONE)
         #self.assertTrue(serv.last_action().delayed)
-        self.assertEqual(serv_a.status, RUNNING)
+        self.assertEqual(serv_a.status, DONE)
         #self.assertFalse(serv_a.last_action().delayed)
-        self.assertEqual(serv_b.status, RUNNING)
+        self.assertEqual(serv_b.status, DONE)
         #self.assertTrue(serv_b.last_action().delayed)
-        self.assertEqual(serv_c.status, RUNNING)
+        self.assertEqual(serv_c.status, DONE)
         #self.assertTrue(serv_c.last_action().delayed)
         
     def test_prepare_with_action_retry(self):
@@ -466,27 +468,32 @@ class ServiceTest(TestCase):
         serv_a.add_dep(serv_c)
         serv_a.run("start")
         self.assertEqual(serv.status, NO_STATUS)
-        self.assertEqual(serv_a.status, RUNNING)
-        self.assertEqual(serv_b.status, RUNNING)
-        self.assertEqual(serv_c.status, RUNNING)
+        self.assertEqual(serv_a.status, DONE)
+        self.assertEqual(serv_b.status, DONE)
+        self.assertEqual(serv_c.status, DONE)
         
     def test_run_action_with_subaction(self):
-        """Test with an action running a sub action (start-> status)"""
+        """Test action running a successful sub action (start->status)"""
+        serv = Service("BASE")
+        act_start = Action("start", "localhost", "/bin/true")
+        act_status = Action("status", "localhost", "/bin/true")
+        act_start.add_dep(target=act_status)
+        serv.add_actions(act_start, act_status)
+        serv.run("start")
+        self.assertEqual(serv.status, DONE)
+        #self.assertFalse(serv.last_action().worker)
+    
+    def test_run_action_with_failed_subaction(self):
+        """Test action running a failed sub action (start->status)"""
         serv = Service("BASE")
         act_start = Action("start", "localhost", "/bin/true")
         act_status = Action("status", "localhost", "/bin/true")
         act_status_fail = Action("status", "localhost", "/bin/false")
-        act_start.add_dep(target=act_status, parent=False)
-        serv.add_actions(act_start, act_status)
-        serv.run("start")
-        self.assertFalse(serv.last_action().worker)
-        
-        serv = Service("BASE")
-        act_start.remove_dep(act_status.name)
-        act_start.add_dep(target=act_status_fail, parent=False)
+        act_start.add_dep(target=act_status_fail)
         serv.add_actions(act_start, act_status_fail)
         serv.run("start")
-        self.assertTrue(serv.last_action().worker)
+        self.assertEqual(serv.status, DONE)
+        #self.assertTrue(serv.last_action().worker)
         
     def test_run_multiple_action_with_subaction(self):
         """Test with multiple actions running a sub action (start-> status)"""
@@ -510,4 +517,7 @@ class ServiceTest(TestCase):
         nemesis.add_dep(zombie_two)
         
         nemesis.run("start")
-        self.assertTrue(zombie_one.last_action().worker)
+        self.assertEqual(hive.status, DONE)
+        self.assertEqual(zombie_one.status, DONE)
+        self.assertEqual(zombie_two.status, TOO_MANY_ERRORS)
+        self.assertEqual(nemesis.status, ERROR)

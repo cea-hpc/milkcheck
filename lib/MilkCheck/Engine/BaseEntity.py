@@ -20,10 +20,10 @@ NO_STATUS = "NO_STATUS"
 WAITING_STATUS = "WAITING_STATUS"
 
 # Compute starting by the entity is done
-RUNNING = "RUNNING"
+DONE = "DONE"
 
 # Compute starting by the entity is done but it encountered some issues
-RUNNING_WITH_WARNINGS = "SUCCESS_WITH_WARNINGS"
+DONE_WITH_WARNINGS = "DONE_WITH_WARNINGS"
 
 # Time allowed for the entity to perform a task is over whereas the task
 # itself is not done
@@ -66,7 +66,9 @@ class BaseEntity(object):
         # Entity description
         self.desc = None
         
-        # Maximum window for parallelism
+        # Maximum window for parallelism. A None fanout means
+        # that the task will be limited by the default value of
+        # ClusterShell 64
         self.fanout = None
         
         # Nodes on which the entity is launched

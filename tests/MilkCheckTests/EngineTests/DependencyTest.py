@@ -12,7 +12,7 @@ from MilkCheck.Engine.Service import Service
 from MilkCheck.Engine.ServiceGroup import ServiceGroup
 
 # Exceptions
-from MilkCheck.Engine.Dependency import IllegalDependencyTypeError
+from MilkCheck.Engine.BaseEntity import IllegalDependencyTypeError
 
 # Symbols
 from MilkCheck.Engine.Dependency import CHECK, REQUIRE, REQUIRE_WEAK
@@ -51,11 +51,14 @@ class DependencyTest(TestCase):
     def test_set_dep_type_property(self):
         """Test assignement to dependency type."""
         dep = Dependency(Service("Base"))
-        self.assertRaises(IllegalDependencyTypeError,
+        self.assertRaises(AssertionError,
             dep.set_dep_type, "TEST")
         dep.dep_type = CHECK
         self.assertEqual(dep._dep_type, CHECK)
         
     def test_is_internal(self):
         """Test the behaviour of the method is internal"""
-        pass
+        dep = Dependency(target=ServiceGroup('Group'), intr=True)
+        self.assertTrue(dep.is_internal())
+        dep = Dependency(target=ServiceGroup('Group'), intr=False)
+        self.assertFalse(dep.is_internal())
