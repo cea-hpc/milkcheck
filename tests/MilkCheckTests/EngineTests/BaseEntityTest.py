@@ -13,7 +13,9 @@ from MilkCheck.Engine.Dependency import Dependency
 
 # Symbols
 from MilkCheck.Engine.Dependency import CHECK, REQUIRE, REQUIRE_WEAK
-from MilkCheck.Engine.BaseEntity import NO_STATUS, RUNNING, WAITING_STATUS
+from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, WAITING_STATUS
+from MilkCheck.Engine.BaseEntity import TIMED_OUT, ERROR, TOO_MANY_ERRORS
+from MilkCheck.Engine.BaseEntity import DONE_WITH_WARNINGS
 
 # Exceptions
 from MilkCheck.Engine.BaseEntity import IllegalDependencyTypeError
@@ -94,14 +96,19 @@ class BaseEntityTest(unittest.TestCase):
         del ent.parents['parent']
         self.assertFalse(ent.has_parent_dep('parent'))
         
-    def test_has_waiting_deps(self):
-        """Test method has_waiting_deps"""
+    def test_is_ready(self):
+        """Test method allowing us to determine if a service can be processed"""
         ent = BaseEntity('foo')
         ent_dep = BaseEntity('parent')
+        ent_dep2 = BaseEntity('parent2')
         ent.add_dep(ent_dep)
-        self.assertFalse(ent.has_waiting_deps())
+        ent.add_dep(ent_dep2)
+        self.assertFalse(ent.is_ready())
         ent_dep.status = WAITING_STATUS
-        self.assertTrue(ent.has_waiting_deps())
+        self.assertFalse(ent.is_ready())
+        ent_dep.status = DONE
+        ent_dep2.status = DONE
+        self.assertTrue(ent.is_ready())
         
     def test_clear_deps(self):
         """Test method clear_deps"""
@@ -122,7 +129,49 @@ class BaseEntityTest(unittest.TestCase):
         self.assertEqual(len(ent.search_deps()), 2)
         self.assertEqual(len(ent.search_deps([NO_STATUS])), 2)
         ent_c = BaseEntity('C')
-        ent_c.status = RUNNING
+        ent_c.status = DONE
         ent.add_dep(ent_c)
         self.assertEqual(len(ent.search_deps([NO_STATUS])), 2)
-        self.assertEqual(len(ent.search_deps([NO_STATUS, RUNNING])), 3)
+        self.assertEqual(len(ent.search_deps([NO_STATUS, DONE])), 3)
+
+    def test_eval_deps_no_status(self):
+        """Test that eval_deps_status return NO_STATUS"""
+        service = BaseEntity("test_service")
+        serv_a = BaseEntity("A")
+        serv_b = BaseEntity("B")
+        serv_a.status = DONE_WITH_WARNINGS
+        service.add_dep(serv_a)
+        service.add_dep(serv_b, CHECK)
+        self.assertEqual(service.eval_deps_status(), NO_STATUS)
+
+    def test_eval_deps_waiting(self):
+        """Test that eval_deps_status return WAITING_STATUS"""
+        service = BaseEntity("test_service")
+        serv_a = BaseEntity("A")
+        serv_b = BaseEntity("B")
+        service.add_dep(serv_a)
+        service.add_dep(serv_b, CHECK)
+        serv_a.status = WAITING_STATUS
+        self.assertEqual(service.eval_deps_status(), WAITING_STATUS)
+
+    def test_eval_deps_error(self):
+        """Test that eval_deps_status return ERROR"""
+        service = BaseEntity("test_service")
+        serv_a = BaseEntity("A")
+        serv_b = BaseEntity("B")
+        service.add_dep(serv_a)
+        service.add_dep(serv_b, CHECK)
+        serv_b.status = DONE
+        serv_a.status = TIMED_OUT
+        self.assertEqual(service.eval_deps_status(), ERROR)
+
+    def test_eval_deps_warnings(self):
+        """Test that eval_deps_status return DONE_WITH_WARNINGS"""
+        service = BaseEntity("test_service")
+        serv_a = BaseEntity("A")
+        serv_b = BaseEntity("B")
+        service.add_dep(serv_a, REQUIRE_WEAK)
+        service.add_dep(serv_b, REQUIRE_WEAK)
+        serv_b.status = TOO_MANY_ERRORS
+        serv_a.status = TIMED_OUT
+        self.assertEqual(service.eval_deps_status(), DONE_WITH_WARNINGS)

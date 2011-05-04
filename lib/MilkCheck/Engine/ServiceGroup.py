@@ -11,9 +11,9 @@ from MilkCheck.Engine.BaseEntity import BaseEntity
 
 # Symbols
 from MilkCheck.Engine.Dependency import REQUIRE
-from MilkCheck.Engine.BaseEntity import NO_STATUS, RUNNING
+from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE
 from MilkCheck.Engine.BaseEntity import WAITING_STATUS, ERROR
-from MilkCheck.Engine.BaseEntity import RUNNING_WITH_WARNINGS
+from MilkCheck.Engine.BaseEntity import DONE_WITH_WARNINGS
 
 class ServiceGroup(Service):
     """
@@ -21,6 +21,12 @@ class ServiceGroup(Service):
     can own actions it's no mandatory. However it shall have
     subservices
     """
+
+    def __init__(self):
+        Service.__init__(self)
+        # Entry point of the group
+        self._entry = Service('entry')
+        # 
         
     def has_subservice(self, name):
         """
@@ -55,7 +61,7 @@ class ServiceGroup(Service):
         Prepare the the current group to be launched as soon
         as his dependencies are solved
         """
-        
+
         # Remember last action called
         if action_name:
             self._last_action = action_name
@@ -66,14 +72,14 @@ class ServiceGroup(Service):
         # The group has no status and not any dep in progress
         if self.status == NO_STATUS and not deps_status == WAITING_STATUS:
             
-            print "[%s] is preparing" % self.name
+            print "[%s] is working" % self.name
             
             if deps_status == ERROR:
                 # Dependency fail badly so the group fail
                 self.update_status(ERROR)
             else:
                 # Just flag that dependencies encountered some issues
-                if deps_status == RUNNING_WITH_WARNINGS:
+                if deps_status == DONE_WITH_WARNINGS:
                     self.warnings = True
                 
                 # Look for deps without status (external and internal)
@@ -101,6 +107,8 @@ class ServiceGroup(Service):
                 else:
                     # The group node is a fake we just change his status
                     if self.warnings:
-                        self.update_status(RUNNING_WITH_WARNINGS)
+                        self.update_status(DONE_WITH_WARNINGS)
                     else:
-                        self.update_status(RUNNING)
+                        self.update_status(DONE)
+                        
+            print "[%s] end prepare" % self.name

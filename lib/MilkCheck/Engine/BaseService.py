@@ -33,64 +33,11 @@ class BaseService(BaseEntity):
         # Define whether the service has warnings
         self.warnings = False
         
-        # Define the last action called on the service
-        self._last_action = None
-        
         # Define a flag allowing us to specify that this service
         # is the original caller so we do not have to start his
         # children 
         self.origin = False
-                   
-            
-    def eval_deps_status(self, reverse=False):
-        """
-        Evaluate the result of the dependencies in order to check
-        if we have to continue in normal mode or in a degraded mode.
-        """
-        deps = self.parents
-        if reverse:
-            deps = self.children
-            
-        temp_dep_status = DONE
-        for dep_name in deps:
-            if deps[dep_name].target.status in \
-                (TOO_MANY_ERRORS, TIMED_OUT, ERROR):
-                if deps[dep_name].is_strong():
-                    return ERROR
-                else:
-                    temp_dep_status = DONE_WITH_WARNINGS
-            elif deps[dep_name].target.status == WAITING_STATUS:
-                return WAITING_STATUS
-            elif deps[dep_name].target.status == NO_STATUS:
-                temp_dep_status = NO_STATUS
-        return temp_dep_status
-        
-    def update_status(self, status, reverse=False):
-        """
-        Update the current service's status and can trigger his dependencies.
-        """
-        assert status in (TIMED_OUT, TOO_MANY_ERRORS, DONE, \
-                            DONE_WITH_WARNINGS, NO_STATUS, WAITING_STATUS, \
-                                ERROR) 
-        self.status = status 
-        print "[%s] is [%s]" % (self.name, self.status)
-        
-        # I got a status so I'm DONE or ERROR and I'm not the calling point
-        if self.status not in (NO_STATUS, WAITING_STATUS) and not self.origin:
-            
-            # Trigger each service which depend on me as soon as it does not
-            # have WAITING_STATUS parents 
-            deps = self.children
-            if reverse:
-                deps = self.parents
-                
-            for depname in deps:
-                if deps[depname].target.status == NO_STATUS and \
-                    not deps[depname].target.has_waiting_deps(reverse):
-                    print  "*** %s triggers %s" % (self.name, \
-                        deps[depname].target.name)
-                    deps[depname].target.prepare()
-    
+
     def run(self, action_name):
         """Run the action_name over the current service."""
         
@@ -102,14 +49,16 @@ class BaseService(BaseEntity):
             self.prepare(action_name, reverse=True)
         else:
             self.prepare(action_name)
-        self.resume()
-        
-    def resume(self):
-        """Start the execution of the tasks on the nodes specified."""
         task_self().resume()
         
     def prepare(self, action_name=None, reverse=False):
         """
         Abstract method which will be overriden in Service and ServiceGroup.
+        """
+        raise NotImplementedError
+
+    def update_status(self, status, reverse=False):
+        """
+        Update the current service's status and can trigger his dependencies.
         """
         raise NotImplementedError

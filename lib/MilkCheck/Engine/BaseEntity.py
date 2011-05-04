@@ -144,7 +144,7 @@ class BaseEntity(object):
         self.parents.clear()
         self.children.clear()
         
-    def has_waiting_deps(self, reverse=False):
+    def is_ready(self, reverse=False):
         """
         Allow us to determine if the current services has to wait before to
         start due to unterminated dependencies.
@@ -152,10 +152,10 @@ class BaseEntity(object):
         deps = self.parents
         if reverse:
             deps = self.children
-        for dep_name in deps:
-            if deps[dep_name].target.status == WAITING_STATUS:
-                return True
-        return False
+        for dep in deps.values():
+            if dep.target.status in (NO_STATUS, WAITING_STATUS):
+                return False
+        return True
 
         
     def search_deps(self, symbols=None, reverse=False):
@@ -173,10 +173,27 @@ class BaseEntity(object):
             elif not symbols:
                 matching.append(deps[dep_name])
         return matching
-        
+    
     def eval_deps_status(self, reverse=False):
         """
-        Evaluate the status of parent/child dependencies depending
-        on the value of the reverse flag
+        Evaluate the result of the dependencies in order to check
+        if we have to continue in normal mode or in a degraded mode.
         """
-        raise NotImplementedError
+        deps = self.parents
+        if reverse:
+            deps = self.children
+
+        temp_dep_status = DONE
+        for dep_name in deps:
+            if deps[dep_name].target.status in \
+                (TOO_MANY_ERRORS, TIMED_OUT, ERROR):
+                if deps[dep_name].is_strong():
+                    return ERROR
+                else:
+                    temp_dep_status = DONE_WITH_WARNINGS
+            elif deps[dep_name].target.status is WAITING_STATUS:
+                return WAITING_STATUS
+            elif deps[dep_name].target.status is NO_STATUS:
+                temp_dep_status = NO_STATUS
+        return temp_dep_status
+    

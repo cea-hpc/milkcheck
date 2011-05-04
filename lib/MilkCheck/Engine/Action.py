@@ -14,26 +14,23 @@ from MilkCheck.ServiceManager import ServiceManager
 
 # Symbols
 from MilkCheck.Engine.BaseService import DONE, TIMED_OUT, TOO_MANY_ERRORS
-from MilkCheck.Engine.BaseService import DONE_WITH_WARNINGS, WAITING_STATUS
-from MilkCheck.Engine.BaseService import ERROR
+from MilkCheck.Engine.BaseService import WAITING_STATUS
+from MilkCheck.Engine.BaseService import NO_STATUS, ERROR
 
 class MilkCheckEventHandler(EventHandler):
     """Defines the basic event handler available for MilkCheck"""
     
-    def __init__(self, action, paction=None):
+    def __init__(self, action):
         EventHandler.__init__(self)
         assert action, "should not be be None"
         # Current action processed by the handler
         self._action = action
-        # Name of parent action
-        self._paction = paction
         
     def ev_timer(self, timer):
         """An action was waiting for the timer"""
-        print "[%s] ev_timer" % self._action.parent.name
-        self._action.schedule(allow_delay=False, paction=self._paction)
-        print "[%s] delayed action added to the master task" % \
-        self._action.parent.name  
+        print " >>> [%s] timer event - action [%s]" % \
+        (self._action.service.name, self._action.name)
+        self._action.schedule(allow_delay=False)
        
         
 class ActionEventHandler(MilkCheckEventHandler):
@@ -46,8 +43,10 @@ class ActionEventHandler(MilkCheckEventHandler):
         """An action which was within the master task is done."""
         # Assign time duration to the current action
         self._action.stop_time = datetime.now()
-        print "[%s] ev_close, action [%s] done in %f s" % \
-        (self._action.parent.name, self._action.name, self._action.duration)
+
+        # Display some information
+        print " >>> [%s] close event - action [%s] done in %f s" % \
+        (self._action.service.name, self._action.name, self._action.duration)
         
         # Remove the current action from the running task, this will trigger
         # a redefinition of the current fanout
@@ -61,36 +60,17 @@ class ActionEventHandler(MilkCheckEventHandler):
         timed_out = self._action.has_timed_out()
         
         # Classic Action was failed
-        if error or timed_out:
-            self._action.status = ERROR
-            # Opportunity to retry the current action
-            if self._action.retry > 0:
-                self._action.retry -= 1
-                self._action.schedule()
-            # Classic action failed 
-            elif not self._action.children:
-                if error:
-                    self._action.parent.update_status(TOO_MANY_ERRORS)
-                elif timed_out:
-                    self._action.parent.update_status(TIMED_OUT)
-            # Sub Action failed whether it doesn't have dependencies
-            # waiting just schedule the parent action
-            elif not \
-                self._paction.eval_deps_status() is ERROR:
-                self._paction.schedule()
-        # Classic Action was successful 
-        elif not self._action.children:
-            if self._action.parent.warnings:
-                self._action.parent.update_status(DONE_WITH_WARNINGS)
-            else:
-                self._action.parent.update_status(DONE)
-        # Sub-action was successful
+        if (error or timed_out) and self._action.retry > 0:
+            self._action.retry -= 1
+            self._action.schedule()
+
+        # failed on too_many_errors
+        elif error:
+            self._action.update_status(TOO_MANY_ERRORS)
+        elif timed_out:
+            self._action.update_status(TIMED_OUT)
         else:
-            stats = self._paction.eval_deps_status()
-            if stats is DONE:
-                self._action.parent.update_status(DONE)
-            elif stats is ERROR:
-                self._action.parent.update_status(ERROR)
+            self._action.update_status(DONE)
                 
 class Action(BaseEntity):
     """
@@ -117,16 +97,53 @@ class Action(BaseEntity):
         # Results and retcodes
         self.worker = None
         
-        # Direct parent object (should be a service)
-        self.parent = None
+        # Parent service of this action
+        self.service = None
         
         # Allow us to determine time used by an action within the master task
         self.start_time = None
         self.stop_time = None
 
+    def run(self):
+        """Allow us to run an action"""
+        self.prepare()
+        task_self().resume()
+
     def prepare(self):
-        pass
-    
+        """prepare"""
+        deps_status = self.eval_deps_status()
+        # NO_STATUS and not any dep in progress for the current action
+        if self.status is NO_STATUS and deps_status is not WAITING_STATUS:
+            #print "[%s] is working" % self.name
+            if deps_status is ERROR or not self.parents:
+                self.update_status(WAITING_STATUS)
+                self.schedule()
+            elif deps_status is DONE:
+                # No need to do the action so just make it DONE
+                self.update_status(DONE)
+            else:
+                # Look for uncompleted dependencies
+                deps = self.search_deps([NO_STATUS])
+                # For each existing deps just prepare it
+                for dep in deps:
+                    dep.target.prepare()
+            #print "[%s] prepare end" % self.name
+                    
+    def update_status(self, status):
+        """update status"""
+        assert status in (NO_STATUS, WAITING_STATUS, DONE,\
+        TOO_MANY_ERRORS, TIMED_OUT),'Bad action status'
+        self.status = status
+        if status not in (NO_STATUS, WAITING_STATUS):
+            if self.children:
+                for dep in self.children.values():
+                    if dep.target.is_ready():
+                        print ' >>> (***) action [%s] triggers action[%s]' % \
+                        (self.name, dep.target.name)
+                        dep.target.prepare()
+            else:
+                self.service.update_status(self.status)
+        
     def has_timed_out(self):
         """Return whether this action has timed out."""
         return self.worker and self.worker.did_timeout()
@@ -170,35 +187,23 @@ class Action(BaseEntity):
             return  delta.seconds + (delta.microseconds/1000000.0)
 
     
-    def schedule(self, allow_delay=True, paction=None):
+    def schedule(self, allow_delay=True):
         """Schedule the current action within the Master Task"""
         task = task_self()
-        self.start_time = datetime.now()
+        if not self.start_time:
+            self.start_time = datetime.now()
+            
         if self.delay > 0 and allow_delay:
             # Action will be started as soon as the timer is done
-            task.timer(handler=ActionEventHandler(self, paction),
+            task.timer(handler=ActionEventHandler(self),
                 fire=self.delay)
-            print "[%s] action [%s] delayed" % (self.parent.name, self.name)
+            print " >>> [%s] action [%s] delayed" % (self.service.name, \
+            self.name)
         else:
             # Fire this action
             ServiceManager().rtasks.add_task(self)
             task.shell(self.command,
-                nodes=self.target, handler=ActionEventHandler(self, \
-                    paction), timeout=self.timeout)
-            self.status = WAITING_STATUS
-            print "[%s] action [%s] in Task " % (self.parent.name, self.name)
-            
-    def eval_deps_status(self, reverse=False):
-        """
-        Evaluate the status of parent/child dependencies depending
-        on the value of the reverse flag
-        """ 
-        status = DONE
-        for parent in self.parents.values():
-            print parent.target.name
-            if parent.target.status is WAITING_STATUS:
-                return WAITING_STATUS            
-            elif parent.target.has_too_many_errors() or \
-                parent.target.timed_out():
-                status = ERROR
-        return status
+                nodes=self.target, handler=ActionEventHandler(self),
+                timeout=self.timeout)
+            print " >>> [%s] action [%s] in Task " % (self.service.name, \
+            self.name)

@@ -6,7 +6,6 @@ This module contains the Service class definition
 """
 
 # Classes
-from copy import copy
 from MilkCheck.Engine.BaseService import BaseService
 from MilkCheck.Engine.Action import Action
 
@@ -14,9 +13,9 @@ from MilkCheck.Engine.Action import Action
 from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
 
 # Symbols
-from MilkCheck.Engine.BaseEntity import NO_STATUS
-from MilkCheck.Engine.BaseEntity import WAITING_STATUS, ERROR
-from MilkCheck.Engine.BaseEntity import DONE_WITH_WARNINGS
+from MilkCheck.Engine.BaseEntity import NO_STATUS, TOO_MANY_ERRORS
+from MilkCheck.Engine.BaseEntity import WAITING_STATUS, ERROR, DONE
+from MilkCheck.Engine.BaseEntity import DONE_WITH_WARNINGS, TIMED_OUT
 from MilkCheck.Engine.Dependency import REQUIRE
 
 class ActionNotFoundError(MilkCheckEngineError):
@@ -53,8 +52,8 @@ class Service(BaseService):
             if action.name in self._actions:
                 raise ActionAlreadyReferencedError(self.name, action.name)
             else:
-                action.parent = self
-                self._actions[action.name] = copy(action)
+                action.service = self
+                self._actions[action.name] = action
         else:
             raise TypeError()
      
@@ -89,21 +88,43 @@ class Service(BaseService):
         assert not inter, "Cannot add an internal dependency to a Service"
         BaseService.add_dep(self, target, sgth, parent)
     
-    def _schedule_task(self, action_name):
-        """
-        Schedule all required actions to perform the action
-        """
+    def schedule(self, action_name):
+        """Schedule all required actions to perform the action"""
         # Retrieve targeted action
-        action = self._actions[action_name]
-        
-        # Fire all actions depending in action
-        if action.parents:
-            for child in action.parents.values():
-                child.target.schedule(paction=action)
+        self._actions[action_name].prepare()
+
+    def update_status(self, status, reverse=False):
+        """
+        Update the current service's status and can trigger his dependencies.
+        """
+        assert status in (TIMED_OUT, TOO_MANY_ERRORS, DONE, \
+                            DONE_WITH_WARNINGS, NO_STATUS, WAITING_STATUS, \
+                                ERROR)
+        if self.warnings and self.last_action().status is DONE:
+            self.status = DONE_WITH_WARNINGS
         else:
-            # Fire the main action
-            action.schedule()
-       
+            self.status = status
+
+        print "[%s] is [%s]" % (self.name, self.status)
+
+        # I got a status so I'm DONE or ERROR and I'm not the calling point
+        if self.status not in (NO_STATUS, WAITING_STATUS) and not self.origin:
+
+            # Trigger each service which depend on me as soon as it does not
+            # have WAITING_STATUS parents
+            deps = self.children
+            if reverse:
+                deps = self.parents
+                
+            for dep in deps.values():
+                print dep.target.name
+                print dep.target.status
+                if dep.target.status is NO_STATUS and \
+                    dep.target.is_ready(reverse):
+                    print  "(***) [%s] triggers [%s]" % (self.name, \
+                        dep.target.name)
+                    dep.target.prepare()
+    
     def prepare(self, action_name=None, reverse=False):
         """
         Prepare the the current service to be launched as soon
@@ -118,10 +139,10 @@ class Service(BaseService):
                 raise ActionNotFoundError(self.name, action_name)
         
         deps_status = self.eval_deps_status()
-        
+
         # NO_STATUS and not any dep in progress for the current service
         if self.status == NO_STATUS and not deps_status == WAITING_STATUS:
-            print "[%s] is preparing" % self.name
+            print "[%s] is working" % self.name
             
             # If dependencies failed the current service will fail
             if deps_status == ERROR:
@@ -138,10 +159,11 @@ class Service(BaseService):
                 if deps:
                     for dep in deps:
                         if dep.is_check():
-                            dep.target.prepare("status")
+                            dep.target.prepare('status')
                         else:
                             dep.target.prepare(action_name)
                 else:
                     # It's time to be processed
                     self.update_status(WAITING_STATUS)
-                    self._schedule_task(action_name)
+                    self.schedule(action_name)
+            print "[%s] prepare end" % self.name
