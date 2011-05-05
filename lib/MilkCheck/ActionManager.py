@@ -21,7 +21,6 @@ class ActionManager(EntityManager):
 
     def __init__(self):
         EntityManager.__init__(self)
-        print 'call constructor'
         # Current fanout
         self.fanout = None
         # ClusterShell default value

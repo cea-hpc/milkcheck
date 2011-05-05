@@ -45,19 +45,16 @@ class BaseService(BaseEntity):
         self.origin = True
         
         # Prepare the service and start the master task
-        if action_name == 'stop':   
-            self.prepare(action_name, reverse=True)
-        else:
-            self.prepare(action_name)
+        self.prepare(action_name)
         task_self().resume()
         
-    def prepare(self, action_name=None, reverse=False):
+    def prepare(self, action_name=None):
         """
         Abstract method which will be overriden in Service and ServiceGroup.
         """
         raise NotImplementedError
 
-    def update_status(self, status, reverse=False):
+    def update_status(self, status):
         """
         Update the current service's status and can trigger his dependencies.
         """

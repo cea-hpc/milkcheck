@@ -23,7 +23,7 @@ class EntityManager(object):
         """
         assert flag in (True, False), 'Invalid flag'
         for entity in self.entities.values():
-            entity.algo_dir = flag
+            entity.algo_reversed = flag
 
 def entity_manager_self():
     """Return a singleton instance of the entity manager"""

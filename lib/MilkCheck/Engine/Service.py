@@ -93,7 +93,7 @@ class Service(BaseService):
         # Retrieve targeted action
         self._actions[action_name].prepare()
 
-    def update_status(self, status, reverse=False):
+    def update_status(self, status):
         """
         Update the current service's status and can trigger his dependencies.
         """
@@ -113,19 +113,17 @@ class Service(BaseService):
             # Trigger each service which depend on me as soon as it does not
             # have WAITING_STATUS parents
             deps = self.children
-            if reverse:
+            if self.algo_reversed:
                 deps = self.parents
                 
             for dep in deps.values():
-                print dep.target.name
-                print dep.target.status
                 if dep.target.status is NO_STATUS and \
-                    dep.target.is_ready(reverse):
+                    dep.target.is_ready():
                     print  "(***) [%s] triggers [%s]" % (self.name, \
                         dep.target.name)
                     dep.target.prepare()
     
-    def prepare(self, action_name=None, reverse=False):
+    def prepare(self, action_name=None):
         """
         Prepare the the current service to be launched as soon
         as his dependencies are solved. 

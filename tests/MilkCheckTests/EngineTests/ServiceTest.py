@@ -608,3 +608,71 @@ class ServiceTest(TestCase):
         self.assertFalse(act_start4.duration)
         self.assertTrue(act_sta_fai.duration)
         self.assertTrue(act_sta.duration)
+
+    def test_run_reverse_single_service(self):
+        """Test run action stop on service (reverse algorithm)"""
+        ser = Service('REVERSE')
+        ser.algo_reversed = True
+        stop = Action('stop', 'localhost', '/bin/true')
+        ser.add_action(stop)
+        ser.run('stop')
+        self.assertEqual(ser.status, DONE)
+        self.assertTrue(stop.duration)
+
+    def test_run_reverse_with_dependencies(self):
+        ser = Service('REVERSE_BASE')
+        ser_dep = Service('REVERSE_DEP')
+        ser.algo_reversed = True
+        ser_dep.algo_reversed = True
+        stop1 = Action('stop', 'localhost', '/bin/true')
+        stop2 = Action('stop', 'localhost', '/bin/true')
+        ser.add_action(stop1)
+        ser_dep.add_action(stop2)
+        ser.add_dep(ser_dep)
+        ser_dep.run('stop')
+        self.assertEqual(ser.status, DONE)
+        self.assertTrue(stop1.duration)
+        self.assertEqual(ser_dep.status, DONE)
+        self.assertTrue(stop2.duration)
+
+    def test_run_revese_multiple_services(self):
+        """Test run stop action on service provokes reverse algorithm"""
+        """Test prepare with multiple dependencies at different levels."""
+        #Service Arthemis is delcared here
+        arth = Service('arthemis')
+        arth.algo_reversed = True
+        stop = Action(name='stop', target='localhost', command='/bin/true')
+        stop2 = Action(name='stop', target='localhost', command='/bin/true')
+        stop3 = Action(name='stop', target='localhost', command='/bin/true')
+        stop4 = Action(name='stop', target='localhost', command='/bin/true')
+        arth.add_action(stop)
+
+        # Service Chiva is declared here
+        chiva = Service('chiva')
+        chiva.algo_reversed = True
+        chiva.add_action(stop2)
+        chiva.add_dep(arth)
+
+        # Service Dyonisos is declared here
+        dion = Service('dionysos')
+        dion.algo_reversed = True
+        dion.add_action(stop3)
+        dion.add_dep(arth)
+
+        # Service Brutus is declared here
+        brut = Service('brutus')
+        brut.algo_reversed = True
+        brut.add_action(stop4)
+
+        brut.add_dep(chiva)
+        brut.add_dep(dion)
+
+        arth.run('stop')
+        self.assertEqual(arth.status, DONE)
+        self.assertTrue(stop.duration)
+        self.assertEqual(chiva.status, DONE)
+        self.assertTrue(stop2.duration)
+        self.assertEqual(dion.status, DONE)
+        self.assertTrue(stop3.duration)
+        self.assertEqual(brut.status, DONE)
+        self.assertTrue(stop4.duration)

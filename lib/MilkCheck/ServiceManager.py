@@ -34,11 +34,14 @@ class ServiceManager(EntityManager):
         
     def call_services(self, services_names, action_name, params=None):
         """Allow the user to call one or multiple services."""
+        # Service are going to use reverse algorithms
+        if action_name.lower() is 'stop':
+            self._reverse_mod(True)
+            
         for name in services_names:
-            service = None
-            normalized_name = name.lower()
-            if self._entities.has_key(normalized_name):
-                self._services[normalized_name].run(action_name)
+            sname = name.lower()
+            if self._entities.has_key(sname):
+                self._services[sname].run(action_name)
             else:
                 raise ServiceNotFoundError()
     

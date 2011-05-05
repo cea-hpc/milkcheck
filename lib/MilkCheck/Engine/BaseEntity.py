@@ -84,7 +84,7 @@ class BaseEntity(object):
         self.children = {}
 
         # Agorithm's direction used
-        self.algo_dir = False
+        self.algo_reversed = False
     
     def add_dep(self, target, sgth=REQUIRE, parent=True, inter=False):
         """
@@ -147,28 +147,29 @@ class BaseEntity(object):
         self.parents.clear()
         self.children.clear()
         
-    def is_ready(self, reverse=False):
+    def is_ready(self):
         """
         Allow us to determine if the current services has to wait before to
         start due to unterminated dependencies.
         """
         deps = self.parents
-        if reverse:
+        if self.algo_reversed:
             deps = self.children
+            
         for dep in deps.values():
             if dep.target.status in (NO_STATUS, WAITING_STATUS):
                 return False
         return True
 
         
-    def search_deps(self, symbols=None, reverse=False):
+    def search_deps(self, symbols=None):
         """
         Look for parent/child dependencies matching to the symbols. The
         search direction depends on the reverse flag's value
         """
         matching = []
         deps = self.parents
-        if reverse:
+        if self.algo_reversed:
             deps = self.children  
         for dep_name in deps:
             if symbols and deps[dep_name].target.status in symbols:
@@ -177,13 +178,13 @@ class BaseEntity(object):
                 matching.append(deps[dep_name])
         return matching
     
-    def eval_deps_status(self, reverse=False):
+    def eval_deps_status(self):
         """
         Evaluate the result of the dependencies in order to check
         if we have to continue in normal mode or in a degraded mode.
         """
         deps = self.parents
-        if reverse:
+        if self.algo_reversed:
             deps = self.children
 
         temp_dep_status = DONE
