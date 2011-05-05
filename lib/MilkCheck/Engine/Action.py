@@ -10,7 +10,6 @@ from datetime import datetime
 from ClusterShell.Task import task_self
 from ClusterShell.Event import EventHandler
 from MilkCheck.Engine.BaseEntity import BaseEntity
-from MilkCheck.ServiceManager import ServiceManager
 
 # Symbols
 from MilkCheck.Engine.BaseService import DONE, TIMED_OUT, TOO_MANY_ERRORS
@@ -50,7 +49,7 @@ class ActionEventHandler(MilkCheckEventHandler):
         
         # Remove the current action from the running task, this will trigger
         # a redefinition of the current fanout
-        ServiceManager().rtasks.remove_task(self._action)
+        action_manager_self()._remove_task(self._action)
         
         # Get back the worker from ClusterShell
         self._action.worker = worker
@@ -189,21 +188,18 @@ class Action(BaseEntity):
     
     def schedule(self, allow_delay=True):
         """Schedule the current action within the Master Task"""
-        task = task_self()
         if not self.start_time:
             self.start_time = datetime.now()
             
         if self.delay > 0 and allow_delay:
             # Action will be started as soon as the timer is done
-            task.timer(handler=ActionEventHandler(self),
-                fire=self.delay)
+            action_manager_self().perform_delayed_action(self)
             print " >>> [%s] action [%s] delayed" % (self.service.name, \
             self.name)
         else:
             # Fire this action
-            ServiceManager().rtasks.add_task(self)
-            task.shell(self.command,
-                nodes=self.target, handler=ActionEventHandler(self),
-                timeout=self.timeout)
+            action_manager_self().perform_action(self)
             print " >>> [%s] action [%s] in Task " % (self.service.name, \
             self.name)
+
+from MilkCheck.ActionManager import action_manager_self

@@ -82,6 +82,9 @@ class BaseEntity(object):
         
         # Children dependencies (e.g A<-B) so A is a child of B)
         self.children = {}
+
+        # Agorithm's direction used
+        self.algo_dir = False
     
     def add_dep(self, target, sgth=REQUIRE, parent=True, inter=False):
         """

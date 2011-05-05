@@ -22,8 +22,8 @@ class ServiceGroup(Service):
     subservices
     """
 
-    def __init__(self):
-        Service.__init__(self)
+    def __init__(self, name):
+        Service.__init__(self, name)
         # Entry point of the group
         self._entry = Service('entry')
         # 
