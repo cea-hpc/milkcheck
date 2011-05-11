@@ -36,21 +36,20 @@ class ActionManager(EntityManager):
         """Perform an immediate action"""
         assert action, 'You cannot perform a NoneType object'
         assert isinstance(action, Action), 'Object should be an action'
-        self._add_task(action)
+        self.add_task(action)
         self._master_task.shell(action.command,
         nodes=action.target, handler=ActionEventHandler(action),
         timeout=action.timeout)
-       
 
     def perform_delayed_action(self, action):
         """Perform a delayed action and add it to the running tasks"""
         assert action, 'You cannot perform a NoneType object'
         assert isinstance(action, Action), 'Object should be an action'
-        self._add_task(action)
+        self.add_task(action)
         self._master_task.timer(handler=ActionEventHandler(action),
         fire=action.delay)
         
-    def _add_task(self, task):
+    def add_task(self, task):
         """
         Fanout goes down whether it is lower than the current
         fanout. Each time the task is added to right category
@@ -76,7 +75,7 @@ class ActionManager(EntityManager):
             self._tasks_done_count += 1
             self._tasks_count += 1
     
-    def _remove_task(self, task):
+    def remove_task(self, task):
         """
         Fanout goes up whether the current task represents the lower
         fanout available and not any task owns the same fanout

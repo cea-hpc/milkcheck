@@ -45,7 +45,14 @@ class Service(BaseService):
         # Actions of the service
         self._actions = {}
         self._last_action = None
-     
+
+    def reset(self):
+        '''Reset values of attributes in order to perform multiple exec'''
+        BaseService.reset(self)
+        self._last_action = None
+        for action in self._actions.values():
+            action.reset()
+    
     def add_action(self, action):
         """Add a new action for the current service"""
         if isinstance(action, Action):
@@ -83,11 +90,6 @@ class Service(BaseService):
         else:
             raise ActionNotFoundError(self.name, self._last_action)
     
-    def add_dep(self, target, sgth=REQUIRE, parent=True, inter=False):
-        """Overrides the original behaviour of BaseService.add_dependency()"""
-        assert not inter, "Cannot add an internal dependency to a Service"
-        BaseService.add_dep(self, target, sgth, parent)
-    
     def schedule(self, action_name):
         """Schedule all required actions to perform the action"""
         # Retrieve targeted action
@@ -100,6 +102,7 @@ class Service(BaseService):
         assert status in (TIMED_OUT, TOO_MANY_ERRORS, DONE, \
                             DONE_WITH_WARNINGS, NO_STATUS, WAITING_STATUS, \
                                 ERROR)
+
         if self.warnings and self.last_action().status is DONE:
             self.status = DONE_WITH_WARNINGS
         else:
@@ -113,7 +116,7 @@ class Service(BaseService):
             # Trigger each service which depend on me as soon as it does not
             # have WAITING_STATUS parents
             deps = self.children
-            if self.algo_reversed:
+            if self._algo_reversed:
                 deps = self.parents
                 
             for dep in deps.values():
@@ -122,25 +125,44 @@ class Service(BaseService):
                     print  "(***) [%s] triggers [%s]" % (self.name, \
                         dep.target.name)
                     dep.target.prepare()
+
+    def _process_dependencies(self, deps):
+        '''perform a prepare on each dependencies in deps'''
+        if deps:
+            for dep in deps:
+                if dep.is_check():
+                    dep.target.prepare('status')
+                else:
+                    dep.target.prepare(self._last_action)
+        else:
+            # It's time to be processed
+            self.update_status(WAITING_STATUS)
+            self.schedule(self._last_action)
+
+    def _action_checkpoint(self, action_name):
+        '''
+        Check that the service will get a call to an existing action.
+        if you reference a none existing action ActionNotFoundError is raised.
+        '''
+        if not action_name and self.has_action(self._last_action):
+            action_name = self._last_action
+        elif action_name and self.has_action(action_name):
+            self._last_action = action_name
+        else:
+            raise ActionNotFoundError(self.name, action_name)
     
     def prepare(self, action_name=None):
         """
         Prepare the the current service to be launched as soon
         as his dependencies are solved. 
         """
-        if not action_name and self.has_action(self._last_action):
-            action_name = self._last_action
-        else:
-            if self.has_action(action_name):
-                self._last_action = action_name
-            else:
-                raise ActionNotFoundError(self.name, action_name)
-        
+        #print "[%s] is working" % self.name
+        self._action_checkpoint(action_name)
         deps_status = self.eval_deps_status()
 
         # NO_STATUS and not any dep in progress for the current service
         if self.status == NO_STATUS and not deps_status == WAITING_STATUS:
-            print "[%s] is working" % self.name
+            #print "[%s] is working" % self.name
             
             # If dependencies failed the current service will fail
             if deps_status == ERROR:
@@ -154,14 +176,7 @@ class Service(BaseService):
                 deps = self.search_deps([NO_STATUS])
                
                 # For each existing deps just prepare it
-                if deps:
-                    for dep in deps:
-                        if dep.is_check():
-                            dep.target.prepare('status')
-                        else:
-                            dep.target.prepare(action_name)
-                else:
-                    # It's time to be processed
-                    self.update_status(WAITING_STATUS)
-                    self.schedule(action_name)
-            print "[%s] prepare end" % self.name
+                self._process_dependencies(deps)
+                
+            #print "[%s] prepare end" % self.name
+        #print "[%s] prepare end" % self.name

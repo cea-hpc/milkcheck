@@ -84,13 +84,44 @@ class BaseEntity(object):
         self.children = {}
 
         # Agorithm's direction used
+        self._algo_reversed = False
+
+    def reset(self):
+        '''Reset values of attributes in order to perform multiple exec'''
+        self.status = NO_STATUS
         self.algo_reversed = False
-    
-    def add_dep(self, target, sgth=REQUIRE, parent=True, inter=False):
+
+    def search(self, name, reverse=False):
+        """Look for a node through the overall graph"""
+        target = None
+        deps = self.parents
+        if reverse:
+            deps = self.children
+        if name in deps:
+            return deps[name].target
+        else:    
+            for dep in deps.values():
+                target = dep.target.search(name, reverse)
+                if target:
+                    return target
+        return target
+
+    def search_leafs(self, leafs=set(), reverse=False):
+        '''Search all leafs hooked to this part of the graph'''
+        if self.children:
+            deps = self.parents
+            if self._algo_reversed:
+                deps = self.children
+            for dep in deps.values():
+                deps.target.search_leafs(leafs, reverse)
+        else:
+            leafs.add(self)
+        return leafs
+        
+    def add_dep(self, target, sgth=REQUIRE, parent=True):
         """
         Add a dependency either in parents or children dictionnary. This allow
-        you to specify the strenght of the dependency and if the dependency is
-        internal.
+        you to specify the strenght of the dependency and the direction chosen.
         """
         assert target, "target must not be None"
         if sgth in (CHECK, REQUIRE, REQUIRE_WEAK):
@@ -100,18 +131,18 @@ class BaseEntity(object):
                 else:
                     # This dependency is considered as a parent of the
                     # current object
-                    self.parents[target.name] = Dependency(target, sgth, inter)
-                    target.children[self.name] = Dependency(self, sgth, inter)
+                    self.parents[target.name] = Dependency(target, sgth, False)
+                    target.children[self.name] = Dependency(self, sgth, False)
             else:
                 if target.name in self.children:
                     raise DependencyAlreadyReferenced()
                 else:
                     # This dependency is considered as a child of the
                     # current object
-                    self.children[target.name] = Dependency(target, sgth, inter)
-                    target.parents[self.name] = Dependency(self, sgth, inter)
+                    self.children[target.name] = Dependency(target, sgth, False)
+                    target.parents[self.name] = Dependency(self, sgth, False)
         else:
-            raise IllegalDependencyTypeError
+            raise IllegalDependencyTypeError()
             
     def remove_dep(self, dep_name, parent=True):
         """
@@ -127,7 +158,13 @@ class BaseEntity(object):
             dep = self.children[dep_name]
             del self.children[dep_name]
             del dep.target.parents[self.name]
-            
+
+    def _update_edges(self, source):
+        """test"""
+        for dep in self.children.values():
+            dep._update_edges(source, True)
+            dep._update_edges(source, False)
+    
     def has_child_dep(self, dep_name):
         """
         Determine whether the current object has a child dependency called
@@ -153,7 +190,7 @@ class BaseEntity(object):
         start due to unterminated dependencies.
         """
         deps = self.parents
-        if self.algo_reversed:
+        if self._algo_reversed:
             deps = self.children
             
         for dep in deps.values():
@@ -169,7 +206,7 @@ class BaseEntity(object):
         """
         matching = []
         deps = self.parents
-        if self.algo_reversed:
+        if self._algo_reversed:
             deps = self.children  
         for dep_name in deps:
             if symbols and deps[dep_name].target.status in symbols:
@@ -184,20 +221,28 @@ class BaseEntity(object):
         if we have to continue in normal mode or in a degraded mode.
         """
         deps = self.parents
-        if self.algo_reversed:
+        if self._algo_reversed:
             deps = self.children
 
         temp_dep_status = DONE
-        for dep_name in deps:
-            if deps[dep_name].target.status in \
-                (TOO_MANY_ERRORS, TIMED_OUT, ERROR):
-                if deps[dep_name].is_strong():
+        for dep in deps.values():
+            if dep.target.status in (TOO_MANY_ERRORS, TIMED_OUT, ERROR):
+                if dep.is_strong():
                     return ERROR
-                else:
+                elif temp_dep_status is not NO_STATUS:
                     temp_dep_status = DONE_WITH_WARNINGS
-            elif deps[dep_name].target.status is WAITING_STATUS:
+            elif dep.target.status is WAITING_STATUS:
                 return WAITING_STATUS
-            elif deps[dep_name].target.status is NO_STATUS:
+            elif dep.target.status is DONE_WITH_WARNINGS and \
+                temp_dep_status is not NO_STATUS:
+                    temp_dep_status = DONE_WITH_WARNINGS
+            elif dep.target.status is NO_STATUS:
                 temp_dep_status = NO_STATUS
         return temp_dep_status
+
+    def set_algo_reversed(self, flag):
+        """Assign the right values for theproperty algo_reversed"""
+        self._algo_reversed = flag
+
+    algo_reversed = property(fset=set_algo_reversed)
     

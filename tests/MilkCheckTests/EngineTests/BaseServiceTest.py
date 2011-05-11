@@ -16,6 +16,15 @@ class BaseServiceTest(TestCase):
     """
     Test cases for the class BaseService
     """
+
+    def test_reset_base_service(self):
+        '''Test reset values of a BaseService object'''
+        serv = BaseService("HIGHER_POINT")
+        serv.origin = True
+        serv.warnings = True
+        serv.reset()
+        self.assertFalse(serv.origin)
+        self.assertFalse(serv.warnings)
         
     def test_update_status(self):
         """Test the method update_status without children."""

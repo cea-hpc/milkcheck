@@ -35,6 +35,22 @@ class ActionTest(TestCase):
                     timeout=10, delay=5)
         self.assertEqual(action.timeout, 10, 'wrong timeout')
         self.assertEqual(action.delay, 5, 'wrong delay')
+
+    def test_reset_action(self):
+        '''Test resest values of an action'''
+        action = Action(name='start', target='fortoy5', command='/bin/true',
+                    timeout=10, delay=5)
+        action.retry = 4
+        action._retry_backup = 5
+        action.worker = 'test'
+        action.start_time = '00:20:30'
+        action.stop_time = '00:20:30'
+        action.reset()
+        self.assertEqual(action.retry, 5)
+        self.assertEqual(action.worker, None)
+        self.assertEqual(action.start_time, None)
+        self.assertEqual(action.stop_time, None)
+        self.assertEqual(action.status, NO_STATUS)
         
     def test_has_too_many_errors(self):
         """Test the method has_too_many_errors."""
@@ -166,6 +182,18 @@ class ServiceTest(TestCase):
         self.assertNotEqual(service, None, 'should be none')
         self.assertEqual(service.name, 'brutus', 'wrong name')
 
+    def test_reset_service(self):
+        '''Test resest values of a service'''
+        service = Service('brutus')
+        action = Action('start')
+        action.status = DONE 
+        service.add_action(action)
+        service._last_action = 'start'
+        service.reset()
+        self.assertFalse(service._last_action)
+        self.assertEqual(action.status, NO_STATUS)
+        self.assertEqual(service.status, NO_STATUS)
+
     def test_add_action(self):
         """Test add_action's behaviour."""
         service = Service('brutus')
@@ -207,15 +235,6 @@ class ServiceTest(TestCase):
         service.prepare('start')
         self.assertTrue(service.last_action())
         self.assertTrue(service.last_action() is start)
-
-    def test_add_dep(self):
-        """
-        Test that you are not allowed to add an internal dependency
-        to a service
-        """
-        ser = Service('SERVICE')
-        self.assertRaises(AssertionError, ser.add_dep,
-            Service('A'), CHECK, True ,True)
 
     def test_prepare_error(self):
         """Test prepare exception if action is not found."""

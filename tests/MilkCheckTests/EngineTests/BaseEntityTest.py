@@ -33,6 +33,29 @@ class BaseEntityTest(unittest.TestCase):
         ent = BaseEntity(name='foo', target='fortoy5')
         self.assertEqual(ent.target, 'fortoy5')
 
+    def test_reset_entity(self):
+        '''Test reset entity'''
+        ent = BaseEntity(name='foo', target='fortoy5')
+        ent.status = NO_STATUS
+        ent.algo_reverse = True
+        ent.reset()
+        self.assertEqual(ent._algo_reversed, False)
+        self.assertEqual(ent.status, NO_STATUS)
+
+    def test_search_leafs(self):
+        '''Test research of leafs within the graph'''
+        ent1 = BaseEntity('ent1')
+        ent2 = BaseEntity('ent2')
+        ent3 = BaseEntity('ent3')
+        ent4 = BaseEntity('ent4')
+        self.assertTrue(ent1.search_leafs())
+        self.assertTrue(len(ent1.search_leafs()), 1)
+        ent1.add_dep(target=ent2)
+        ent1.add_dep(target=ent3)
+        ent2.add_dep(target=ent4)
+        self.assertTrue(ent1.search_leafs())
+        self.assertTrue(len(ent1.search_leafs()), 2)
+        
     def test_add_dep_parents(self):
         """Test method add dependency for parents"""
         ent = BaseEntity('foo')
@@ -48,6 +71,32 @@ class BaseEntityTest(unittest.TestCase):
         ent.add_dep(target=ent_dep, parent=False)
         self.assertTrue(ent.has_child_dep('child'))
         self.assertTrue(ent_dep.has_parent_dep('foo'))
+
+    def test_search_node_graph(self):
+        """Test the research of a node through a graph"""
+        ent1 = BaseEntity('E1')
+        ent2 = BaseEntity('E2')
+        ent3 = BaseEntity('E3')
+        ent4 = BaseEntity('E4')
+        ent1.add_dep(ent2)
+        ent1.add_dep(ent3)
+        ent2.add_dep(ent4)
+        ent3.add_dep(ent4)
+        self.assertTrue(ent1.search('E3') is ent3)
+        self.assertTrue(ent1.search('E5') is None)
+
+    def test_search_node_graph_reverse(self):
+        """Test the research of node through a graph in reverse mod"""
+        ent1 = BaseEntity('E1')
+        ent2 = BaseEntity('E2')
+        ent3 = BaseEntity('E3')
+        ent4 = BaseEntity('E4')
+        ent1.add_dep(ent2)
+        ent1.add_dep(ent3)
+        ent2.add_dep(ent4)
+        ent3.add_dep(ent4)
+        self.assertTrue(ent4.search('E1', True) is ent1)
+        self.assertTrue(ent4.search('E5', True) is None)
         
     def test_add_dep_bad_cases(self):
         """Test bad usage of the method add_dep"""
@@ -143,6 +192,9 @@ class BaseEntityTest(unittest.TestCase):
         service.add_dep(serv_a)
         service.add_dep(serv_b, CHECK)
         self.assertEqual(service.eval_deps_status(), NO_STATUS)
+        serv_a.status = NO_STATUS
+        serv_b.status = DONE_WITH_WARNINGS
+        self.assertEqual(service.eval_deps_status(), NO_STATUS)
 
     def test_eval_deps_waiting(self):
         """Test that eval_deps_status return WAITING_STATUS"""
@@ -174,4 +226,7 @@ class BaseEntityTest(unittest.TestCase):
         service.add_dep(serv_b, REQUIRE_WEAK)
         serv_b.status = TOO_MANY_ERRORS
         serv_a.status = TIMED_OUT
+        self.assertEqual(service.eval_deps_status(), DONE_WITH_WARNINGS)
+        serv_a.status = DONE
+        serv_b.status = DONE_WITH_WARNINGS
         self.assertEqual(service.eval_deps_status(), DONE_WITH_WARNINGS)

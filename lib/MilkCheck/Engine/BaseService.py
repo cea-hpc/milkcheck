@@ -38,6 +38,15 @@ class BaseService(BaseEntity):
         # children 
         self.origin = False
 
+        # Used for ghost services or services that you do not care
+        self.simulate = False
+
+    def reset(self):
+        '''Reset values of attributes in order to perform multiple exec'''
+        BaseEntity.reset(self)
+        self.warnings = False
+        self.origin = False
+
     def run(self, action_name):
         """Run the action_name over the current service."""
         
