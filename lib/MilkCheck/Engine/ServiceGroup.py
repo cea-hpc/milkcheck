@@ -9,12 +9,14 @@ This module contains the ServiceGroup class definition
 from MilkCheck.Engine.Service import Service, Action
 from MilkCheck.Engine.BaseEntity import BaseEntity
 from MilkCheck.Engine.Dependency import Dependency
+from MilkCheck.Callback import call_back_self
 
 # Symbols
 from MilkCheck.Engine.Dependency import REQUIRE
 from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, TIMED_OUT
 from MilkCheck.Engine.BaseEntity import WAITING_STATUS, ERROR
 from MilkCheck.Engine.BaseEntity import DONE_WITH_WARNINGS, TOO_MANY_ERRORS
+from MilkCheck.Callback import EV_COMPLETE, EV_STARTED, EV_STATUS_CHANGED
 
 # Exceptions
 from MilkCheck.ServiceManager import ServiceNotFoundError
@@ -212,6 +214,8 @@ class ServiceGroup(Service):
                     else:
                         internal.target.prepare(self._last_action)
         else:
+            call_back_self().notify(self, EV_STARTED)
+            
             # The group node is a fake we just change his status
             if self.warnings:
                 self.update_status(DONE_WITH_WARNINGS)

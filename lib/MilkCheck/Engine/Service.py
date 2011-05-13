@@ -8,6 +8,7 @@ This module contains the Service class definition
 # Classes
 from MilkCheck.Engine.BaseService import BaseService
 from MilkCheck.Engine.Action import Action
+from MilkCheck.Callback import call_back_self
 
 # Exceptions
 from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
@@ -17,6 +18,8 @@ from MilkCheck.Engine.BaseEntity import NO_STATUS, TOO_MANY_ERRORS
 from MilkCheck.Engine.BaseEntity import WAITING_STATUS, ERROR, DONE
 from MilkCheck.Engine.BaseEntity import DONE_WITH_WARNINGS, TIMED_OUT
 from MilkCheck.Engine.Dependency import REQUIRE
+from MilkCheck.Callback import EV_COMPLETE, EV_STARTED
+from MilkCheck.Callback import EV_STATUS_CHANGED, EV_TRIGGER_DEP
 
 class ActionNotFoundError(MilkCheckEngineError):
     """
@@ -108,10 +111,12 @@ class Service(BaseService):
         else:
             self.status = status
 
-        print "[%s] is [%s]" % (self.name, self.status)
+        call_back_self().notify(self, EV_STATUS_CHANGED)
 
         # I got a status so I'm DONE or ERROR and I'm not the calling point
         if self.status not in (NO_STATUS, WAITING_STATUS) and not self.origin:
+
+            call_back_self().notify(self, EV_COMPLETE)
 
             # Trigger each service which depend on me as soon as it does not
             # have WAITING_STATUS parents
@@ -122,8 +127,7 @@ class Service(BaseService):
             for dep in deps.values():
                 if dep.target.status is NO_STATUS and \
                     dep.target.is_ready():
-                    print  "(***) [%s] triggers [%s]" % (self.name, \
-                        dep.target.name)
+                    call_back_self().notify((self, dep.target), EV_TRIGGER_DEP)
                     dep.target.prepare()
 
     def _process_dependencies(self, deps):
@@ -136,6 +140,7 @@ class Service(BaseService):
                     dep.target.prepare(self._last_action)
         else:
             # It's time to be processed
+            call_back_self().notify(self, EV_STARTED)
             self.update_status(WAITING_STATUS)
             self.schedule(self._last_action)
 
@@ -162,10 +167,10 @@ class Service(BaseService):
 
         # NO_STATUS and not any dep in progress for the current service
         if self.status == NO_STATUS and not deps_status == WAITING_STATUS:
-            #print "[%s] is working" % self.name
             
             # If dependencies failed the current service will fail
             if deps_status == ERROR:
+                call_back_self().notify(self, EV_STARTED)
                 self.update_status(ERROR)
             else:
                 # Just flag if dependencies encountered problem
@@ -177,6 +182,3 @@ class Service(BaseService):
                
                 # For each existing deps just prepare it
                 self._process_dependencies(deps)
-                
-            #print "[%s] prepare end" % self.name
-        #print "[%s] prepare end" % self.name

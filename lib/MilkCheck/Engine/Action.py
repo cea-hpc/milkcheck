@@ -10,11 +10,38 @@ from datetime import datetime
 from ClusterShell.Task import task_self
 from ClusterShell.Event import EventHandler
 from MilkCheck.Engine.BaseEntity import BaseEntity
+from MilkCheck.Callback import call_back_self
 
 # Symbols
 from MilkCheck.Engine.BaseService import DONE, TIMED_OUT, TOO_MANY_ERRORS
 from MilkCheck.Engine.BaseService import WAITING_STATUS
 from MilkCheck.Engine.BaseService import NO_STATUS, ERROR
+from MilkCheck.Callback import EV_COMPLETE, EV_DELAYED, EV_STATUS_CHANGED
+from MilkCheck.Callback import EV_STARTED, EV_TRIGGER_DEP
+
+class NodeInfo(object):
+    '''This class represent the result of command executed on cluster's node'''
+    def __init__(self, node, command, nbuffer=None, rcode=None):
+        # node used
+        self.node = node
+        # command performed
+        self.command = command
+        # node buffer
+        self.node_buffer = nbuffer
+        # exit code of the command
+        self.exit_code = rcode
+
+    @classmethod
+    def from_worker(cls, worker):
+        '''Build a NodeInfo object from a worker'''
+        assert worker, 'worker cannot be None'
+        (node, nbuffer) = worker.last_read()
+        (node, exit_code) = worker.last_retcode()
+        return cls(node, worker.command, nbuffer, exit_code)
+
+    def __repr__(self):
+        return '[%s]:%s:%s:%s' % \
+            (self.node, self.command, self.exit_code, self.node_buffer)
 
 class MilkCheckEventHandler(EventHandler):
     '''
@@ -29,6 +56,10 @@ class MilkCheckEventHandler(EventHandler):
         assert action, "should not be be None"
         # Current action hooked to the handler
         self._action = action
+
+    def ev_hup(self, worker):
+        '''An event hup is raised when a connection to a node is done'''
+        call_back_self().notify(NodeInfo.from_worker(worker), EV_COMPLETE)
         
     def ev_timer(self, timer):
         '''
@@ -37,8 +68,6 @@ class MilkCheckEventHandler(EventHandler):
         to handle action with a service which is specified as ghost. That means
         it does nothing
         '''
-        print " >>> [%s] timer event - action [%s]" % \
-        (self._action.service.name, self._action.name)
         if self._action.service.simulate:
             self._action.service.update_status(
                 self._action.service.eval_deps_status())
@@ -60,11 +89,10 @@ class ActionEventHandler(MilkCheckEventHandler):
         
         # Assign time duration to the current action
         self._action.stop_time = datetime.now()
-
-        # Display some information
-        print " >>> [%s] close event - action [%s] done in %f s" % \
-        (self._action.service.name, self._action.name, self._action.duration)
         
+        # Callback the interface
+        call_back_self().notify(self._action, EV_COMPLETE)
+
         # Remove the current action from the running task, this will trigger
         # a redefinition of the current fanout
         action_manager_self().remove_task(self._action)
@@ -171,12 +199,13 @@ class Action(BaseEntity):
         assert status in (NO_STATUS, WAITING_STATUS, DONE, \
         TOO_MANY_ERRORS, TIMED_OUT),'Bad action status'
         self.status = status
+        call_back_self().notify(self, EV_STATUS_CHANGED)
         if status not in (NO_STATUS, WAITING_STATUS):
             if self.children:
                 for dep in self.children.values():
                     if dep.target.is_ready():
-                        print ' >>> (***) action [%s] triggers action[%s]' % \
-                        (self.name, dep.target.name)
+                        call_back_self().notify((self, dep.target), \
+                            EV_TRIGGER_DEP)
                         dep.target.prepare()
             else:
                 self.service.update_status(self.status)
@@ -241,13 +270,11 @@ class Action(BaseEntity):
             
         if self.delay > 0 and allow_delay:
             # Action will be started as soon as the timer is done
+            call_back_self().notify(self, EV_DELAYED)
             action_manager_self().perform_delayed_action(self)
-            print " >>> [%s] action [%s] delayed" % (self.service.name, \
-            self.name)
         else:
             # Fire this action
+            call_back_self().notify(self, EV_STARTED)
             action_manager_self().perform_action(self)
-            print " >>> [%s] action [%s] in Task " % (self.service.name, \
-            self.name)
 
 from MilkCheck.ActionManager import action_manager_self

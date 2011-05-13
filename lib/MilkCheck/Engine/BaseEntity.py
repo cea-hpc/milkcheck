@@ -158,12 +158,6 @@ class BaseEntity(object):
             dep = self.children[dep_name]
             del self.children[dep_name]
             del dep.target.parents[self.name]
-
-    def _update_edges(self, source):
-        """test"""
-        for dep in self.children.values():
-            dep._update_edges(source, True)
-            dep._update_edges(source, False)
     
     def has_child_dep(self, dep_name):
         """
