@@ -8,6 +8,7 @@ Test cases for the BaseEntity classes.
 import unittest
 
 # Classes
+from ClusterShell.NodeSet import NodeSet, NodeSetException
 from MilkCheck.Engine.BaseEntity import BaseEntity
 from MilkCheck.Engine.Dependency import Dependency
 
@@ -31,7 +32,21 @@ class BaseEntityTest(unittest.TestCase):
         self.assertTrue(isinstance(ent, BaseEntity))
         self.assertEqual(ent.name, 'foo')
         ent = BaseEntity(name='foo', target='fortoy5')
-        self.assertEqual(ent.target, 'fortoy5')
+        self.assertTrue('fortoy5' in ent.target)
+        ent = BaseEntity(name='foo', target=NodeSet('fortoy[8-15]'))
+        self.assertTrue(NodeSet('fortoy[8-15]') == ent.target)
+        self.assertRaises(NodeSetException, BaseEntity, name='foo',
+                            target='[fortoy]')
+
+    def test_update_target(self):
+        '''Test update of the target of an entity'''
+        ent = BaseEntity(name='foo', target='fortoy[5-10]')
+        ent.update_target(NodeSet('fortoy[5-8]'))
+        self.assertTrue(ent.target == NodeSet('fortoy[5-8]'))
+        ent.update_target('fortoy[4-6]', mode='DIF')
+        self.assertTrue(ent.target == NodeSet('fortoy[7-8]'))
+        ent.update_target('fortoy8', mode='INT')
+        self.assertTrue(ent.target == NodeSet('fortoy8'))
 
     def test_reset_entity(self):
         '''Test reset entity'''

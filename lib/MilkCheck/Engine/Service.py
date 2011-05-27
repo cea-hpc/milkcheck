@@ -17,31 +17,34 @@ from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
 from MilkCheck.Engine.BaseEntity import NO_STATUS, TOO_MANY_ERRORS
 from MilkCheck.Engine.BaseEntity import WAITING_STATUS, ERROR, DONE
 from MilkCheck.Engine.BaseEntity import DONE_WITH_WARNINGS, TIMED_OUT
-from MilkCheck.Engine.Dependency import REQUIRE
 from MilkCheck.Callback import EV_COMPLETE, EV_STARTED
 from MilkCheck.Callback import EV_STATUS_CHANGED, EV_TRIGGER_DEP
 
 class ActionNotFoundError(MilkCheckEngineError):
-    """
+    '''
     Error raised as soon as the current service has not the action
     requested by the service.
-    """
+    '''
     
     def __init__(self, sname, aname):
         msg = "%s not referenced in %s" % (aname, sname) 
         MilkCheckEngineError.__init__(self, msg) 
         
 class ActionAlreadyReferencedError(MilkCheckEngineError):
-    """
+    '''
     Error raised whether the current service already has an action
     with the same name.
-    """
+    '''
     def __init__(self, sname, aname):
         msg = "%s already referenced in %s" % (aname, sname) 
         MilkCheckEngineError.__init__(self, msg)
 
 class Service(BaseService):
-    """This class models a service ."""
+    '''
+    This class is a concrete representation of the concept of Service
+    introduced by BaseSevice. A Service contains actions, and those actions
+    are called and executed on nodes.
+    '''
     def __init__(self, name):
         BaseService.__init__(self, name)
         
@@ -49,6 +52,18 @@ class Service(BaseService):
         self._actions = {}
         self._last_action = None
 
+    def update_target(self, nodeset, mode=None):
+        '''Update the attribute target of a service'''
+        assert nodeset, 'The nodeset cannot be None'
+        if not mode:
+            self.target = nodeset
+        elif mode is 'DIF':
+            self.target.difference_update(nodeset)
+        elif mode is 'INT':
+            self.target.intersection_update(nodeset)
+        for action in self._actions.values():
+            action.update_target(nodeset, mode)
+            
     def reset(self):
         '''Reset values of attributes in order to perform multiple exec'''
         BaseService.reset(self)
@@ -57,7 +72,7 @@ class Service(BaseService):
             action.reset()
     
     def add_action(self, action):
-        """Add a new action for the current service"""
+        '''Add a new action to the service'''
         if isinstance(action, Action):
             if action.name in self._actions:
                 raise ActionAlreadyReferencedError(self.name, action.name)
@@ -68,40 +83,41 @@ class Service(BaseService):
             raise TypeError()
      
     def add_actions(self, *args):
-        """Add multiple actions at the same type"""
+        '''Add multiple actions to the service'''
         for action in args:
             self.add_action(action)
             
     def remove_action(self, action_name):
-        """Remove the specified action from those available in the service."""
+        '''Remove the specified action from those available in the service.'''
         if action_name in self._actions:
             del self._actions[action_name]
         else:
             raise ActionNotFoundError(self.name, action_name)
     
     def has_action(self, action_name):
-        """Figure out whether the service has the specified action."""
+        '''Figure out whether the service has the specified action.'''
         return action_name in self._actions
     
     def last_action(self):
-        """
+        '''
         Return the last action hooked/applied to the service. This action
         contain the worker of the last task performed.
-        """
+        '''
         if self._last_action and self.has_action(self._last_action):
             return self._actions[self._last_action]
         else:
             raise ActionNotFoundError(self.name, self._last_action)
     
     def schedule(self, action_name):
-        """Schedule all required actions to perform the action"""
+        '''Schedule an action available for this service'''
         # Retrieve targeted action
         self._actions[action_name].prepare()
 
     def update_status(self, status):
-        """
-        Update the current service's status and can trigger his dependencies.
-        """
+        '''
+        Update the current service's status and whether all of his parents
+        dependencies are solved start children dependencies.
+        '''
         assert status in (TIMED_OUT, TOO_MANY_ERRORS, DONE, \
                             DONE_WITH_WARNINGS, NO_STATUS, WAITING_STATUS, \
                                 ERROR)
@@ -113,9 +129,10 @@ class Service(BaseService):
 
         call_back_self().notify(self, EV_STATUS_CHANGED)
 
+        if self.status not in (NO_STATUS, WAITING_STATUS) and self.origin:
+            call_back_self().notify(self, EV_COMPLETE)
         # I got a status so I'm DONE or ERROR and I'm not the calling point
-        if self.status not in (NO_STATUS, WAITING_STATUS) and not self.origin:
-
+        elif self.status not in (NO_STATUS, WAITING_STATUS):
             call_back_self().notify(self, EV_COMPLETE)
 
             # Trigger each service which depend on me as soon as it does not
@@ -126,12 +143,13 @@ class Service(BaseService):
                 
             for dep in deps.values():
                 if dep.target.status is NO_STATUS and \
-                    dep.target.is_ready():
+                    dep.target.is_ready() and \
+                        dep.target._tagged:
                     call_back_self().notify((self, dep.target), EV_TRIGGER_DEP)
                     dep.target.prepare()
 
     def _process_dependencies(self, deps):
-        '''perform a prepare on each dependencies in deps'''
+        '''Perform a prepare on each dependency in deps'''
         if deps:
             for dep in deps:
                 if dep.is_check():
@@ -157,16 +175,18 @@ class Service(BaseService):
             raise ActionNotFoundError(self.name, action_name)
     
     def prepare(self, action_name=None):
-        """
+        '''
         Prepare the the current service to be launched as soon
         as his dependencies are solved. 
-        """
-        #print "[%s] is working" % self.name
+        '''
         self._action_checkpoint(action_name)
         deps_status = self.eval_deps_status()
 
+        # Tag the service
+        self._tagged = True
+
         # NO_STATUS and not any dep in progress for the current service
-        if self.status == NO_STATUS and not deps_status == WAITING_STATUS:
+        if self.status is NO_STATUS and deps_status is not WAITING_STATUS:
             
             # If dependencies failed the current service will fail
             if deps_status == ERROR:

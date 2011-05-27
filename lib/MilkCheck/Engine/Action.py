@@ -13,9 +13,9 @@ from MilkCheck.Engine.BaseEntity import BaseEntity
 from MilkCheck.Callback import call_back_self
 
 # Symbols
-from MilkCheck.Engine.BaseService import DONE, TIMED_OUT, TOO_MANY_ERRORS
-from MilkCheck.Engine.BaseService import WAITING_STATUS
-from MilkCheck.Engine.BaseService import NO_STATUS, ERROR
+from MilkCheck.Engine.BaseEntity import DONE, TIMED_OUT, TOO_MANY_ERRORS
+from MilkCheck.Engine.BaseEntity import WAITING_STATUS
+from MilkCheck.Engine.BaseEntity import NO_STATUS, ERROR
 from MilkCheck.Callback import EV_COMPLETE, EV_DELAYED, EV_STATUS_CHANGED
 from MilkCheck.Callback import EV_STARTED, EV_TRIGGER_DEP
 
@@ -40,8 +40,8 @@ class NodeInfo(object):
         return cls(node, worker.command, nbuffer, exit_code)
 
     def __repr__(self):
-        return '[%s]:%s:%s:%s' % \
-            (self.node, self.command, self.exit_code, self.node_buffer)
+        '''Return a string serializing object's content'''
+        return '[%s]:%s:%s' % (self.node, self.command, self.exit_code)
 
 class MilkCheckEventHandler(EventHandler):
     '''

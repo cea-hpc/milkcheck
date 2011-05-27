@@ -9,7 +9,6 @@ the MilkCheck's engine
 from unittest import TestCase
 
 # Classes
-from MilkCheck.UI.Cli import CommandLineInterface
 from MilkCheck.Engine.ServiceGroup import ServiceGroup
 from MilkCheck.Engine.Service import Service
 from MilkCheck.Engine.Action import Action
@@ -26,7 +25,6 @@ class CoreTest(TestCase):
     def test_core_behaviour_one(self):
         '''Test the ability of the core to solve a large graph N1'''
         # Define Group 1
-        cli = CommandLineInterface()
         grp1 = ServiceGroup('GRP1')
         grp1_i1 = Service('I1')
         grp1_i2 = Service('I2')

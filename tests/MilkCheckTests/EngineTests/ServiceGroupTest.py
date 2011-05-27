@@ -11,6 +11,7 @@ from unittest import TestCase
 from MilkCheck.Engine.ServiceGroup import ServiceGroup
 from MilkCheck.Engine.Service import Service
 from MilkCheck.Engine.Action import Action
+from ClusterShell.NodeSet import NodeSet
 
 # Symbols
 from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, TIMED_OUT
@@ -28,6 +29,15 @@ class ServiceGroupTest(TestCase):
         self.assertTrue(isinstance(ser_group, ServiceGroup))
         self.assertEqual(ser_group.name, 'GROUP')
 
+    def test_update_target(self):
+        '''Test update of the target of a group of services'''
+        grp = ServiceGroup('G')
+        srva = Service('A')
+        grp.add_inter_dep(target=srva)
+        grp.update_target('fortoy[5-10]')
+        self.assertTrue(grp.target == NodeSet('fortoy[5-10]'))
+        self.assertTrue(srva.target == NodeSet('fortoy[5-10]'))
+        
     def test_reset_service_group(self):
         '''Test the ability to reset values of a service group'''
         group = ServiceGroup('GROUP')

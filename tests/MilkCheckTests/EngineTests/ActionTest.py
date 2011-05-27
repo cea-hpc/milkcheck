@@ -9,6 +9,7 @@ This modules defines the tests cases targeting the BaseService
 from unittest import TestCase
 from MilkCheck.Engine.Action import Action, NodeInfo
 from MilkCheck.Engine.Service import Service
+from ClusterShell.NodeSet import NodeSet
 
 # Symbols
 from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, TIMED_OUT, ERROR
@@ -56,7 +57,7 @@ class ActionTest(TestCase):
         self.assertNotEqual(action, None, 'should be none')
         self.assertEqual(action.name, 'start', 'wrong name')
         action = Action(name='start', target='fortoy5', command='/bin/true')
-        self.assertEqual(action.target, 'fortoy5', 'wrong target')
+        self.assertEqual(action.target, NodeSet('fortoy5'), 'wrong target')
         self.assertEqual(action.command, '/bin/true', 'wrong command')
         action = Action(name='start', target='fortoy5', command='/bin/true',
                     timeout=10, delay=5)
@@ -196,7 +197,3 @@ class ActionTest(TestCase):
         self.assertTrue(a3.duration)
         self.assertEqual(a4.status, TOO_MANY_ERRORS)
         self.assertTrue(a4.duration)
-
-    def test_update_status(self):
-        """TODO"""
-        pass

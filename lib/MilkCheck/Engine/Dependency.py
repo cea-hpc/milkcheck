@@ -12,15 +12,15 @@ REQUIRE = "REQUIRE"
 REQUIRE_WEAK = "REQUIRE_WEAK"
 
 class Dependency(object):
-    """
+    '''
     This class define the structure of a dependency. A dependency can
     point both on parent and children. It models an edge between the
-    two object whithout considering their types
-    """
+    two objects whithout considering their types.
+    '''
     
     def __init__(self, target, dtype=REQUIRE, intr=False):
        
-        # object pointed by the dependency
+        # Object pointed by the dependency
         assert target, "Dependency target shall not be None"
         self.target = target 
         
@@ -34,19 +34,19 @@ class Dependency(object):
         self._internal = intr
         
     def is_weak(self):
-        """ Return True if the dependency is weak."""
+        '''Return True if the dependency is weak.'''
         return (self._dep_type == REQUIRE_WEAK)
     
     def is_strong(self):
-        """Return True if the dependency is strong"""
+        '''Return True if the dependency is strong'''
         return self._dep_type in (REQUIRE, CHECK)
     
     def is_check(self):
-        """Return True if the dependency is check"""
+        '''Return True if the dependency is check'''
         return (self._dep_type == CHECK)
     
     def is_internal(self):
-        """Return the value of the internal attribute"""
+        '''Return the value of the internal attribute'''
         return self._internal
 
     def set_dep_type(self, dtype):

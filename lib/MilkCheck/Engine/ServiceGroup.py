@@ -40,6 +40,18 @@ class ServiceGroup(Service):
         # subservices
         self._subservices = {}
 
+    def update_target(self, nodeset, mode=None):
+        '''Update the attribute target of a service'''
+        assert nodeset, 'The nodeset cannot be None'
+        if not mode:
+            self.target = nodeset
+        elif mode is 'DIF':
+            self.target.difference_update(nodeset)
+        elif mode is 'INT':
+            self.target.intersection_update(nodeset)
+        for service in self._subservices.values():
+            service.update_target(nodeset, mode)
+
     def reset(self):
         '''Reset values of attributes in order to perform multiple exec'''
         Service.reset(self)

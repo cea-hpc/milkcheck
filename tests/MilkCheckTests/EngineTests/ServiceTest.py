@@ -9,6 +9,7 @@ from unittest import TestCase
 # Classes
 from MilkCheck.Engine.Service import Service
 from MilkCheck.Engine.Action import Action
+from ClusterShell.NodeSet import NodeSet
 
 # Exceptions
 from MilkCheck.Engine.Service import ActionAlreadyReferencedError
@@ -17,9 +18,8 @@ from MilkCheck.Engine.Service import ActionNotFoundError
 # Symbols
 from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, TIMED_OUT, ERROR
 from MilkCheck.Engine.BaseEntity import TOO_MANY_ERRORS, WAITING_STATUS
-from MilkCheck.Engine.BaseEntity import DONE_WITH_WARNINGS 
+from MilkCheck.Engine.BaseEntity import DONE_WITH_WARNINGS, LOCKED 
 from MilkCheck.Engine.Dependency import CHECK, REQUIRE, REQUIRE_WEAK
-
         
 class ServiceTest(TestCase):
     """Define the unit tests for the object service."""
@@ -28,6 +28,15 @@ class ServiceTest(TestCase):
         service = Service('brutus')
         self.assertNotEqual(service, None, 'should be none')
         self.assertEqual(service.name, 'brutus', 'wrong name')
+
+    def test_update_target(self):
+        '''Test update of the target of an service'''
+        serv = Service('A')
+        act = Action('start', 'fortoy[5-10]', '/bin/true')
+        serv.add_action(act)
+        serv.update_target('aury[1-12]^fortoy[3-6]')
+        self.assertTrue(serv.target == NodeSet('aury[1-12]^fortoy[3-6]'))
+        self.assertTrue(act.target == NodeSet('aury[1-12]^fortoy[3-6]'))
 
     def test_reset_service(self):
         '''Test resest values of a service'''
@@ -542,3 +551,50 @@ class ServiceTest(TestCase):
         self.assertTrue(stop3.duration)
         self.assertEqual(brut.status, DONE)
         self.assertTrue(stop4.duration)
+
+    def test_run_with_locked_service(self):
+        '''Test run services with locked dependencies'''
+        s1 = Service('S1')
+        s2 = Service('S2')
+        s3 = Service('S3')
+        s4 = Service('S4')
+        s5 = Service('S5')
+
+        # Actions S1
+        start_s1 = Action('start', 'localhost', '/bin/true')
+        stop_s1 = Action('stop', 'localhost', '/bin/true')
+        s1.add_actions(start_s1, stop_s1)
+        # Actions S2
+        start_s2 = Action('start', 'localhost', '/bin/true')
+        stop_s2 = Action('stop', 'localhost', '/bin/true')
+        s2.add_actions(start_s2, stop_s2)
+        # Actions S3
+        start_s3 = Action('start', 'localhost', '/bin/false')
+        stop_s3 = Action('stop', 'localhost', '/bin/false')
+        s3.add_actions(start_s3, stop_s3)
+        # Actions S4
+        start_s4 = Action('start', 'localhost', '/bin/true')
+        stop_s4 = Action('stop', 'localhost', '/bin/true')
+        s4.add_actions(start_s4, stop_s4)
+        # Actions I1
+        start_s5 = Action('start', 'localhost', '/bin/true')
+        stop_s5 = Action('stop', 'localhost', '/bin/true')
+        s5.add_actions(start_s5, stop_s5)
+
+        # Locked services
+        s3.status = LOCKED
+
+        # Build graph
+        s1.add_dep(target=s2)
+        s1.add_dep(target=s3)
+        s3.add_dep(target=s4)
+        s3.add_dep(target=s5)
+        
+        # Run service S1
+        s1.run('start')
+
+        self.assertEqual(s1.status, DONE)
+        self.assertEqual(s2.status, DONE)
+        self.assertEqual(s3.status, LOCKED)
+        self.assertEqual(s4.status, NO_STATUS)
+        self.assertEqual(s5.status, NO_STATUS)
