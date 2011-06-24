@@ -54,13 +54,19 @@ class IllegalDependencyTypeError(MilkCheckEngineError):
     CHECK, REQUIRE OR REQUIRE_WEAK to dep_type
     """
 
+class VariableAlreadyReferencedError(MilkCheckEngineError):
+    '''
+    Exception raised as soon as you try to add a variable
+    which is already referenced for this entity.
+    '''
+
 class BaseEntity(object):
     '''
     This class is abstract and shall not be instanciated.
     A BaseEntity object basically represents a node of graph with reference
     on parents and children.
     '''
-    def __init__(self, name, target=None):
+    def __init__(self, name, target='localhost'):
         # Entity name
         self.name = name
         
@@ -68,7 +74,7 @@ class BaseEntity(object):
         self.status = NO_STATUS
         
         # Description of an entity
-        self.desc = None
+        self.desc = ''
         
         # Maximum window for parallelism. A None fanout means
         # that the task will be limited by the default value of
@@ -80,8 +86,9 @@ class BaseEntity(object):
         self._target = self.target
         self._target_backup = self.target
         
-        # Maximum error authorized for the entity
-        self.errors = 0
+        # Maximum error authorized for the entity. -1 means that
+        # do not want any error
+        self.errors = -1
         
         # Parents dependencies (e.g A->B so B is the parent of A)
         self.parents = {}
@@ -98,6 +105,21 @@ class BaseEntity(object):
         # call by her dependencies
         self._tagged = False
 
+        # Variables
+        self.variables = {}
+
+    def add_var(self, varname, value):
+        '''Add a new variable within the entity context'''
+        if varname not in self.variables:
+            self.variables[varname] = value
+        else:
+            raise VariableAlreadyReferencedError
+
+    def remove_var(self, varname):
+        '''Remove an existing var from the entity'''
+        if varname in self._variables:
+            del self.variables[varname]
+
     def update_target(self, nodeset, mode=None):
         '''Update the attribute target of an entity'''
         assert nodeset, 'The nodeset cannot be None'
@@ -111,7 +133,7 @@ class BaseEntity(object):
     def reset(self):
         '''Reset values of attributes in order to perform multiple exec.'''
         self._tagged = False
-        self.target = self._target_backup
+        self.target = self.target_backup
         self.status = NO_STATUS
         self.algo_reversed = False
 
@@ -189,14 +211,14 @@ class BaseEntity(object):
             del self.children[dep_name]
             del dep.target.parents[self.name]
     
-    def has_child_dep(self, dep_name):
+    def has_child_dep(self, dep_name=None):
         '''
         Determine whether the current object has a child dependency called
         dep_name.
         '''
         return dep_name in self.children
         
-    def has_parent_dep(self, dep_name):
+    def has_parent_dep(self, dep_name=None):
         '''
         Determine whether the current object has a parent dependency called
         dep_name
@@ -274,9 +296,17 @@ class BaseEntity(object):
         '''Getter for the property target'''
         return self._target
 
+    def get_target_backup(self):
+        '''Getter of the property target backup'''
+        return self._target_backup
+        
     def set_target(self, nodeset):
         '''Setter for the property target'''
         self._target = NodeSet(nodeset)
 
+    def set_target_backup(self, nodeset):
+        '''Setter of the property target backup'''
+        self._target_backup = NodeSet(nodeset)
+
     target = property(fget=get_target, fset=set_target)
-    
+    target_backup = property(fget=get_target_backup, fset=set_target_backup)

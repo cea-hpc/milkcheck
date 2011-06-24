@@ -18,8 +18,8 @@ class BaseService(BaseEntity):
     Services types have to implements.
     '''
     
-    def __init__(self, name):
-        BaseEntity.__init__(self, name)
+    def __init__(self, name, target=None):
+        BaseEntity.__init__(self, name, target)
         
         # Define whether the service has warnings
         self.warnings = False

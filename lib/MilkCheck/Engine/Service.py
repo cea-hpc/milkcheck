@@ -27,7 +27,7 @@ class ActionNotFoundError(MilkCheckEngineError):
     '''
     
     def __init__(self, sname, aname):
-        msg = "%s not referenced in %s" % (aname, sname) 
+        msg = "Action [%s] not referenced for this service" % (aname, sname)
         MilkCheckEngineError.__init__(self, msg) 
         
 class ActionAlreadyReferencedError(MilkCheckEngineError):
@@ -45,8 +45,8 @@ class Service(BaseService):
     introduced by BaseSevice. A Service contains actions, and those actions
     are called and executed on nodes.
     '''
-    def __init__(self, name):
-        BaseService.__init__(self, name)
+    def __init__(self, name, target=None):
+        BaseService.__init__(self, name, target)
         
         # Actions of the service
         self._actions = {}

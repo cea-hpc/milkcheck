@@ -6,11 +6,15 @@ This module contains the Action class definition. It also contains the
 definition of a basic event handler and the ActionEventHandler.
 """
 # Classes
+from re import sub, findall
 from datetime import datetime
 from ClusterShell.Task import task_self
 from ClusterShell.Event import EventHandler
 from MilkCheck.Engine.BaseEntity import BaseEntity
 from MilkCheck.Callback import call_back_self
+
+# Exceptions
+from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
 
 # Symbols
 from MilkCheck.Engine.BaseEntity import DONE, TIMED_OUT, TOO_MANY_ERRORS
@@ -18,6 +22,15 @@ from MilkCheck.Engine.BaseEntity import WAITING_STATUS
 from MilkCheck.Engine.BaseEntity import NO_STATUS, ERROR
 from MilkCheck.Callback import EV_COMPLETE, EV_DELAYED, EV_STATUS_CHANGED
 from MilkCheck.Callback import EV_STARTED, EV_TRIGGER_DEP
+
+class UndefinedVariableError(MilkCheckEngineError):
+    '''
+    This error is raised each time that you make reference to a None existing
+    variable located in a command
+    '''
+    def __init__(self, varname, cmd):
+        msg = "Variable [%s] undefined in [%s]" % (varname, cmd)
+        MilkCheckEngineError.__init__(self, msg)
 
 class NodeInfo(object):
     '''This class represent the result of command executed on cluster's node'''
@@ -91,7 +104,7 @@ class ActionEventHandler(MilkCheckEventHandler):
         self._action.stop_time = datetime.now()
         
         # Callback the interface
-        call_back_self().notify(self._action, EV_COMPLETE)
+        #call_back_self().notify(self._action, EV_COMPLETE)
 
         # Remove the current action from the running task, this will trigger
         # a redefinition of the current fanout
@@ -201,6 +214,8 @@ class Action(BaseEntity):
         self.status = status
         call_back_self().notify(self, EV_STATUS_CHANGED)
         if status not in (NO_STATUS, WAITING_STATUS):
+            # Callback the interface
+            call_back_self().notify(self, EV_COMPLETE)
             if self.children:
                 for dep in self.children.values():
                     if dep.target.is_ready():
@@ -277,4 +292,43 @@ class Action(BaseEntity):
             call_back_self().notify(self, EV_STARTED)
             action_manager_self().perform_action(self)
 
+    def resolved_command(self):
+        '''Return a command with variable's name replaced by values'''
+        final_cmd = self.command
+        symbols = {}
+        for symbol in findall('\${1}[\w]+', self.command):
+            varname = symbol.lstrip('$')
+            # Look for an attribute matching the symbol in this action
+            if hasattr(self, varname.lower()):
+                final_cmd = sub(
+                    '\%s' % symbol, getattr(self, varname.lower()), final_cmd)
+            # Look for a variable matching the symbol in the action 
+            elif varname in self.variables:
+                final_cmd = sub(
+                    '\%s' % symbol, self.variables[varname], final_cmd)
+            # Look for an attribute matching the symbol at the service level
+            elif hasattr(self.service, varname.lower()):
+                final_cmd = sub(
+                    '\%s' % symbol,
+                        getattr(self.service, varname.lower()), final_cmd)
+            # Look for a variable matching the symbol in the service level
+            elif self.service and varname in self.service.variables:
+                final_cmd = sub(
+                    '\%s' % symbol, self.service.variables[varname], final_cmd)
+            # Look for an attribute matching the symbol in the manager
+            elif hasattr(service_manager_self(), varname.lower()):
+                final_cmd = sub(
+                    '\%s' % symbol,
+                        getattr(
+                            service_manager_self(), varname.lower()), final_cmd)
+            # Look for a variable matching the symbol at the manager level
+            elif varname in service_manager_self().variables:
+                final_cmd = sub(
+                    '\%s' % symbol, service_manager_self().variables[varname],
+                        final_cmd)
+            else:
+                raise UndefinedVariableError(varname, self.command)
+        return final_cmd
+
 from MilkCheck.ActionManager import action_manager_self
+from MilkCheck.ServiceManager import service_manager_self

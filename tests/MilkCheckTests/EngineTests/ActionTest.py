@@ -6,10 +6,14 @@ This modules defines the tests cases targeting the BaseService
 """
 
 # Classes
+from re import findall, search
 from unittest import TestCase
 from MilkCheck.Engine.Action import Action, NodeInfo
 from MilkCheck.Engine.Service import Service
 from ClusterShell.NodeSet import NodeSet
+
+# Exceptions
+from MilkCheck.Engine.Action import UndefinedVariableError
 
 # Symbols
 from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, TIMED_OUT, ERROR
@@ -197,3 +201,47 @@ class ActionTest(TestCase):
         self.assertTrue(a3.duration)
         self.assertEqual(a4.status, TOO_MANY_ERRORS)
         self.assertTrue(a4.duration)
+
+    def test_command_resolution1(self):
+        """Test variable replacement within the action's command 1"""
+        a1 = Action('start', 'localhost')
+        a1.command = '$HOSTS_SSH service user_access status'
+        self.assertRaises(UndefinedVariableError, a1.resolved_command)
+
+    def test_command_resolution2(self):
+        """Test variable replacement within the action's command 2"""
+        a1 = Action('start', 'localhost')
+        a1.command = '$HOSTS_SSH service user_access status'
+        a1.add_var('HOSTS_SSH', 'fortoy1,fortoy2')
+        fingerprints = findall('fortoy1,fortoy2', a1.resolved_command())
+        self.assertTrue(len(fingerprints) == 1)
+
+    def test_command_resolution3(self):
+        """Test variable replacement within the action's command 3"""
+        a1 = Action('start', 'localhost')
+        a1.command = '$HOSTS_SSH service user_access status'
+        ser = Service('TEST')
+        ser.add_var('HOSTS_SSH', 'fortoy1,fortoy2')
+        a1.service = ser
+        fingerprints = findall('fortoy1,fortoy2', a1.resolved_command())
+        self.assertTrue(len(fingerprints) == 1)
+
+    def test_command_resolution4(self):
+        '''Test variable replacement within the action's command 4'''
+        a1 = Action('start', 'localhost')
+        a1.command = '$TARGET service $SNAME $NAME'
+        ser = Service('TEST')
+        a1.service = ser
+        ser = Service('TEST')
+        ser.add_var('SNAME', 'user_access')
+        a1.service = ser
+        cmd = a1.resolved_command()
+        self.assertTrue(search('localhost', cmd))
+        self.assertTrue(search('user_access', cmd))
+        self.assertTrue(search('start', cmd))
+
+    def test_command_resolution_fake(self):
+        '''edfefe'''
+        a1 = Action('start', 'localhost')
+        a1.command = '/bin/true'
+        print a1.resolved_command()

@@ -37,7 +37,7 @@ class ActionManager(EntityManager):
         assert action, 'You cannot perform a NoneType object'
         assert isinstance(action, Action), 'Object should be an action'
         self.add_task(action)
-        self._master_task.shell(action.command,
+        self._master_task.shell(action.resolved_command(),
         nodes=action.target, handler=ActionEventHandler(action),
         timeout=action.timeout)
 

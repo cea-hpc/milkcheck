@@ -6,13 +6,18 @@ This module contains the UserView class definition.
 '''
 
 # classes
+import logging
+import logging.config
+from os import environ
 from sys import stderr, stdout
 from MilkCheck.UI.UserView import UserView
 from MilkCheck.UI.OptionParser import McOptionParser
 from MilkCheck.UI.OptionParser import InvalidOptionError
 from MilkCheck.Engine.Action import Action, NodeInfo
-from MilkCheck.Engine.Service import Service
+from MilkCheck.Engine.Service import Service, ActionNotFoundError
 from MilkCheck.ServiceManager import service_manager_self
+from MilkCheck.ServiceManager import ServiceNotFoundError
+from MilkCheck.Engine.BaseEntity import TIMED_OUT, TOO_MANY_ERRORS, ERROR, DONE
 
 class CommandLineInterface(UserView):
     '''
@@ -37,16 +42,21 @@ class CommandLineInterface(UserView):
         self.count_average_verbmsg = 0
         self.count_high_verbmsg = 0
 
+        # HAS TO BE REMOVED AND SET UP IN THE MAIN
+        logging.config.fileConfig(environ['PYTHONPATH']+
+            '/MilkCheck/Log/mc_logging.conf')
+
     def execute(self, command_line):
         '''
         Ask for the manager to execute orders given by the command line.
         '''
+        logger = logging.getLogger('watcher')
         self._mop = McOptionParser()
         self._mop.configure_mop()
         try:
             (self._options, self._args) = self._mop.parse_args(command_line)
         except InvalidOptionError as exc:
-            stderr.write(exc.msg)
+            self._mop.print_help()
         else:
             manager = service_manager_self()
             self.count_low_verbmsg = 0
@@ -54,32 +64,69 @@ class CommandLineInterface(UserView):
             self.count_high_verbmsg = 0
             # Case 1 : we call services and we are able to add constraints
             if len(self._args) > 1:
-                manager.call_services(
-                    self._args[:len(self._args)-1], self._args[-1],
-                        opts=self._options)
+                try:
+                    manager.call_services(
+                        self._args[:len(self._args)-1], self._args[-1],
+                            opts=self._options)
+                except ServiceNotFoundError, exc:
+                    logger.error(' %s' % exc)
+                except ActionNotFoundError, exc:
+                    logger.error(' %s' % exc)
             # Case 2 : we just display dependencies of one or several services
             elif self._options.print_servs:
-                print 'Print service dependencies'
-            # Case 3 : Just load another configuration into the manager
+                print 'TODO : Print service dependencies'
+            # Case 3 : Just load another configuration
+            elif self._options.config_dir:
+                manager.load_config(self._options.config_dir)
             else:
-                print 'Load another configuration'
+                self._mop.print_help()
         finally:
             self._mop.destroy()
-    
+
+    def __print_service_banner(self, service):
+        '''
+        This service print the banner specifying that a service is going
+        to be compute.
+        '''
+        userMessenger = logging.getLogger('user')
+        msg_len = len('%s - %s' %(service.name, service.last_action().desc))
+        if msg_len + 2 <= 80:
+            userMessenger.info('\n+%s+' % (80*'-'))
+            userMessenger.info(
+            '|%s%s|' % \
+            (' %s - %s ' %(service.name, service.last_action().desc),
+                (80-(msg_len+2))*' '))
+            userMessenger.info('+%s+' % (80*'-'))
+        else:
+            msg = '%s - %s' %(obj.name, obj.last_action().desc)
+            userMessenger.info('\n+%s+',(len(msg)+2)*'-')
+            userMessenger.info('| %s - %s |' \
+            %(obj.name, obj.last_action().desc))
+            userMessenger.info('+%s+',(len(msg)+2)*'-')
+
+    def __print_msg_status(self, msg, status):
+        userMessenger = logging.getLogger('user')
+        msg_len = len('%s' % msg)+len('[%s]' % status)
+        if msg_len <= 79 :
+            userMessenger.info(
+                '%s %s' % (msg, '%s[%s]' %(((79 - msg_len)+2)*' ', status)))
+        else:
+            userMessenger.info('%s [%s]' % (msg, status))
+        
     def ev_started(self, obj):
         '''
         Something has started on the object given as parameter. This migh be
         the beginning of a command one a node, an action or a service.
         '''
-        if isinstance(obj, NodeInfo) and self._options.verbosity >= 3:
-            pass
-        elif isinstance(obj, Action) and self._options.verbosity >= 2:
-            print " >>> [%s] action [%s] in Task" % \
-            (obj.service.name, obj.name)
+        userMessenger = logging.getLogger('user')
+        if isinstance(obj, Action) and self._options.verbosity >= 2:
+            userMessenger.info('    > %s %s :\n      command %s on %s' % \
+            (obj.name, obj.service.name, obj.command, obj.target))
             if self.profiling:
                 self.count_average_verbmsg += 1
-        elif isinstance(obj, Service) and self._options.verbosity >= 1:
-            print '[%s] processing has started' % obj.name
+        elif isinstance(obj, Service) and not obj.simulate and \
+                self._options.verbosity >= 1:
+            self.__print_service_banner(obj)
             if self.profiling:
                 self.count_low_verbmsg += 1
                 
@@ -88,20 +135,28 @@ class CommandLineInterface(UserView):
         Something is complete on the object given as parameter. This migh be
         the end of a command on a node,  an action or a service.
         '''
+        userMessenger = logging.getLogger('user')
         if isinstance(obj, NodeInfo) and self._options.verbosity >= 3:
-            print '    ===> %s' % obj
+            userMessenger.info('        ===> %s' % obj)
             if obj.node_buffer:
-                print '         [buffer]'
-                print '             %s', obj.node_buffer
+                userMessenger.info('        [buffer]')
+                userMessenger.info('        %s', obj.node_buffer)
             if self.profiling:
                 self.count_high_verbmsg += 1
-        elif isinstance(obj, Action) and self._options.verbosity >= 2:
-            print " >>> [%s] action [%s] processed in %f s" % \
-            (obj.service.name, obj.name, obj.duration)
+        elif isinstance(obj, Action) and self._options.verbosity >= 3:
+            self.__print_msg_status(
+                '    > action %s of service %s ran in %f second(s)' \
+                    %(obj.name, obj.service.name, obj.duration),
+                        obj.status)
             if self.profiling:
-                self.count_average_verbmsg += 1
-        elif isinstance(obj, Service) and self._options.verbosity >= 1:
-            print "[%s] has been processed" % obj.name
+                self.count_high_verbmsg += 1
+        elif isinstance(obj, Service) and not obj.simulate and \
+            self._options.verbosity >= 1:
+            self.__print_msg_status('    > %s %s - %s' \
+                %(obj.last_action().name,
+                    obj.name,
+                        obj.last_action().desc),
+                            obj.status)
             if self.profiling:
                 self.count_low_verbmsg += 1
 
@@ -110,23 +165,36 @@ class CommandLineInterface(UserView):
         Status of the object given as parameter. Actions or Service's status
         might have changed.
         '''
-        if isinstance(obj, Action) and self._options.verbosity >= 2:
-            print " >>> [%s] action [%s] is [%s] " % \
-            (obj.service.name, obj.name, obj.status)
-            if self.profiling:
+        userMessenger = logging.getLogger('user')
+        if isinstance(obj, Action) and self._options.verbosity >= 3 and \
+            obj.status not in (TIMED_OUT, TOO_MANY_ERRORS, ERROR, DONE) and \
+                not obj.service.simulate:
+            self.__print_msg_status('    > action %s of service %s' \
+                %(obj.name, obj.service.name), obj.status)
+            if self.profiling: 
                 self.count_average_verbmsg += 1
-        elif isinstance(obj, Service) and self._options.verbosity >= 1:
-            print " >>> [%s] status is [%s] " % (obj.name, obj.status)
+        elif isinstance(obj, Service) and self._options.verbosity >= 3 and \
+            obj.status not in (TIMED_OUT, TOO_MANY_ERRORS, ERROR, DONE) and \
+                not obj.simulate:
+            self.__print_msg_status('    > %s %s - %s' \
+            %(obj.last_action().name,
+                    obj.name,
+                        obj.last_action().desc,
+                            ), obj.status)
             if self.profiling:
                 self.count_low_verbmsg += 1
+                
     def ev_delayed(self, obj):
         '''
         Object given as parameter has been delayed. This event is only raised
         when an action was delayed
         '''
-        if isinstance(obj, Action) and self._options.verbosity >= 2:
-            print " >>> [%s] action [%s] has been delayed %i s" % \
-            (obj.service.name, obj.name, obj.delay)
+        userMessenger = logging.getLogger('user')
+        if isinstance(obj, Action) and not obj.service.simulate and \
+            self._options.verbosity >= 2:
+            userMessenger.info(
+                '    > %s %s has been delayed during %d second(s)'\
+            % (obj.name, obj.service.name, obj.delay))
             if self.profiling:
                 self.count_average_verbmsg += 1
                 
@@ -137,19 +205,24 @@ class CommandLineInterface(UserView):
         Action A triggers Action B
         Service A triggers Service B
         '''
+        userMessenger = logging.getLogger('user')
         if isinstance(obj_source, Action) and \
                 isinstance(obj_triggered, Action) and \
-                    self._options.verbosity >= 2:
-            print '[%s] Action [%s] triggers Action [%s]' % \
-            (obj_source.service.name, obj_source.name, obj_triggered.name)
+                    self._options.verbosity >= 3:
+            userMessenger.info(
+            '    > action %s of service %s has triggered action %s'\
+                % (obj_source.name, obj_source.service.name,
+                        obj_triggered.name))
             if self.profiling:
-                self.count_average_verbmsg += 1
+                self.count_high_verbmsg += 1
         elif isinstance(obj_source, Service) and \
                 isinstance(obj_triggered, Service) and \
-                    self._options.verbosity >= 1:
-            print '[%s] triggers [%s]' % (obj_source.name, obj_triggered.name)
+                    not obj_source.simulate and \
+                        self._options.verbosity >= 3:
+            userMessenger.info('    > service %s has triggered service %s'\
+                % (obj_source.name, obj_triggered.name))
             if self.profiling:
-                self.count_low_verbmsg += 1
+                self.count_high_verbmsg += 1
 
     def get_totalmsg_count(self):
         '''Sum all counter to know how many message the CLI got'''

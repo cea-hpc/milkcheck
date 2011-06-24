@@ -10,6 +10,7 @@ from MilkCheck.EntityManager import EntityManager
 
 # Exceptions
 from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
+from MilkCheck.Engine.BaseEntity import VariableAlreadyReferencedError
 
 # Symbols
 from MilkCheck.Engine.BaseEntity import LOCKED
@@ -39,7 +40,7 @@ class ServiceManager(EntityManager):
     def __init__(self):
         EntityManager.__init__(self)
         # Variables declared in the global scope
-        self._variables = {}
+        self.variables = {}
         # Status of the graph
         self._graph_changed = False
 
@@ -52,6 +53,23 @@ class ServiceManager(EntityManager):
     def has_service(self, service):
         '''Determine if the service is registered within the manager'''
         return service in self.entities.values()
+
+    def add_var(self, varname, value):
+        '''Add a symbol within the service manager'''
+        if varname not in self.variables:
+            self.variables[varname] = value
+        else:
+            raise VariableAlreadyReferencedError
+
+    def remove_var(self, varname):
+        '''Remove var from the the service manager'''
+        if varname in self.variables:
+            del self.variables[varname]
+
+    def reset(self):
+        '''Clean object service manager.'''
+        self.variables.clear()
+        self.entities.clear()
 
     def register_service(self, service):
         '''Add a new service to the manager.'''
@@ -98,6 +116,10 @@ class ServiceManager(EntityManager):
         can be an update of the nodes usable by the services or whatever that
         is referenced within options.  
         '''
+        # Load the configuration located within the directory
+        if options.config_dir:
+            self.load_config(options.config_dir)
+
         # Avoid some of the services referenced in the graph
         if options.excluded_svc:
             self.__lock_services(options.excluded_svc)
@@ -141,7 +163,7 @@ class ServiceManager(EntityManager):
         if opts:
             self._apply_options(opts)
         # Service are going to use reversed algorithms
-        if action is 'stop':
+        if action == 'stop':
             self._reverse_mod(True)
         # For each valid service call run
         for service in services:
@@ -149,10 +171,16 @@ class ServiceManager(EntityManager):
                 self.entities[service].run(action)
                 self._graph_changed = True
             else:
-                raise ServiceNotFoundError
-    
-    def dependencies(self, services):
-        pass
+                raise ServiceNotFoundError('Undefined service [%s]' %service)
+
+    def load_config(self, conf):
+        '''
+        Load the configuration within the manager thanks to MilkCheckConfig
+        '''
+        from MilkCheck.Config.Configuration import MilkCheckConfig
+        config = MilkCheckConfig()
+        config.load_from_dir(directory=conf)
+        config.build_graph()
 
 def service_manager_self():
     '''Return a singleton instance of a service manager'''

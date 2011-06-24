@@ -28,8 +28,8 @@ class ServiceGroup(Service):
     subservices
     """
 
-    def __init__(self, name):
-        Service.__init__(self, name)
+    def __init__(self, name, target=None):
+        Service.__init__(self, name, target)
         # Entry point of the group
         self._source = Service('source')
         self._source.simulate = True
@@ -57,6 +57,8 @@ class ServiceGroup(Service):
         Service.reset(self)
         for service in self._subservices.values():
             service.reset()
+        self._sink.reset()
+        self._source.reset()
         
     def search(self, name, reverse=False):
         """Look for a node through the overall graph"""

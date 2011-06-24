@@ -15,6 +15,7 @@ from MilkCheck.Engine.Action import Action
 from MilkCheck.Engine.ServiceGroup import ServiceGroup
 from MilkCheck.Engine.BaseEntity import DONE, NO_STATUS, TOO_MANY_ERRORS
 from MilkCheck.Engine.BaseEntity import ERROR
+from MilkCheck.Callback import CallbackHandler
 from ClusterShell.NodeSet import NodeSet
 
 class CommandLineInterfaceTests(TestCase):
@@ -36,12 +37,18 @@ class CommandLineInterfaceTests(TestCase):
         ServiceManager._instance = None 
         manager = service_manager_self()
         s1 = Service('S1')
+        s1.desc = 'I am the service S1'
         s2 = Service('S2')
+        s2.desc = 'I am the service S2'
         s3 = Service('S3')
+        s3.desc = 'I am the service S3'
         s4 = Service('S4')
+        s4.desc = 'I am the service S4'
         g1 = ServiceGroup('G1')
         i1 = Service('I1')
+        i1.desc = 'I am the service I1'
         i2 = Service('I2')
+        i2.desc = 'I am the service I2'
 
         # Actions S1
         start_s1 = Action('start', 'localhost, 127.0.0.1', '/bin/true')
@@ -85,6 +92,7 @@ class CommandLineInterfaceTests(TestCase):
 
     def test_execute_services_verbosity(self):
         '''Test method execute to run services with different verbosity'''
+        CallbackHandler._instance = None
         cli = CommandLineInterface()
         cli.profiling = True
         cli.execute(['S3', 'start', '-v'])
@@ -106,22 +114,24 @@ class CommandLineInterfaceTests(TestCase):
 
     def test_execute_services_exclusion(self):
         '''Test exclusion of services from the CLI'''
+        CallbackHandler._instance = None
         cli = CommandLineInterface()
         # Execute start on S1 with verbosity at level one, do not process
         # the node S3 moreover hijack cluster nodes aury11 and aury12
         cli.profiling = True
-        cli.execute(['S1', 'start', '-v', '-X', 'S3'])
+        cli.execute(['S1', 'start', '-vvv', '-X', 'S3'])
         manager = service_manager_self()
         self.assertEqual(manager.entities['S1'].status, DONE)
         self.assertEqual(manager.entities['S2'].status, DONE)
         self.assertEqual(manager.entities['S4'].status, NO_STATUS)
         self.assertEqual(manager.entities['G1'].status, NO_STATUS)
         self.assertTrue(cli.count_low_verbmsg > 0)
-        self.assertTrue(cli.count_average_verbmsg == 0)
-        self.assertTrue(cli.count_high_verbmsg == 0)
+        self.assertTrue(cli.count_average_verbmsg > 0)
+        self.assertTrue(cli.count_high_verbmsg > 0)
 
     def test_execute_nodes_exlcusion(self):
         '''Test nodes exlcusion from the CLI'''
+        CallbackHandler._instance = None
         cli = CommandLineInterface()
         cli.execute(['S3', 'stop', '-vvv', '-x', '127.0.0.1'])
         manager = service_manager_self()
@@ -137,6 +147,7 @@ class CommandLineInterfaceTests(TestCase):
 
     def test_execute_nodes_only(self):
         '''Test mandatory nodes from CLI'''
+        CallbackHandler._instance = None
         cli = CommandLineInterface()
         cli.execute(['S1', 'start', '-d', '-n', '127.0.0.1'])
         manager = service_manager_self()

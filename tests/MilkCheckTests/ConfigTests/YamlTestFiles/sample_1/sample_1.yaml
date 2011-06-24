@@ -1,0 +1,95 @@
+# Global variables
+---
+variables:
+    GBL: true
+# Definition of service S1
+# This service requires S2 and S3
+---
+service:
+    name: S1
+    desc: "I'm the service S1"
+    require: [S2, S3]
+    variables:
+        S1VAR: store0,work0
+    target: "localhost"
+    actions:
+        start:
+            target: "localhost"
+            cmd:   /bin/true
+        stop:
+            target: "localhost"
+            cmd:   /bin/true
+            
+# Definition of service S2
+# This service require S4
+---
+service:
+    name: S2
+    desc: "I'm the service S2"
+    require: [S4]
+    target: "localhost"
+    actions:
+        start:
+            target: "localhost"
+            cmd:   /bin/true
+        stop:
+            target: "localhost"
+            cmd:   /bin/true
+# Definition of service S3
+# This service require S4
+---
+service:
+    name: S3
+    desc: "I'm the service S3"
+    require: [S4]
+    target: "localhost"
+    actions:
+        start:
+            target: "localhost"
+            cmd:   /bin/true
+        stop:
+            target: "localhost"
+            cmd:   /bin/true
+
+# Definition of service S4
+# This requires the group G1 but it is not mandatory
+---
+service:
+    name: S4
+    desc: "I'm the service S1"
+    require_weak: [G1]
+    target: "localhost"
+    actions:
+        start:
+            target: "localhost"
+            cmd:   /bin/true
+        stop:
+            target: "localhost"
+            cmd:   /bin/true
+
+# Definition of the service group G1
+# it contains two subservices : lustre and hpss_nfs
+---
+service:
+    name: G1
+    desc: "I'm the service S1"
+    target: "localhost,127.0.0.1"
+    services:
+        I1:
+            desc: "I'm the service I1"
+            actions:
+                start:
+                    target: "localhost"
+                    cmd: "/bin/true"
+                stop:
+                    target: "localhost"
+                    cmd: "/bin/true"
+        I2:
+            desc: "I'm the service I2"
+            actions:
+                start:
+                    target: "localhost"
+                    cmd: "/bin/true"
+                stop:
+                    target: "localhost"
+                    cmd: "/bin/true"

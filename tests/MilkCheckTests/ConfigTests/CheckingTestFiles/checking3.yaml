@@ -1,0 +1,42 @@
+#-------------------------------------------------------------------------------
+# THIS FILE SPECIFIES THE RULE THAT MILKCHECK USE IN ORDER
+# TO VERIFY GRAMMAR'S CONTENT.
+#-------------------------------------------------------------------------------
+
+# Describe keys usable within the grammar. For each key we need
+# to specify if it is REQUIRED or OPTIONAL
+places:
+    service:
+       name:         REQUIRED
+       desc:         OPTIONAL
+       target:       OPTIONAL
+       fanout:       OPTIONAL
+       errors:       OPTIONAL
+       variables:    OPTIONAL
+       actions:      REQUIRED
+       services:     REQUIRED
+       require:      OPTIONAL
+       require_weak: OPTIONAL
+       check:        OPTIONAL
+    action:
+        name:         REQUIRED
+        desc:         OPTIONAL
+        target:       OPTIONAL
+        fanout:       OPTIONAL
+        retry:        OPTIONAL
+        errors:       OPTIONAL
+        timeout:      OPTIONAL
+        variables:    OPTIONAL
+        delay:        OPTIONAL
+        require:      OPTIONAL
+        require_weak: OPTIONAL
+        cmd:          REQUIRED
+
+# For some property we need to control the validy of the content.
+# This allows you to specify your own type checking
+rules:
+    name:   '^[a-zA-Z0-9_]+$'
+    delay:  '^([0-9]+|[0-9]+\.[0-9]{1,2})$'
+    retry:  '^[0-9]+$'
+    fanout: '^[0-9]+$'
+    errors: '^[0-9]+$'
