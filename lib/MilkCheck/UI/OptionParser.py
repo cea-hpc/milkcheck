@@ -12,6 +12,7 @@ from ClusterShell.NodeSet import NodeSet, NodeSetException
 
 # MilkCheck version
 __VERSION__ = 1.0
+__LAST_RELEASE__ = 'Friday, July 2011'
 
 class InvalidOptionError(Exception):
     '''Exception raised when the parser ran against an unexpected option.'''
@@ -51,6 +52,11 @@ class McOptionParser(OptionParser):
         self.add_option('-v', '--verbose', action='count', dest='verbosity',
                         default=1, help='Increase or decrease verbosity')
 
+        self.set_conflict_handler('resolve')
+        self.add_option('-v', '--version', action='callback',
+                        callback=self.__check_version_mode, dest='version',
+                        help='Version number of MilkCheck')
+
         self.add_option('-d', '--debug', action='callback',
                         callback=self.__config_debug, dest='debug',
                         help='Set debug mode and maximum verbosity')
@@ -88,7 +94,7 @@ class McOptionParser(OptionParser):
 
     def error(self, msg):
         '''Raise an exception when the parser gets an error.'''
-        raise InvalidOptionError(msg)
+        raise InvalidOptionError(' %s' % msg)
 
     def __config_debug(self, option, opt, value, parser):
         '''Configure the debug mode when the parser gets the option -d.'''
@@ -103,6 +109,11 @@ class McOptionParser(OptionParser):
             self.error('-c/--config-dir should be a valid directory')
 
 
+    def __check_version_mode(self, option, opt, value, parser):
+        '''Check that not any option is used with --version'''
+        setattr(self.values, option.dest, 'MilkCheck %s - Last release on %s'
+        % (self.version, __LAST_RELEASE__))
+
     def __check_printdep_mode(self, option, opt, value, parser):
         '''Check whether we are in printdeps mode.'''
         if self.values.only_nodes or \
@@ -110,6 +121,8 @@ class McOptionParser(OptionParser):
                     self.values.hijack_servs:
             self.error('%s cannot be used with -n, -x or -X' % option)
         self.__consume_args_callback(option, value)
+        if not self.values.print_servs:
+            self.error('%s service names are missing' % option)
 
     def __check_service_mode(self, option, opt, value, parser):
         '''Check whether we are in the service execution mode.'''

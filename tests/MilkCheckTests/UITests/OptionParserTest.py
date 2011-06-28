@@ -21,22 +21,19 @@ class McOptionParserTest(TestCase):
         mop = McOptionParser()
         mop.configure_mop()
         (options, args) = mop.parse_args(['-d'])
-        mop.destroy()
-        self.assertEqual(options.verbosity, 4)
+        self.assertEqual(options.verbosity, 5)
         self.assertTrue(options.debug)
 
         mop = McOptionParser()
         mop.configure_mop()
         (options, args) = mop.parse_args(['-d'])
-        mop.destroy()
-        self.assertEqual(options.verbosity, 4)
+        self.assertEqual(options.verbosity, 5)
         self.assertTrue(options.debug)
 
         mop = McOptionParser()
         mop.configure_mop()
         (options, args) = mop.parse_args(['-vvv'])
-        mop.destroy()
-        self.assertEqual(options.verbosity, 3)
+        self.assertEqual(options.verbosity, 4)
         self.assertFalse(options.debug)
 
     def test_option_onlynodes(self):
@@ -45,7 +42,6 @@ class McOptionParserTest(TestCase):
         mop.configure_mop()
         self.assertRaises(InvalidOptionError,
             mop.parse_args, ['robinhood','-n', 'fortoy8'])
-        mop.destroy()
 
         mop = McOptionParser()
         mop.configure_mop()
@@ -55,18 +51,15 @@ class McOptionParserTest(TestCase):
         self.assertTrue('fortoy1' in options.only_nodes)
         self.assertTrue('fortoy2' in options.only_nodes)
         self.assertTrue('robinhood' in args and 'start' in args)
-        mop.destroy()
 
         mop = McOptionParser()
         mop.configure_mop()
         self.assertRaises(InvalidOptionError,
             mop.parse_args, ['robinhood', 'start','-n', '[fortoy5]'])
-        mop.destroy()
 
         mop = McOptionParser()
         mop.configure_mop()
         self.assertRaises(InvalidOptionError, mop.parse_args, ['-n', 'group'])
-        mop.destroy()
 
     def test_option_printdeps(self):
         '''Test usage of the printdeps option'''
@@ -74,7 +67,11 @@ class McOptionParserTest(TestCase):
         mop.configure_mop()
         self.assertRaises(InvalidOptionError,
         mop.parse_args, ['-p', 'robinhood', '-n', 'nodegroup'])
-        mop.destroy()
+
+        mop = McOptionParser()
+        mop.configure_mop()
+        self.assertRaises(InvalidOptionError,
+        mop.parse_args, ['-p'])
 
         mop = McOptionParser()
         mop.configure_mop()
@@ -83,7 +80,6 @@ class McOptionParserTest(TestCase):
         self.assertTrue('robinhood' in options.print_servs)
         self.assertTrue('lustre' in options.print_servs)
         self.assertTrue('nfs_mount' in options.print_servs)
-        mop.destroy()
 
     def test_option_configdir(self):
         '''Test usage of the configdir option'''
@@ -98,7 +94,6 @@ class McOptionParserTest(TestCase):
         mop.configure_mop()
         self.assertRaises(InvalidOptionError,
             mop.parse_args, ['-c', '/duke/'])
-        mop.destroy()
 
     def test_option_hijack_nodes(self):
         '''Test usage of the hijack_nodes option'''
@@ -110,4 +105,10 @@ class McOptionParserTest(TestCase):
         self.assertTrue('fortoy[13-15]' in options.only_nodes)
         self.assertFalse('fortoy[8-9]'  in options.only_nodes)
         self.assertTrue('fortoy[8-12]' in options.hijack_nodes)
-        mop.destroy()
+
+    def test_option_version(self):
+        '''Test usage of option --version'''
+        mop = McOptionParser()
+        mop.configure_mop()
+        (options, args) = mop.parse_args(['--version'])
+        self.assertTrue(options.version)

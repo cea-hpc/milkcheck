@@ -50,12 +50,14 @@ class CommandLineInterface(UserView):
         '''
         Ask for the manager to execute orders given by the command line.
         '''
-        logger = logging.getLogger('watcher')
+        watcher = logging.getLogger('watcher')
+        userMessenger = logging.getLogger('user')
         self._mop = McOptionParser()
         self._mop.configure_mop()
         try:
             (self._options, self._args) = self._mop.parse_args(command_line)
         except InvalidOptionError, exc:
+            watcher.error('%s' % exc)
             self._mop.print_help()
         else:
             manager = service_manager_self()
@@ -69,15 +71,18 @@ class CommandLineInterface(UserView):
                         self._args[:len(self._args)-1], self._args[-1],
                             opts=self._options)
                 except ServiceNotFoundError, exc:
-                    logger.error(' %s' % exc)
+                    watcher.error(' %s' % exc)
                 except ActionNotFoundError, exc:
-                    logger.error(' %s' % exc)
+                    watcher.error(' %s' % exc)
             # Case 2 : we just display dependencies of one or several services
             elif self._options.print_servs:
                 print 'TODO : Print service dependencies'
             # Case 3 : Just load another configuration
             elif self._options.config_dir:
                 manager.load_config(self._options.config_dir)
+            # Case 4: If version option detected so print version number
+            elif self._options.version:
+                userMessenger.info(self._options.version)
             else:
                 self._mop.print_help()
 
