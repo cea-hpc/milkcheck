@@ -55,7 +55,7 @@ class CommandLineInterface(UserView):
         self._mop.configure_mop()
         try:
             (self._options, self._args) = self._mop.parse_args(command_line)
-        except InvalidOptionError as exc:
+        except InvalidOptionError, exc:
             self._mop.print_help()
         else:
             manager = service_manager_self()
@@ -80,8 +80,6 @@ class CommandLineInterface(UserView):
                 manager.load_config(self._options.config_dir)
             else:
                 self._mop.print_help()
-        finally:
-            self._mop.destroy()
 
     def __print_service_banner(self, service):
         '''

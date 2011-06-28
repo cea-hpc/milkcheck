@@ -27,7 +27,7 @@ class ActionNotFoundError(MilkCheckEngineError):
     '''
     
     def __init__(self, sname, aname):
-        msg = "Action [%s] not referenced for this service" % (aname, sname)
+        msg = "Action [%s] not referenced for this service" % (aname)
         MilkCheckEngineError.__init__(self, msg) 
         
 class ActionAlreadyReferencedError(MilkCheckEngineError):

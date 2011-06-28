@@ -62,7 +62,7 @@ class MilkCheckConfig(object):
         logger = logging.getLogger('watcher')
         try:
             print 'Reading configuration...'
-            content = yaml.load_all(stream)
+            content = yaml.safe_load_all(stream)
         except IOError, exc:
             logger.error('YAML file not found : ')
         except yaml.YAMLError, exc:
@@ -87,10 +87,6 @@ class MilkCheckConfig(object):
         if self._flow:
             manager = service_manager_self()
             self._build_services()
-            #for service in manager.entities:
-                #print '[%s]' % manager.entities[service].name
-                #for (act, value) in manager.entities[service]._actions.items():
-                    #print '%s on %s' %(act, value.target)
 
     def _build_services(self):
         '''
