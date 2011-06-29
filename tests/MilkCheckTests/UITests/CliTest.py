@@ -90,6 +90,12 @@ class CommandLineInterfaceTests(TestCase):
         '''Test the instanciation of the CLI'''
         self.assertTrue(CommandLineInterface())
 
+    def test_execute_service_from_CLI(self):
+        '''Execute a service from the CLI'''
+        CallbackHandler._instance = None
+        cli = CommandLineInterface()
+        cli.execute(['G1', 'stop', '-vvv'])
+
     def test_execute_services_verbosity(self):
         '''Test method execute to run services with different verbosity'''
         CallbackHandler._instance = None

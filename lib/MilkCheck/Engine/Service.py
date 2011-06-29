@@ -27,7 +27,7 @@ class ActionNotFoundError(MilkCheckEngineError):
     '''
     
     def __init__(self, sname, aname):
-        msg = "Action [%s] not referenced for this service" % (aname)
+        msg = "Action [%s] not referenced for [%s]" % (aname, sname)
         MilkCheckEngineError.__init__(self, msg) 
         
 class ActionAlreadyReferencedError(MilkCheckEngineError):
@@ -77,7 +77,7 @@ class Service(BaseService):
             if action.name in self._actions:
                 raise ActionAlreadyReferencedError(self.name, action.name)
             else:
-                action.service = self
+                action.parent = self
                 self._actions[action.name] = action
         else:
             raise TypeError()
@@ -121,7 +121,7 @@ class Service(BaseService):
         assert status in (TIMED_OUT, TOO_MANY_ERRORS, DONE, \
                             DONE_WITH_WARNINGS, NO_STATUS, WAITING_STATUS, \
                                 ERROR)
-
+                                
         if self.warnings and self.last_action().status is DONE:
             self.status = DONE_WITH_WARNINGS
         else:
@@ -181,7 +181,6 @@ class Service(BaseService):
         '''
         self._action_checkpoint(action_name)
         deps_status = self.eval_deps_status()
-
         # Tag the service
         self._tagged = True
 

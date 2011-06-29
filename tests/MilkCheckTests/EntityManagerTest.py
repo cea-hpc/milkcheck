@@ -31,5 +31,5 @@ class EntityManagerTest(TestCase):
         manager.entities['bar'] = ent2
         self.assertRaises(AssertionError, manager._reverse_mod, None)
         manager._reverse_mod(True)
-        self.assertTrue(ent1.algo_dir and ent2.algo_dir)
-        self.assertFalse(not ent1.algo_dir and not ent2.algo_dir)
+        self.assertTrue(ent1._algo_reversed and ent2._algo_reversed)
+        self.assertFalse(not ent1._algo_reversed and not ent2._algo_reversed)

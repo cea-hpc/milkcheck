@@ -450,7 +450,7 @@ class ServiceGroupTest(TestCase):
         self.assertEqual(inter_serv3.status, TOO_MANY_ERRORS)
         
     def test_run_partial_deps(self):
-        '''Test stop algorithm as soon as the calling point is done.'''
+        '''Test start algorithm as soon as the calling point is done.'''
         serv = Service('NOT_CALLED')
         serv_a = ServiceGroup('CALLING_GROUP')
         serv_b = Service('SERV_1')
@@ -467,3 +467,19 @@ class ServiceGroupTest(TestCase):
         self.assertEqual(serv_a.status, DONE)
         self.assertEqual(serv_b.status, DONE)
         self.assertEqual(serv_c.status, DONE)
+
+    def test_run_stop_on_group(self):
+        '''Test stop algorithm on a group'''
+        group = ServiceGroup('G1')
+        i1 = Service('I1')
+        i1.add_action(Action('stop', 'localhost', '/bin/true'))
+        group.add_inter_dep(target=i1)
+        s1 = Service('S1')
+        s1.add_action(Action('stop', 'localhost', '/bin/true'))
+        s1.add_dep(target=group)
+        s1.algo_reversed = True
+        group.algo_reversed = True
+        group.run('stop')
+        self.assertEqual(s1.status, DONE)
+        self.assertEqual(i1.status, DONE)
+        self.assertEqual(group.status, DONE)

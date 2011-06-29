@@ -37,7 +37,7 @@ class ActionManager(EntityManager):
         assert action, 'You cannot perform a NoneType object'
         assert isinstance(action, Action), 'Object should be an action'
         self.add_task(action)
-        self._master_task.shell(action.resolved_command(),
+        self._master_task.shell(action.command,
         nodes=action.target, handler=ActionEventHandler(action),
         timeout=action.timeout)
 
@@ -114,9 +114,12 @@ class ActionManager(EntityManager):
                 task in self.entities[task.fanout]
 
     @property
-    def running_tasks(self): # Retourner iterateur
-        """Return an iterator over the running_tasks"""
-        return self.entities.itervalues()
+    def running_tasks(self):
+        """Return a set of running tasks"""
+        running_tasks = set()
+        for tasks in self.entities.values():
+            running_tasks.update(tasks)
+        return running_tasks
 
     @property
     def tasks_count(self):

@@ -9,6 +9,7 @@ definition of a basic event handler and the ActionEventHandler.
 from re import sub, findall
 from datetime import datetime
 from ClusterShell.Task import task_self
+from ClusterShell.Worker.Popen import WorkerPopen
 from ClusterShell.Event import EventHandler
 from MilkCheck.Engine.BaseEntity import BaseEntity
 from MilkCheck.Callback import call_back_self
@@ -22,39 +23,6 @@ from MilkCheck.Engine.BaseEntity import WAITING_STATUS
 from MilkCheck.Engine.BaseEntity import NO_STATUS, ERROR
 from MilkCheck.Callback import EV_COMPLETE, EV_DELAYED, EV_STATUS_CHANGED
 from MilkCheck.Callback import EV_STARTED, EV_TRIGGER_DEP
-
-class UndefinedVariableError(MilkCheckEngineError):
-    '''
-    This error is raised each time that you make reference to a None existing
-    variable located in a command
-    '''
-    def __init__(self, varname, cmd):
-        msg = "Variable [%s] undefined in [%s]" % (varname, cmd)
-        MilkCheckEngineError.__init__(self, msg)
-
-class NodeInfo(object):
-    '''This class represent the result of command executed on cluster's node'''
-    def __init__(self, node, command, nbuffer=None, rcode=None):
-        # node used
-        self.node = node
-        # command performed
-        self.command = command
-        # node buffer
-        self.node_buffer = nbuffer
-        # exit code of the command
-        self.exit_code = rcode
-
-    @classmethod
-    def from_worker(cls, worker):
-        '''Build a NodeInfo object from a worker'''
-        assert worker, 'worker cannot be None'
-        (node, nbuffer) = worker.last_read()
-        (node, exit_code) = worker.last_retcode()
-        return cls(node, worker.command, nbuffer, exit_code)
-
-    def __repr__(self):
-        '''Return a string serializing object's content'''
-        return '[%s]:%s:%s' % (self.node, self.command, self.exit_code)
 
 class MilkCheckEventHandler(EventHandler):
     '''
@@ -72,7 +40,7 @@ class MilkCheckEventHandler(EventHandler):
 
     def ev_hup(self, worker):
         '''An event hup is raised when a connection to a node is done'''
-        call_back_self().notify(NodeInfo.from_worker(worker), EV_COMPLETE)
+        call_back_self().notify(worker, EV_COMPLETE)
         
     def ev_timer(self, timer):
         '''
@@ -81,9 +49,9 @@ class MilkCheckEventHandler(EventHandler):
         to handle action with a service which is specified as ghost. That means
         it does nothing
         '''
-        if self._action.service.simulate:
-            self._action.service.update_status(
-                self._action.service.eval_deps_status())
+        if self._action.parent.simulate:
+            self._action.parent.update_status(
+                self._action.parent.eval_deps_status())
         else:
             self._action.schedule(allow_delay=False)
        
@@ -156,9 +124,6 @@ class Action(BaseEntity):
         # Results and retcodes
         self.worker = None
         
-        # Parent service of this action
-        self.service = None
-        
         # Allow us to determine time used by an action within the master task
         self.start_time = None
         self.stop_time = None
@@ -188,7 +153,6 @@ class Action(BaseEntity):
         deps_status = self.eval_deps_status()
         # NO_STATUS and not any dep in progress for the current action
         if self.status is NO_STATUS and deps_status is not WAITING_STATUS:
-            #print "[%s] is working" % self.name
             if deps_status is ERROR or not self.parents:
                 self.update_status(WAITING_STATUS)
                 self.schedule()
@@ -201,7 +165,6 @@ class Action(BaseEntity):
                 # For each existing deps just prepare it
                 for dep in deps:
                     dep.target.prepare()
-            #print "[%s] prepare end" % self.name
                     
     def update_status(self, status):
         '''
@@ -223,7 +186,7 @@ class Action(BaseEntity):
                             EV_TRIGGER_DEP)
                         dep.target.prepare()
             else:
-                self.service.update_status(self.status)
+                self.parent.update_status(self.status)
         
     def has_timed_out(self):
         '''Return whether this action has timed out.'''
@@ -235,13 +198,18 @@ class Action(BaseEntity):
         the limit authorized by the action.
         '''
         too_many_errors = False
-        error_count = 0
         if self.worker:
-            for retcode, nds in self.worker.iter_retcodes():
-                if retcode != 0:
-                    error_count += len(nds)
-                    if error_count > self.errors:
-                        too_many_errors = True
+            if isinstance(self.worker, WorkerPopen):
+                retcode = self.worker.retcode()
+                if retcode != 0 and self.errors > 0:
+                    too_many_errors = True
+            else:
+                error_count = 0
+                for retcode, nds in self.worker.iter_retcodes():
+                    if retcode != 0:
+                        error_count += len(nds)
+                        if error_count > self.errors:
+                            too_many_errors = True
         return too_many_errors
                     
     def set_retry(self, retry):
@@ -291,44 +259,7 @@ class Action(BaseEntity):
             # Fire this action
             call_back_self().notify(self, EV_STARTED)
             action_manager_self().perform_action(self)
-
-    def resolved_command(self):
-        '''Return a command with variable's name replaced by values'''
-        final_cmd = self.command
-        symbols = {}
-        for symbol in findall('\${1}[\w]+', self.command):
-            varname = symbol.lstrip('$')
-            # Look for an attribute matching the symbol in this action
-            if hasattr(self, varname.lower()):
-                final_cmd = sub(
-                    '\%s' % symbol, getattr(self, varname.lower()), final_cmd)
-            # Look for a variable matching the symbol in the action 
-            elif varname in self.variables:
-                final_cmd = sub(
-                    '\%s' % symbol, self.variables[varname], final_cmd)
-            # Look for an attribute matching the symbol at the service level
-            elif hasattr(self.service, varname.lower()):
-                final_cmd = sub(
-                    '\%s' % symbol,
-                        getattr(self.service, varname.lower()), final_cmd)
-            # Look for a variable matching the symbol in the service level
-            elif self.service and varname in self.service.variables:
-                final_cmd = sub(
-                    '\%s' % symbol, self.service.variables[varname], final_cmd)
-            # Look for an attribute matching the symbol in the manager
-            elif hasattr(service_manager_self(), varname.lower()):
-                final_cmd = sub(
-                    '\%s' % symbol,
-                        getattr(
-                            service_manager_self(), varname.lower()), final_cmd)
-            # Look for a variable matching the symbol at the manager level
-            elif varname in service_manager_self().variables:
-                final_cmd = sub(
-                    '\%s' % symbol, service_manager_self().variables[varname],
-                        final_cmd)
-            else:
-                raise UndefinedVariableError(varname, self.command)
-        return final_cmd
+        
 
 from MilkCheck.ActionManager import action_manager_self
 from MilkCheck.ServiceManager import service_manager_self

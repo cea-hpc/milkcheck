@@ -21,6 +21,8 @@ from MilkCheck.Engine.BaseEntity import DONE_WITH_WARNINGS
 # Exceptions
 from MilkCheck.Engine.BaseEntity import IllegalDependencyTypeError
 from MilkCheck.Engine.BaseEntity import DependencyAlreadyReferenced
+from MilkCheck.Engine.BaseEntity import UndefinedVariableError
+from MilkCheck.Engine.BaseEntity import InvalidVariableError
 
 class BaseEntityTest(unittest.TestCase):
     """Tests cases for the class BaseEntity."""
@@ -44,6 +46,7 @@ class BaseEntityTest(unittest.TestCase):
         ent.update_target(NodeSet('fortoy[5-8]'))
         self.assertTrue(ent.target == NodeSet('fortoy[5-8]'))
         ent.update_target('fortoy[4-6]', mode='DIF')
+        print ent.target
         self.assertTrue(ent.target == NodeSet('fortoy[7-8]'))
         ent.update_target('fortoy8', mode='INT')
         self.assertTrue(ent.target == NodeSet('fortoy8'))
@@ -245,3 +248,81 @@ class BaseEntityTest(unittest.TestCase):
         serv_a.status = DONE
         serv_b.status = DONE_WITH_WARNINGS
         self.assertEqual(service.eval_deps_status(), DONE_WITH_WARNINGS)
+
+    def test_lookup_variables1(self):
+        '''Test variables resolution through a single entity'''
+        service = BaseEntity('test_service')
+        service.add_var('VAR', 'test')
+        symbols = {'VAR': None}
+        service._lookup_variables(symbols)
+        self.assertEqual(symbols['VAR'], 'test')
+
+    def test_lookup_variables2(self):
+        '''Test variables resolution through multiple entities'''
+        service = BaseEntity('test_service')
+        service.add_var('VAR', 'test')
+        group = BaseEntity('group_service')
+        group.add_var('GVAR', 'group')
+        service.parent = group
+        symbols = {'VAR': None, 'GVAR': None}
+        service._lookup_variables(symbols)
+        self.assertEqual(symbols['VAR'], 'test')
+        self.assertEqual(symbols['GVAR'], 'group')
+
+    def test_lookup_variables3(self):
+        '''Test variables resolution with an undefined var'''
+        service = BaseEntity('test_service')
+        service.add_var('VAR', 'test')
+        group = BaseEntity('group_service')
+        group.add_var('GVAR', 'group')
+        service.parent = group
+        symbols = {'VAR': None, 'GVAR': None, 'BAD_VAR': None}
+        self.assertRaises(UndefinedVariableError,
+            service._lookup_variables, symbols)
+
+    def test_lookup_variables4(self):
+        '''Test variables resolution with a var referencing a property'''
+        service = BaseEntity('test_service')
+        service.add_var('VAR', 'test')
+        group = BaseEntity('group_service')
+        group.add_var('GVAR', 'group')
+        service.parent = group
+        symbols = {'VAR': None, 'GVAR': None, 'TARGET': None}
+        service._lookup_variables(symbols)
+        self.assertEqual(symbols['VAR'], 'test')
+        self.assertEqual(symbols['GVAR'], 'group')
+        self.assertEqual(symbols['TARGET'], 'localhost')
+
+    def test_resolve_property1(self):
+        '''Test replacement of symbols within a property'''
+        service = BaseEntity('test_service')
+        service.add_var('NODES', 'localhost,127.0.0.1')
+        service.target = '%NODES'
+        self.assertEqual(service.resolve_property('target'),
+            NodeSet('localhost,127.0.0.1'))
+
+    def test_resolve_property2(self):
+        '''Test with nothing to replace in the property'''
+        service = BaseEntity('test_service')
+        group = BaseEntity('group_service')
+        service.parent = group
+        self.assertEqual(service.resolve_property('parent'), group)
+
+    def test_resolve_property3(self):
+        '''Test resolution with a property containing a shell variable'''
+        service = BaseEntity('test_service')
+        service.target = '$(echo localhost,127.0.0.1)'
+        self.assertEqual(service.resolve_property('target'),
+            NodeSet('localhost,127.0.0.1'))
+
+    def test_resolve_property4(self):
+        '''
+        Test resolution with a property containing an invalid shell variable
+        '''
+        service = BaseEntity('test_service')
+        error = False
+        try:
+            service.target = '$(/bin/false)'
+        except InvalidVariableError:
+            error = True
+        self.assertTrue(error)

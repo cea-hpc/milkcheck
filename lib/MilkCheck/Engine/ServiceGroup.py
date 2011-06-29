@@ -213,16 +213,12 @@ class ServiceGroup(Service):
             # that all external dependencies are solve
             if deps['external']:
                 for external in deps['external']:
-                    #print "[%s] external dep of %s" % \
-                    (external.target.name, self.name)
                     if external.is_check():
                         external.target.prepare('status')
                     else:
                         external.target.prepare(self._last_action)
             elif deps['internal']:
                 for internal in deps['internal']:
-                    #print "[%s] internal dep of %s" % \
-                    (internal.target.name, self.name)
                     if internal.is_check():
                         internal.target.prepare('status')
                     else:
@@ -251,6 +247,8 @@ class ServiceGroup(Service):
             del self._source.children[self.name]
             self._sink.add_dep(target=self)
             del self.children['sink']
+        for service in self._subservices.values():
+            service.algo_reversed = flag
         self._algo_reversed = flag
         self._sink._algo_reversed = flag
         self._source._algo_reversed = flag

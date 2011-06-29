@@ -6,6 +6,8 @@ This module contains the BaseEntity class definition
 """
 
 # Classes
+from subprocess import Popen, PIPE
+from re import sub, findall, match, search
 from ClusterShell.NodeSet import NodeSet
 from MilkCheck.Engine.Dependency import Dependency
 
@@ -60,6 +62,24 @@ class VariableAlreadyReferencedError(MilkCheckEngineError):
     which is already referenced for this entity.
     '''
 
+class UndefinedVariableError(MilkCheckEngineError):
+    '''
+    This error is raised each time that you make reference to a None existing
+    variable located in a command
+    '''
+    def __init__(self, varname):
+        msg = "Variable %s undefined" % (varname)
+        MilkCheckEngineError.__init__(self, msg)
+
+class InvalidVariableError(MilkCheckEngineError):
+    '''
+    This error is raised when wer try to evaluate the value of a variables
+    through the shell but the retcode is greater than one.
+    '''
+    def __init__(self, varname):
+        msg = "Cannot evaluate variable %s" % (varname)
+        MilkCheckEngineError.__init__(self, msg)
+    
 class BaseEntity(object):
     '''
     This class is abstract and shall not be instanciated.
@@ -83,12 +103,14 @@ class BaseEntity(object):
         
         # Nodes on which the entity is launched
         self.target = target
-        self._target = self.target
         self._target_backup = self.target
         
         # Maximum error authorized for the entity. -1 means that
         # do not want any error
         self.errors = -1
+
+        # Parent of the current object. Must be a subclass of BaseEntity
+        self.parent = None
         
         # Parents dependencies (e.g A->B so B is the parent of A)
         self.parents = {}
@@ -117,23 +139,39 @@ class BaseEntity(object):
 
     def remove_var(self, varname):
         '''Remove an existing var from the entity'''
-        if varname in self._variables:
+        if varname in self.variables:
             del self.variables[varname]
 
     def update_target(self, nodeset, mode=None):
         '''Update the attribute target of an entity'''
         assert nodeset, 'The nodeset cannot be None'
+        # Try to resolve the property 
+        self.target = NodeSet(self.resolve_property('target'))
         if not mode:
-            self.target = nodeset
+            self.target = NodeSet(nodeset)
         elif mode is 'DIF':
             self.target.difference_update(nodeset)
         elif mode is 'INT':
             self.target.intersection_update(nodeset)
 
+    def get_target(self):
+        '''Return self._target'''
+        return self._target
+
+    def set_target(self, value):
+        '''Assign nodeset to _target'''
+        if match('\$\(.+\)', '%s' %value) or search('%[\w]+', '%s' %value):
+            self._target = value
+            self.target = NodeSet(self.resolve_property('target'))
+        else:
+            self._target = NodeSet(value)
+            
+    target = property(fset=set_target, fget=get_target)
+
     def reset(self):
         '''Reset values of attributes in order to perform multiple exec.'''
         self._tagged = False
-        self.target = self.target_backup
+        self.target = self._target_backup
         self.status = NO_STATUS
         self.algo_reversed = False
 
@@ -292,21 +330,70 @@ class BaseEntity(object):
 
     algo_reversed = property(fset=set_algo_reversed)
 
-    def get_target(self):
-        '''Getter for the property target'''
-        return self._target
+    def _lookup_variables(self, symbols):
+        '''
+        Look for the values of the variables defined in symbols. It search
+        recursively in the parent of the current object. As soon as all the
+        variables have been solved the algorithm stops and return a dictionnary
+        with the value of the variables. If we cannot solve all variables it
+        raise an UndefinedVariableError
+        '''
+        # Determine whether the symbols were solved
+        def all_solved(symbols):
+            for sym in symbols:
+                if not symbols[sym]:
+                    return False
+            return True
 
-    def get_target_backup(self):
-        '''Getter of the property target backup'''
-        return self._target_backup
-        
-    def set_target(self, nodeset):
-        '''Setter for the property target'''
-        self._target = NodeSet(nodeset)
+        # Look for the variables in the object itself
+        for sym in symbols:
+            if sym in self.variables: 
+                symbols[sym] = self.variables[sym]
+            elif hasattr(self, sym.lower()):
+                symbols[sym] = '%s' % self.resolve_property(sym.lower())
+                
+        if all_solved(symbols):
+            return
+        elif self.parent:
+            self.parent._lookup_variables(symbols)
+        else:
+            for sym in symbols:
+                if sym in service_manager_self().variables:
+                    symbols[sym] = service_manager_self().variables[sym]
+            if not all_solved(symbols):
+                for (name, value) in symbols.items():
+                    if not value:
+                        raise UndefinedVariableError(name)
+            
 
-    def set_target_backup(self, nodeset):
-        '''Setter of the property target backup'''
-        self._target_backup = NodeSet(nodeset)
+    def resolve_property(self, prop):
+        '''
+        Resolve the variables contained within the property. It proceeds by
+        looking for the values required to replace the symbols.
+        '''
+        pvalue = None
+        if hasattr(self, prop):
+             pvalue = getattr(self, prop)
+             # Evaluated by the shell
+             fprint = match('\$\((?P<command>.+)\)', '%s' % pvalue)
+             if fprint and fprint.group('command'):
+                cmd = Popen(fprint.group('command').split(' '),
+                    stdout=PIPE, stderr=PIPE)
+                (stdout, stderr) = cmd.communicate()
+                cmd.stdout.close()
+                cmd.stderr.close()
+                if cmd.wait() == 0:
+                    pvalue = stdout.rstrip('\n')
+                else:
+                    raise InvalidVariableError(pvalue)
+             else:
+                 symbols = {}
+                 for symb in findall('%{1}[\w]+', '%s' % pvalue):
+                     symbols[symb.lstrip('%')] = None
+                 if symbols:
+                    self._lookup_variables(symbols)
+                    for (symb, value) in symbols.items():
+                        pvalue = sub('%%%s' % symb, value, pvalue)
+        return pvalue
 
-    target = property(fget=get_target, fset=set_target)
-    target_backup = property(fget=get_target_backup, fset=set_target_backup)
+from MilkCheck.ServiceManager import service_manager_self
