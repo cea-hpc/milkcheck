@@ -52,6 +52,10 @@ class ServiceGroup(Service):
         for service in self._subservices.values():
             service.update_target(nodeset, mode)
 
+    def iter_subservices(self):
+        '''Return an iterator over the subservices'''
+        return self._subservices.itervalues()
+
     def reset(self):
         '''Reset values of attributes in order to perform multiple exec'''
         Service.reset(self)
@@ -236,6 +240,12 @@ class ServiceGroup(Service):
         '''Save the action_name wether specified'''
         if action_name:
             self._last_action = action_name
+
+    def inherits_from(self, entity):
+       '''Inherit properties from entity'''
+       BaseEntity.inherits_from(self, entity)
+       for subservice in self.iter_subservices():
+           subservice.inherits_from(self)
 
     def set_algo_reversed(self, flag):
         """Updates dependencies if reversed flag is specified"""

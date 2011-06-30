@@ -124,7 +124,7 @@ class MilkCheckConfig(object):
                 for dep in values:
                     wrap.source.add_dep(
                         target=dependencies[dep].source, sgth=dtype.upper())
-        # Populate the manager
+        # Populate the manager and set up inheritance
         for wrap in dependencies.values():
             manager.register_service(wrap.source)
 

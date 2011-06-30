@@ -29,6 +29,18 @@ class ServiceTest(TestCase):
         self.assertNotEqual(service, None, 'should be none')
         self.assertEqual(service.name, 'brutus', 'wrong name')
 
+    def test_inheritance(self):
+        '''Test inheritance between action and services'''
+        ser1 = Service('parent')
+        ser1.target = '127.0.0.1'
+        ser2 = Service('inherited')
+        ser2.add_action(Action('start'))
+        ser2.add_action(Action('stop', 'localhost'))
+        ser2.inherits_from(ser1)
+        self.assertEqual(ser2.target, NodeSet('127.0.0.1'))
+        self.assertEqual(ser2._actions['start'].target, NodeSet('127.0.0.1'))
+        self.assertEqual(ser2._actions['stop'].target, NodeSet('localhost'))
+
     def test_update_target(self):
         '''Test update of the target of an service'''
         serv = Service('A')

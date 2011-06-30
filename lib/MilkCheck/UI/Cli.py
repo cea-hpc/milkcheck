@@ -93,16 +93,16 @@ class CommandLineInterface(UserView):
         to be compute.
         '''
         userMessenger = logging.getLogger('user')
-        msg_len = len('%s - %s' %(service.name, service.last_action().desc))
+        msg_len = len('%s - %s' %(service.name, service.desc))
         if msg_len + 2 <= 80:
             userMessenger.info('\n+%s+' % (80*'-'))
             userMessenger.info(
             '|%s%s|' % \
-            (' %s - %s ' %(service.name, service.last_action().desc),
+            (' %s - %s ' %(service.name, service.desc),
                 (80-(msg_len+2))*' '))
             userMessenger.info('+%s+' % (80*'-'))
         else:
-            msg = '%s - %s' %(obj.name, obj.last_action().desc)
+            msg = '%s - %s' %(obj.name, obj.desc)
             userMessenger.info('\n+%s+',(len(msg)+2)*'-')
             userMessenger.info('| %s - %s |' \
             %(obj.name, obj.last_action().name))

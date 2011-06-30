@@ -8,6 +8,7 @@ This module contains the Service class definition
 # Classes
 from MilkCheck.Engine.BaseService import BaseService
 from MilkCheck.Engine.Action import Action
+from MilkCheck.Engine.BaseEntity import BaseEntity
 from MilkCheck.Callback import call_back_self
 
 # Exceptions
@@ -86,6 +87,10 @@ class Service(BaseService):
         '''Add multiple actions to the service'''
         for action in args:
             self.add_action(action)
+
+    def iter_actions(self):
+        '''Return an iterator over actions'''
+        return self._actions.itervalues()
             
     def remove_action(self, action_name):
         '''Remove the specified action from those available in the service.'''
@@ -201,3 +206,9 @@ class Service(BaseService):
                
                 # For each existing deps just prepare it
                 self._process_dependencies(deps)
+
+    def inherits_from(self, entity):
+        '''Inherit properties from entity'''
+        BaseEntity.inherits_from(self, entity)
+        for action in self.iter_actions():
+            action.inherits_from(self)

@@ -8,6 +8,7 @@ ServiceGroupFactory.
 
 from unittest import TestCase
 from ClusterShell.NodeSet import NodeSet
+from MilkCheck.Engine.ServiceGroup import ServiceGroup
 from MilkCheck.Engine.ServiceFactory import ServiceFactory
 from MilkCheck.Engine.ServiceFactory import ServiceGroupFactory
 
@@ -180,3 +181,78 @@ class ServiceGroupFactoryTest(TestCase):
             sergrp._subservices['test'].has_child_dep('source'))
         self.assertTrue(
             sergrp._subservices['test'].has_parent_dep('sink'))
+
+    def test_create_service_imbrications(self):
+        '''Test create service with mutliple level of subservices'''
+        sergrp = ServiceGroupFactory.create_servicegroup_from_dict(
+        {'service':
+            {'services':
+                {'svcA':
+                    {'require': ['subgroup'],
+                    'actions':
+                        {'start': {'cmd': '/bin/True'},
+                        'stop': {'cmd': '/bin/False'}},
+                        'desc': 'I am the subservice $NAME'},
+                'subgroup':
+                    {'services':
+                        {'svcB':
+                            {'require_weak':['svcC'],
+                            'actions':
+                                {'start': {'cmd': '/bin/True'},
+                            '   stop': {'cmd': '/bin/False'}},
+                            'desc': 'I am the subservice $NAME'},
+                        'svcC':
+                            {'actions':
+                                {'start': {'cmd': '/bin/True'},
+                                'stop': {'cmd': '/bin/False'}},
+                                'desc': 'I am the subservice $NAME'}},
+                        'target': '127.0.0.1',
+                        'desc': "I'm the service $NAME"}},
+            'desc': 'I am a group',
+            'target': 'localhost',
+            'name': 'groupinit'}})
+        for subservice in ('svcA', 'subgroup'):
+            if isinstance(sergrp._subservices[subservice], ServiceGroup):
+                for subsubser in ('svcB', 'svcC'):
+                    self.assertTrue(
+                    sergrp._subservices[subservice].has_subservice(subsubser))
+            self.assertTrue(sergrp.has_subservice(subservice))
+
+    def test_inheritance(self):
+        '''Test properties inherited from ServiceGroup to Service and Action'''
+        sergrp = ServiceGroupFactory.create_servicegroup_from_dict(
+        {'service':
+            {'services':
+                {'svcA':
+                    {'require': ['subgroup'],
+                    'actions':
+                        {'start': {'cmd': '/bin/True'},
+                        'stop': {'cmd': '/bin/False'}},
+                        'desc': 'I am the subservice $NAME'},
+                'subgroup':
+                    {'services':
+                        {'svcB':
+                            {'require_weak':['svcC'],
+                            'actions':
+                                {'start': {'cmd': '/bin/True'},
+                            '   stop': {'cmd': '/bin/False'}},
+                            'desc': 'I am the subservice $NAME'},
+                        'svcC':
+                            {'actions':
+                                {'start': {'cmd': '/bin/True'},
+                                'stop': {'cmd': '/bin/False'}},
+                                'desc': 'I am the subservice $NAME'}},
+                        'target': '127.0.0.1',
+                        'desc': "I'm the service $NAME"}},
+            'desc': 'I am a group',
+            'target': 'localhost',
+            'name': 'groupinit'}})
+        self.assertEqual(
+            sergrp._subservices['svcA'].target, NodeSet('localhost'))
+        self.assertEqual(
+            sergrp._subservices['subgroup'].target, NodeSet('127.0.0.1'))
+        subgroup = sergrp._subservices['subgroup']
+        self.assertEqual(
+            subgroup._subservices['svcB'].target, NodeSet('127.0.0.1'))
+        self.assertEqual(
+            subgroup._subservices['svcC'].target, NodeSet('127.0.0.1'))

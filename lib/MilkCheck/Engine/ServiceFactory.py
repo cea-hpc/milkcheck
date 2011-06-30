@@ -36,12 +36,15 @@ class ServiceFactory(object):
         '''Build an object service from a dictionnary and return it.'''
         service = serialized_service['service']
         ser = Service(service['name'])
+        # Creation of the service
         for item in service:
             if item == 'target':
                 ser.target = service[item]
                 ser.target_backup = service[item]
             elif item == 'fanout':
                 ser.fanout = service[item]
+            elif item == 'timeout':
+                ser.timeout = service[item]
             elif item == 'errors':
                 ser.errors = service[item]
             elif item == 'desc':
@@ -62,6 +65,9 @@ class ServiceFactory(object):
                     for dep in dependencies[action]:
                         actions[action].add_dep(actions[dep])
                     ser.add_action(actions[action])
+        # Inherits properies between service and actions
+        for action in ser.iter_actions():
+            action.inherits_from(ser)
         return ser
 
 
@@ -84,6 +90,8 @@ class ServiceGroupFactory(object):
                 sergrp.target_backup = ser[item]
             elif item == 'fanout':
                 sergrp.fanout = ser[item]
+            elif item == 'timeout':
+                sergrp.timeout = ser[item]
             elif item == 'errors':
                 sergrp.errors = ser[item]
             elif item == 'desc':
@@ -95,6 +103,7 @@ class ServiceGroupFactory(object):
                 dep_mapping = {}
                 # Wrap dependencies from YAML and build the service
                 for subservice in ser['services']:
+                    # Parsing dependencies
                     wrap = DepWrapper()
                     if 'require' in ser['services'][subservice]:
                         wrap.deps['require'] = \
@@ -105,8 +114,15 @@ class ServiceGroupFactory(object):
                     if 'check' in ser['services'][subservice]:
                         wrap.deps['check'] = \
                             ser['services'][subservice]['check']
+                    # Get subservices which migh be Service or ServiceGroup
                     ser[item][subservice]['name'] = subservice
-                    service = ServiceFactory.create_service_from_dict(
+                    service = None
+                    if 'services' in ser[item][subservice]:
+                        service = \
+                            ServiceGroupFactory.create_servicegroup_from_dict(
+                            {'service': ser[item][subservice]})
+                    else:
+                        service = ServiceFactory.create_service_from_dict(
                             {'service': ser[item][subservice]})
                     sergrp._subservices[subservice] = service
                     wrap.source = service
@@ -123,6 +139,7 @@ class ServiceGroupFactory(object):
                                         sgth=dtype.upper())
                 # Bind subgraph to the service group
                 for service in sergrp._subservices.values():
+                    service.parent = sergrp
                     if not service.children:
                         service.add_dep(sergrp._source, parent=False)
                         # Generate fake actions
@@ -136,6 +153,8 @@ class ServiceGroupFactory(object):
                             if not sergrp.has_action(action):
                                 sergrp._sink.add_action(
                                     Action(action, delay=0.01))
+        for subser in sergrp.iter_subservices():
+            subser.inherits_from(sergrp)
         return sergrp
 
 class DepWrapper(object):

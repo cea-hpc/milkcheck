@@ -407,7 +407,8 @@ class BaseEntity(object):
             self.fanout = entity.fanout
         if self.errors <= -1 and entity.errors >= 0:
             self.errors = entity.errors
-        if self.timeout <= -1 and entity.timeout >= 0:
+        if self.timeout is not None and self.timeout <= -1 and \
+            entity.timeout >= 0:
             self.timeout = entity.timeout
         if not self.target:
             self.target = entity.target

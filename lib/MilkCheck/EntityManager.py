@@ -16,6 +16,10 @@ class EntityManager(object):
         # entity handle by the manager
         self.entities = {}
 
+    def iter_entities(self):
+        '''Return an iterator over the entitie'''
+        return self.entities.itervalues()
+
     def _reverse_mod(self, flag):
         """
         Enable a flag on BaseEntity object which help us to define
