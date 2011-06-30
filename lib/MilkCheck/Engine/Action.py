@@ -105,7 +105,7 @@ class Action(BaseEntity):
     nodes of a cluster. An action might have dependencies with other actions.
     '''
     
-    def __init__(self, name, target=None, command=None, timeout=0, delay=0):
+    def __init__(self, name, target=None, command=None, timeout=-1, delay=0):
         BaseEntity.__init__(self, name=name, target=target)
         
         # Action's timeout in seconds/milliseconds
@@ -259,7 +259,6 @@ class Action(BaseEntity):
             # Fire this action
             call_back_self().notify(self, EV_STARTED)
             action_manager_self().perform_action(self)
-        
 
 from MilkCheck.ActionManager import action_manager_self
 from MilkCheck.ServiceManager import service_manager_self

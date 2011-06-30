@@ -291,7 +291,7 @@ class BaseEntityTest(unittest.TestCase):
         service._lookup_variables(symbols)
         self.assertEqual(symbols['VAR'], 'test')
         self.assertEqual(symbols['GVAR'], 'group')
-        self.assertEqual(symbols['TARGET'], 'localhost')
+        self.assertEqual(symbols['TARGET'], '')
 
     def test_resolve_property1(self):
         '''Test replacement of symbols within a property'''
@@ -326,3 +326,34 @@ class BaseEntityTest(unittest.TestCase):
         except InvalidVariableError:
             error = True
         self.assertTrue(error)
+
+    def test_inheritance_of_properties1(self):
+        '''Test inheritance between entities'''
+        ent1 = BaseEntity(name='parent', target='aury[10-16]')
+        ent1.fanout = 5
+        ent1.errors = 2
+        ent1.timeout = 15
+        ent2 = BaseEntity(name='child')
+        ent2.inherits_from(ent1)
+        self.assertEqual(ent2.target, NodeSet('aury[10-16]'))
+        self.assertEqual(ent2.fanout, 5)
+        self.assertEqual(ent2.errors, 2)
+        self.assertEqual(ent2.timeout, 15)
+        
+    def test_inheritance_of_properties2(self):
+        '''
+        Test inheritance between entities but some properties are
+        not inherited
+        '''
+        ent1 = BaseEntity(name='parent', target='aury[10-16]')
+        ent1.fanout = 5
+        ent1.errors = 2
+        ent2 = BaseEntity(name='child')
+        ent2.fanout = 2
+        ent2.errors = 3
+        ent2.timeout = 15
+        ent2.inherits_from(ent1)
+        self.assertEqual(ent2.target, NodeSet('aury[10-16]'))
+        self.assertEqual(ent2.fanout, 2)
+        self.assertEqual(ent2.errors, 3)
+        self.assertEqual(ent2.timeout, 15)

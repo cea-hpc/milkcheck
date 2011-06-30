@@ -86,7 +86,7 @@ class BaseEntity(object):
     A BaseEntity object basically represents a node of graph with reference
     on parents and children.
     '''
-    def __init__(self, name, target='localhost'):
+    def __init__(self, name, target=None):
         # Entity name
         self.name = name
         
@@ -99,15 +99,18 @@ class BaseEntity(object):
         # Maximum window for parallelism. A None fanout means
         # that the task will be limited by the default value of
         # ClusterShell 64
-        self.fanout = None
+        self.fanout = -1
         
         # Nodes on which the entity is launched
         self.target = target
         self._target_backup = self.target
         
         # Maximum error authorized for the entity. -1 means that
-        # do not want any error
+        # we do not want any error
         self.errors = -1
+
+        # Max time allowed to compute an entity, -1 means no timeout
+        self.timeout = -1
 
         # Parent of the current object. Must be a subclass of BaseEntity
         self.parent = None
@@ -117,6 +120,7 @@ class BaseEntity(object):
         
         # Children dependencies (e.g A<-B) so A is a child of B)
         self.children = {}
+
 
         # Agorithm's direction used
         # False : go in parent's direction
@@ -347,9 +351,9 @@ class BaseEntity(object):
 
         # Look for the variables in the object itself
         for sym in symbols:
-            if sym in self.variables: 
+            if symbols[sym] is None and sym in self.variables:
                 symbols[sym] = self.variables[sym]
-            elif hasattr(self, sym.lower()):
+            elif symbols[sym] is None and hasattr(self, sym.lower()):
                 symbols[sym] = '%s' % self.resolve_property(sym.lower())
                 
         if all_solved(symbols):
@@ -358,11 +362,12 @@ class BaseEntity(object):
             self.parent._lookup_variables(symbols)
         else:
             for sym in symbols:
-                if sym in service_manager_self().variables:
+                if symbols[sym] is None and\
+                    sym in service_manager_self().variables:
                     symbols[sym] = service_manager_self().variables[sym]
             if not all_solved(symbols):
                 for (name, value) in symbols.items():
-                    if not value:
+                    if value is None:
                         raise UndefinedVariableError(name)
             
 
@@ -395,5 +400,16 @@ class BaseEntity(object):
                     for (symb, value) in symbols.items():
                         pvalue = sub('%%%s' % symb, value, pvalue)
         return pvalue
+
+    def inherits_from(self, entity):
+        '''Inheritance of properties between entities'''
+        if self.fanout <= -1 and entity.fanout:
+            self.fanout = entity.fanout
+        if self.errors <= -1 and entity.errors >= 0:
+            self.errors = entity.errors
+        if self.timeout <= -1 and entity.timeout >= 0:
+            self.timeout = entity.timeout
+        if not self.target:
+            self.target = entity.target
 
 from MilkCheck.ServiceManager import service_manager_self

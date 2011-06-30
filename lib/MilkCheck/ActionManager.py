@@ -37,9 +37,9 @@ class ActionManager(EntityManager):
         assert action, 'You cannot perform a NoneType object'
         assert isinstance(action, Action), 'Object should be an action'
         self.add_task(action)
-        self._master_task.shell(action.command,
-        nodes=action.target, handler=ActionEventHandler(action),
-        timeout=action.timeout)
+        self._master_task.shell(action.resolve_property('command'),
+        nodes=action.resolve_property('target'),
+        handler=ActionEventHandler(action), timeout=action.timeout)
 
     def perform_delayed_action(self, action):
         """Perform a delayed action and add it to the running tasks"""
