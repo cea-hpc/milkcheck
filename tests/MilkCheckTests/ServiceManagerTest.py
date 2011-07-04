@@ -22,13 +22,14 @@ class ServiceManagerTest(TestCase):
     
     def test_instanciation(self):
         '''Test the instanciation of the singleton class ServiceManager'''
+        ServiceManager._instance = None
         manager = service_manager_self()
         same_manager = service_manager_self()
         self.assertTrue(manager is same_manager)
-        ServiceManager._instance = None
 
     def test_service_registration(self):
         '''Test the resgistration of a service within the manager'''
+        ServiceManager._instance = None
         manager = service_manager_self()
         srvtest = Service('test')
         manager.register_service(srvtest)
@@ -40,10 +41,10 @@ class ServiceManagerTest(TestCase):
         manager.register_services(srva, srvb)
         self.assertTrue(manager.has_service(srva))
         self.assertTrue(manager.has_service(srvb))
-        ServiceManager._instance = None
 
     def test_forget_service(self):
         '''The how the manager forgets a service properly'''
+        ServiceManager._instance = None
         manager = service_manager_self()
         s1 = Service('S1')
         s2 = Service('S2')
@@ -62,10 +63,10 @@ class ServiceManagerTest(TestCase):
         self.assertFalse(manager.has_service(s4))
         self.assertFalse(s4.has_child_dep('S3'))
         self.assertFalse(s3.has_parent_dep('S4'))
-        ServiceManager._instance = None
 
     def test_call_services(self):
         '''Test behaviour of the method call services'''
+        ServiceManager._instance = None
         manager = service_manager_self()
         s1 = Service('S1')
         s2 = Service('S2')
@@ -93,4 +94,3 @@ class ServiceManagerTest(TestCase):
         self.assertEqual(s2.status, DONE)
         self.assertEqual(s3.status, DONE)
         self.assertEqual(s4.status, DONE)
-        ServiceManager._instance = None
