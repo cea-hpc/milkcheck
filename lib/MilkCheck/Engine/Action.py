@@ -201,7 +201,7 @@ class Action(BaseEntity):
         if self.worker:
             if isinstance(self.worker, WorkerPopen):
                 retcode = self.worker.retcode()
-                if retcode != 0 and self.errors > 0:
+                if retcode != 0 and self.errors < 1:
                     too_many_errors = True
             else:
                 error_count = 0

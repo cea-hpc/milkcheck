@@ -14,6 +14,12 @@ from MilkCheck.ActionManager import ActionManager, action_manager_self
 class ActionManagerTest(TestCase):
     """Test cases for action_manager_self"""
 
+    def setUp(self):
+        ActionManager._instance = None
+
+    def tearDown(self):
+        ActionManager._instance = None
+
     def test_instanciation(self):
         """Test singleton handling of action_manager_self"""
         task_manager = action_manager_self()
@@ -22,7 +28,7 @@ class ActionManagerTest(TestCase):
 
     def test_add_task(self):
         """Test the behaviour of the add_task method"""
-        task_manager = ActionManager()
+        task_manager = action_manager_self()
         task1 = Action('start')
         task1.fanout = 60
         task2 = Action('stop')
@@ -43,7 +49,7 @@ class ActionManagerTest(TestCase):
 
     def test_add_task_weird_values(self):
         """Test the method add task with task without fanout"""
-        task_manager = ActionManager()
+        task_manager = action_manager_self()
         task1 = Action('start')
         task1.fanout = 60
         task2 = Action('stop')
@@ -57,7 +63,7 @@ class ActionManagerTest(TestCase):
 
     def test_remove_task(self):
         """Test the behaviour of the remove_task method"""
-        task_manager = ActionManager()
+        task_manager = action_manager_self()
         task1 = Action('start')
         task1.fanout = 260
         task2 = Action('stop')
@@ -83,7 +89,7 @@ class ActionManagerTest(TestCase):
 
     def test__is_running_task(self):
         """Test the behaviour of the method _is_running_task"""
-        task_manager = ActionManager()
+        task_manager = action_manager_self()
         task1 = Action('start')
         task1.fanout = 260
         task2 = Action('stop')
@@ -103,7 +109,7 @@ class ActionManagerTest(TestCase):
         """
         Test return a sets of running tasks from the property running_tasks
         """
-        task_manager = ActionManager()
+        task_manager = action_manager_self()
         task1 = Action('start')
         task1.fanout = 260
         task2 = Action('stop')
@@ -132,7 +138,7 @@ class ActionManagerTest(TestCase):
         
 
     def test_perform_delayed_action(self):
-        """test perform an action without any delay"""
+        """test perform an action with a delay"""
         action = Action('start', 'localhost', 'sleep 3')
         ser = Service('TEST')
         ser.add_action(action)

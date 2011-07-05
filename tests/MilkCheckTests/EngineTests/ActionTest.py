@@ -49,8 +49,8 @@ class ActionTest(TestCase):
         self.assertEqual(action.stop_time, None)
         self.assertEqual(action.status, NO_STATUS)
 
-    def test_has_too_many_errors(self):
-        """Test the method has_too_many_errors."""
+    def test_has_too_many_errors_remote(self):
+        """Test the method has_too_many_errors remote."""
         action = Action(name='start', target='aury[12,13,21]',
                     command='/bin/false')
         action.errors = 2
@@ -66,17 +66,24 @@ class ActionTest(TestCase):
         last_action = service.last_action()
         self.assertFalse(last_action.has_too_many_errors())
 
-        service.reset()
-        act_test.target = None
-        act_test.command = '/bin/true'
+    def test_has_too_many_errors_local(self):
+        """Test the method has_too_many_errors local."""
+        service = Service('test_service')
+        act_test = Action(name='test', command='/bin/true')
+        service.add_action(act_test)
         service.run('test')
         last_action = service.last_action()
         self.assertFalse(last_action.has_too_many_errors())
 
         service.reset()
-        act_test.target = None
         act_test.errors = 1
         act_test.command = '/bin/false'
+        service.run('test')
+        last_action = service.last_action()
+        self.assertFalse(last_action.has_too_many_errors())
+
+        service.reset()
+        act_test.errors = 0
         service.run('test')
         last_action = service.last_action()
         self.assertTrue(last_action.has_too_many_errors())

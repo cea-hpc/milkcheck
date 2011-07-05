@@ -8,7 +8,7 @@ entity manager
 
 # Classes
 from unittest import TestCase
-from MilkCheck.EntityManager import entity_manager_self
+from MilkCheck.EntityManager import entity_manager_self, EntityManager
 from MilkCheck.Engine.BaseEntity import BaseEntity
 
 class EntityManagerTest(TestCase):
@@ -33,3 +33,6 @@ class EntityManagerTest(TestCase):
         manager._reverse_mod(True)
         self.assertTrue(ent1._algo_reversed and ent2._algo_reversed)
         self.assertFalse(not ent1._algo_reversed and not ent2._algo_reversed)
+
+    def tearDown(self):
+        EntityManager._instance = None

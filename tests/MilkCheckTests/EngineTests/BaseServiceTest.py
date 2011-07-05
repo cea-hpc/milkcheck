@@ -10,7 +10,7 @@ from unittest import TestCase
 from MilkCheck.Engine.BaseService import BaseService
 
 # Symbols
-from MilkCheck.Engine.BaseService import DONE
+from MilkCheck.Engine.BaseEntity import DONE
 
 class BaseServiceTest(TestCase):
     """

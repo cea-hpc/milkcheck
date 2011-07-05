@@ -73,8 +73,8 @@ class CommandLineInterface(UserView):
                             opts=self._options)
                 except ServiceNotFoundError, exc:
                     watcher.error(' %s' % exc)
-                #except ActionNotFoundError, exc:
-                    #watcher.error(' %s' % exc)
+                except ActionNotFoundError, exc:
+                    watcher.error(' %s' % exc)
             # Case 2 : we just display dependencies of one or several services
             elif self._options.print_servs:
                 print 'TODO : Print service dependencies'
