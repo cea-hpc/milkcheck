@@ -26,7 +26,7 @@ from MilkCheck.Engine.BaseEntity import InvalidVariableError
 
 class BaseEntityTest(unittest.TestCase):
     """Tests cases for the class BaseEntity."""
-    
+
     def test_instanciation_base_entity(self):
         """Test BaseEntity object instanciation."""
         ent = BaseEntity('foo')
@@ -46,7 +46,6 @@ class BaseEntityTest(unittest.TestCase):
         ent.update_target(NodeSet('fortoy[5-8]'))
         self.assertTrue(ent.target == NodeSet('fortoy[5-8]'))
         ent.update_target('fortoy[4-6]', mode='DIF')
-        print ent.target
         self.assertTrue(ent.target == NodeSet('fortoy[7-8]'))
         ent.update_target('fortoy8', mode='INT')
         self.assertTrue(ent.target == NodeSet('fortoy8'))
@@ -73,7 +72,7 @@ class BaseEntityTest(unittest.TestCase):
         ent2.add_dep(target=ent4)
         self.assertTrue(ent1.search_leafs())
         self.assertTrue(len(ent1.search_leafs()), 2)
-        
+
     def test_add_dep_parents(self):
         """Test method add dependency for parents"""
         ent = BaseEntity('foo')
@@ -81,7 +80,7 @@ class BaseEntityTest(unittest.TestCase):
         ent.add_dep(ent_dep)
         self.assertTrue(ent.has_parent_dep('parent'))
         self.assertTrue(ent_dep.has_child_dep('foo'))
-        
+
     def test_add_dep_children(self):
         """Test method add_dep for children"""
         ent = BaseEntity('foo')
@@ -115,25 +114,25 @@ class BaseEntityTest(unittest.TestCase):
         ent3.add_dep(ent4)
         self.assertTrue(ent4.search('E1', True) is ent1)
         self.assertTrue(ent4.search('E5', True) is None)
-        
+
     def test_add_dep_bad_cases(self):
         """Test bad usage of the method add_dep"""
         ent = BaseEntity('foo')
         ent_dep = BaseEntity('child')
         ent.add_dep(ent_dep, CHECK)
-                
+
         # Dependency with a None Service
         self.assertRaises(AssertionError, ent.add_dep, None)
-            
+
         # Dependency with bad name identifier
         self.assertRaises(IllegalDependencyTypeError,
             ent.add_dep, BaseEntity('A'), 'BAD')
-            
+
         #Already referenced dependency 
         r_ent = BaseEntity('child')
         self.assertRaises(DependencyAlreadyReferenced,
             ent.add_dep, r_ent)
-        
+
     def test_remove_dep(self):
         """Test method remove_dep."""
         ent = BaseEntity('foo')
@@ -144,7 +143,7 @@ class BaseEntityTest(unittest.TestCase):
         self.assertTrue('child' not in ent.children)
         self.assertTrue('foo' not in ent.parents)
         self.assertRaises(AssertionError, ent.remove_dep, None)
-        
+
     def test_has_child_dep(self):
         """Test method has_child_dep"""
         ent = BaseEntity('foo')
@@ -153,7 +152,7 @@ class BaseEntityTest(unittest.TestCase):
         self.assertTrue(ent.has_child_dep('child'))
         del ent.children['child']
         self.assertFalse(ent.has_child_dep('child'))
-        
+
     def test_has_parent_dep(self):
         """Test method has_parent_dep"""
         ent = BaseEntity('foo')
@@ -162,7 +161,7 @@ class BaseEntityTest(unittest.TestCase):
         self.assertTrue(ent.has_parent_dep('parent'))
         del ent.parents['parent']
         self.assertFalse(ent.has_parent_dep('parent'))
-        
+
     def test_is_ready(self):
         """Test method allowing us to determine if a service can be processed"""
         ent = BaseEntity('foo')
@@ -176,7 +175,7 @@ class BaseEntityTest(unittest.TestCase):
         ent_dep.status = DONE
         ent_dep2.status = DONE
         self.assertTrue(ent.is_ready())
-        
+
     def test_clear_deps(self):
         """Test method clear_deps"""
         ent = BaseEntity('foo')
@@ -185,7 +184,7 @@ class BaseEntityTest(unittest.TestCase):
         self.assertEqual(len(ent.parents), 1)
         ent.clear_deps()
         self.assertEqual(len(ent.parents), 0)
-       
+
     def test_search_deps(self):
         """Test method search_deps"""
         ent = BaseEntity('test_service')
@@ -339,7 +338,7 @@ class BaseEntityTest(unittest.TestCase):
         self.assertEqual(ent2.fanout, 5)
         self.assertEqual(ent2.errors, 2)
         self.assertEqual(ent2.timeout, 15)
-        
+
     def test_inheritance_of_properties2(self):
         '''
         Test inheritance between entities but some properties are

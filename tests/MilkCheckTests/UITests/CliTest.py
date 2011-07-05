@@ -86,19 +86,20 @@ class CommandLineInterfaceTests(TestCase):
         # Register services within the manager
         manager.register_services(s1, s2, s3, s4, g1)
 
+    def tearDown(self):
+        CallbackHandler._instance = None
+
     def test_instanciation_cli(self):
         '''Test the instanciation of the CLI'''
         self.assertTrue(CommandLineInterface())
 
     def test_execute_service_from_CLI(self):
         '''Execute a service from the CLI'''
-        CallbackHandler._instance = None
         cli = CommandLineInterface()
         cli.execute(['G1', 'stop', '-vvv'])
 
     def test_execute_services_verbosity(self):
         '''Test method execute to run services with different verbosity'''
-        CallbackHandler._instance = None
         cli = CommandLineInterface()
         cli.profiling = True
         cli.execute(['S3', 'start', '-v'])
@@ -120,7 +121,6 @@ class CommandLineInterfaceTests(TestCase):
 
     def test_execute_services_exclusion(self):
         '''Test exclusion of services from the CLI'''
-        CallbackHandler._instance = None
         cli = CommandLineInterface()
         # Execute start on S1 with verbosity at level one, do not process
         # the node S3 moreover hijack cluster nodes aury11 and aury12
@@ -137,7 +137,6 @@ class CommandLineInterfaceTests(TestCase):
 
     def test_execute_nodes_exlcusion(self):
         '''Test nodes exlcusion from the CLI'''
-        CallbackHandler._instance = None
         cli = CommandLineInterface()
         cli.execute(['S3', 'stop', '-vvv', '-x', '127.0.0.1'])
         manager = service_manager_self()
@@ -153,7 +152,6 @@ class CommandLineInterfaceTests(TestCase):
 
     def test_execute_nodes_only(self):
         '''Test mandatory nodes from CLI'''
-        CallbackHandler._instance = None
         cli = CommandLineInterface()
         cli.execute(['S1', 'start', '-d', '-n', '127.0.0.1'])
         manager = service_manager_self()

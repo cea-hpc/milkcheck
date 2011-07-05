@@ -169,7 +169,7 @@ class BaseEntity(object):
             self.target = NodeSet(self.resolve_property('target'))
         else:
             self._target = NodeSet(value)
-            
+
     target = property(fset=set_target, fget=get_target)
 
     def reset(self):
@@ -212,7 +212,7 @@ class BaseEntity(object):
         else:
             leafs.add(self)
         return leafs
-        
+
     def add_dep(self, target, sgth=REQUIRE, parent=True):
         '''
         Add a dependency in both direction. This method allow the user to
@@ -237,7 +237,7 @@ class BaseEntity(object):
                     target.parents[self.name] = Dependency(self, sgth, False)
         else:
             raise IllegalDependencyTypeError()
-            
+
     def remove_dep(self, dep_name, parent=True):
         '''
         Remove a dependency on both side, in the current object and in the
@@ -252,26 +252,26 @@ class BaseEntity(object):
             dep = self.children[dep_name]
             del self.children[dep_name]
             del dep.target.parents[self.name]
-    
+
     def has_child_dep(self, dep_name=None):
         '''
         Determine whether the current object has a child dependency called
         dep_name.
         '''
         return dep_name in self.children
-        
+
     def has_parent_dep(self, dep_name=None):
         '''
         Determine whether the current object has a parent dependency called
         dep_name
         '''
         return dep_name in self.parents
-        
+
     def clear_deps(self):
         '''Clear parent/child dependencies.'''
         self.parents.clear()
         self.children.clear()
-        
+
     def is_ready(self):
         '''
         Determine if the current services has to wait before to
@@ -280,13 +280,12 @@ class BaseEntity(object):
         deps = self.parents
         if self._algo_reversed:
             deps = self.children
-            
+
         for dep in deps.values():
             if dep.target.status in (NO_STATUS, WAITING_STATUS):
                 return False
-        return True
+        return True 
 
-        
     def search_deps(self, symbols=None):
         '''
         Look for parent/child dependencies matching to the symbols. The
@@ -302,7 +301,7 @@ class BaseEntity(object):
             elif not symbols:
                 matching.append(deps[dep_name])
         return matching
-    
+
     def eval_deps_status(self):
         '''
         Evaluate the result of the dependencies in order to check to establish
@@ -343,6 +342,7 @@ class BaseEntity(object):
         raise an UndefinedVariableError
         '''
         # Determine whether the symbols were solved
+        from MilkCheck.ServiceManager import service_manager_self
         def all_solved(symbols):
             for sym in symbols:
                 if not symbols[sym]:
@@ -355,7 +355,7 @@ class BaseEntity(object):
                 symbols[sym] = self.variables[sym]
             elif symbols[sym] is None and hasattr(self, sym.lower()):
                 symbols[sym] = '%s' % self.resolve_property(sym.lower())
-                
+
         if all_solved(symbols):
             return
         elif self.parent:
@@ -369,7 +369,6 @@ class BaseEntity(object):
                 for (name, value) in symbols.items():
                     if value is None:
                         raise UndefinedVariableError(name)
-            
 
     def resolve_property(self, prop):
         '''
@@ -412,5 +411,3 @@ class BaseEntity(object):
             self.timeout = entity.timeout
         if not self.target:
             self.target = entity.target
-
-from MilkCheck.ServiceManager import service_manager_self

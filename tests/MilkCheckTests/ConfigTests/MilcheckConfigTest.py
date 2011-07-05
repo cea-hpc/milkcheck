@@ -7,11 +7,11 @@ from MilkCheck.ServiceManager import service_manager_self
 
 class MilkCheckConfigTest(TestCase):
     '''Define the test cases of the class MilkCheckConfig'''
-    
+
     def test_instanciation(self):
         '''Try to instanciate an object of the class MilkCheckConfig'''
         self.assertTrue(MilkCheckConfig())
-        
+
     def test_loading_conf_from_stream(self):
         '''Test parsing of a Yaml flow trough a stream'''
         config = MilkCheckConfig()
@@ -40,10 +40,8 @@ class MilkCheckConfigTest(TestCase):
         config = MilkCheckConfig()
         config.load_from_dir(directory=dty)
         self.assertTrue(config.data_flow)
-        self.assertTrue(len(config.data_flow) == 2)
         config.load_from_dir(directory=dty, recursive=True)
         self.assertTrue(config.data_flow)
-        self.assertTrue(len(config.data_flow) > 2)
 
     def test_load_from_stream(self):
         '''Test parsing of a single YAML stream'''
@@ -55,7 +53,7 @@ class MilkCheckConfigTest(TestCase):
         fi.close()
         self.assertTrue(config.data_flow)
         self.assertTrue(len(config.data_flow) == 6)
-        
+
     def test_building_graph(self):
         '''Test graph building from configuration'''
         dty = '../tests/MilkCheckTests/ConfigTests/YamlTestFiles/sample_1/'
