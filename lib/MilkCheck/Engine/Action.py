@@ -6,7 +6,6 @@ This module contains the Action class definition. It also contains the
 definition of a basic event handler and the ActionEventHandler.
 """
 # Classes
-from re import sub, findall
 from datetime import datetime
 from ClusterShell.Task import task_self
 from ClusterShell.Worker.Popen import WorkerPopen
@@ -14,15 +13,11 @@ from ClusterShell.Event import EventHandler
 from MilkCheck.Engine.BaseEntity import BaseEntity
 from MilkCheck.Callback import call_back_self
 
-# Exceptions
-from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
-
 # Symbols
 from MilkCheck.Engine.BaseEntity import DONE, TIMED_OUT, TOO_MANY_ERRORS
 from MilkCheck.Engine.BaseEntity import WAITING_STATUS
 from MilkCheck.Engine.BaseEntity import NO_STATUS, ERROR
-from MilkCheck.Callback import EV_COMPLETE, EV_DELAYED, EV_STATUS_CHANGED
-from MilkCheck.Callback import EV_STARTED, EV_TRIGGER_DEP
+from MilkCheck.Callback import EV_COMPLETE, EV_DELAYED, EV_STARTED
 
 class MilkCheckEventHandler(EventHandler):
     '''
@@ -38,10 +33,11 @@ class MilkCheckEventHandler(EventHandler):
         # Current action hooked to the handler
         self._action = action
 
-    def ev_hup(self, worker):
-        '''An event hup is raised when a connection to a node is done'''
-        call_back_self().notify(worker, EV_COMPLETE)
-        
+    def ev_start(self, worker):
+        '''Command has been started on a nodeset'''
+        if not self._action.parent.simulate:
+            call_back_self().notify(self._action, EV_STARTED)
+
     def ev_timer(self, timer):
         '''
         A timer event is raised when an action was delayed. Now the timer is
@@ -67,24 +63,20 @@ class ActionEventHandler(MilkCheckEventHandler):
         This event is raised by the master task as soon as an action is
         done. It specifies the how the action will be computed.
         '''
-        
         # Assign time duration to the current action
         self._action.stop_time = datetime.now()
-        
-        # Callback the interface
-        #call_back_self().notify(self._action, EV_COMPLETE)
 
         # Remove the current action from the running task, this will trigger
         # a redefinition of the current fanout
         action_manager_self().remove_task(self._action)
-        
+
         # Get back the worker from ClusterShell
         self._action.worker = worker
-        
+
         # Checkout actions issues
         error = self._action.has_too_many_errors()
         timed_out = self._action.has_timed_out()
-        
+
         # Classic Action was failed
         if (error or timed_out) and self._action.retry > 0:
             self._action.retry -= 1
@@ -175,15 +167,12 @@ class Action(BaseEntity):
         assert status in (NO_STATUS, WAITING_STATUS, DONE, \
         TOO_MANY_ERRORS, TIMED_OUT),'Bad action status'
         self.status = status
-        call_back_self().notify(self, EV_STATUS_CHANGED)
         if status not in (NO_STATUS, WAITING_STATUS):
-            # Callback the interface
-            call_back_self().notify(self, EV_COMPLETE)
+            if not self.parent.simulate:
+                call_back_self().notify(self, EV_COMPLETE)
             if self.children:
                 for dep in self.children.values():
                     if dep.target.is_ready():
-                        call_back_self().notify((self, dep.target), \
-                            EV_TRIGGER_DEP)
                         dep.target.prepare()
             else:
                 self.parent.update_status(self.status)
@@ -257,8 +246,6 @@ class Action(BaseEntity):
             action_manager_self().perform_delayed_action(self)
         else:
             # Fire this action
-            call_back_self().notify(self, EV_STARTED)
             action_manager_self().perform_action(self)
 
 from MilkCheck.ActionManager import action_manager_self
-from MilkCheck.ServiceManager import service_manager_self

@@ -18,8 +18,7 @@ from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
 from MilkCheck.Engine.BaseEntity import NO_STATUS, TOO_MANY_ERRORS
 from MilkCheck.Engine.BaseEntity import WAITING_STATUS, ERROR, DONE
 from MilkCheck.Engine.BaseEntity import DONE_WITH_WARNINGS, TIMED_OUT
-from MilkCheck.Callback import EV_COMPLETE, EV_STARTED
-from MilkCheck.Callback import EV_STATUS_CHANGED, EV_TRIGGER_DEP
+from MilkCheck.Callback import EV_STATUS_CHANGED
 
 class ActionNotFoundError(MilkCheckEngineError):
     '''
@@ -48,7 +47,7 @@ class Service(BaseService):
     '''
     def __init__(self, name, target=None):
         BaseService.__init__(self, name, target)
-        
+
         # Actions of the service
         self._actions = {}
         self._last_action = None
@@ -64,14 +63,14 @@ class Service(BaseService):
             self.target.intersection_update(nodeset)
         for action in self._actions.values():
             action.update_target(nodeset, mode)
-            
+
     def reset(self):
         '''Reset values of attributes in order to perform multiple exec'''
         BaseService.reset(self)
         self._last_action = None
         for action in self._actions.values():
             action.reset()
-    
+
     def add_action(self, action):
         '''Add a new action to the service'''
         if isinstance(action, Action):
@@ -82,7 +81,7 @@ class Service(BaseService):
                 self._actions[action.name] = action
         else:
             raise TypeError()
-     
+
     def add_actions(self, *args):
         '''Add multiple actions to the service'''
         for action in args:
@@ -91,18 +90,18 @@ class Service(BaseService):
     def iter_actions(self):
         '''Return an iterator over actions'''
         return self._actions.itervalues()
-            
+
     def remove_action(self, action_name):
         '''Remove the specified action from those available in the service.'''
         if action_name in self._actions:
             del self._actions[action_name]
         else:
             raise ActionNotFoundError(self.name, action_name)
-    
+
     def has_action(self, action_name):
         '''Figure out whether the service has the specified action.'''
         return action_name in self._actions
-    
+
     def last_action(self):
         '''
         Return the last action hooked/applied to the service. This action
@@ -112,7 +111,7 @@ class Service(BaseService):
             return self._actions[self._last_action]
         else:
             raise ActionNotFoundError(self.name, self._last_action)
-    
+
     def schedule(self, action_name):
         '''Schedule an action available for this service'''
         # Retrieve targeted action
@@ -126,7 +125,7 @@ class Service(BaseService):
         assert status in (TIMED_OUT, TOO_MANY_ERRORS, DONE, \
                             DONE_WITH_WARNINGS, NO_STATUS, WAITING_STATUS, \
                                 ERROR)
-                                
+
         if self.warnings and self.last_action().status is DONE:
             self.status = DONE_WITH_WARNINGS
         else:
@@ -134,23 +133,20 @@ class Service(BaseService):
 
         call_back_self().notify(self, EV_STATUS_CHANGED)
 
-        if self.status not in (NO_STATUS, WAITING_STATUS) and self.origin:
-            call_back_self().notify(self, EV_COMPLETE)
         # I got a status so I'm DONE or ERROR and I'm not the calling point
-        elif self.status not in (NO_STATUS, WAITING_STATUS):
-            call_back_self().notify(self, EV_COMPLETE)
+        if self.status not in (NO_STATUS, WAITING_STATUS) and \
+            not self.origin:
 
             # Trigger each service which depend on me as soon as it does not
             # have WAITING_STATUS parents
             deps = self.children
             if self._algo_reversed:
                 deps = self.parents
-                
+
             for dep in deps.values():
                 if dep.target.status is NO_STATUS and \
                     dep.target.is_ready() and \
                         dep.target._tagged:
-                    call_back_self().notify((self, dep.target), EV_TRIGGER_DEP)
                     dep.target.prepare()
 
     def _process_dependencies(self, deps):
@@ -163,7 +159,6 @@ class Service(BaseService):
                     dep.target.prepare(self._last_action)
         else:
             # It's time to be processed
-            call_back_self().notify(self, EV_STARTED)
             self.update_status(WAITING_STATUS)
             self.schedule(self._last_action)
 
@@ -178,7 +173,7 @@ class Service(BaseService):
             self._last_action = action_name
         else:
             raise ActionNotFoundError(self.name, action_name)
-    
+
     def prepare(self, action_name=None):
         '''
         Prepare the the current service to be launched as soon
@@ -191,19 +186,18 @@ class Service(BaseService):
 
         # NO_STATUS and not any dep in progress for the current service
         if self.status is NO_STATUS and deps_status is not WAITING_STATUS:
-            
+
             # If dependencies failed the current service will fail
             if deps_status == ERROR:
-                call_back_self().notify(self, EV_STARTED)
                 self.update_status(ERROR)
             else:
                 # Just flag if dependencies encountered problem
                 if deps_status == DONE_WITH_WARNINGS:
                     self.warnings = True
-                
+
                 # Look for uncompleted dependencies 
                 deps = self.search_deps([NO_STATUS])
-               
+
                 # For each existing deps just prepare it
                 self._process_dependencies(deps)
 

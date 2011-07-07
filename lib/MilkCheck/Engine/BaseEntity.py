@@ -253,6 +253,16 @@ class BaseEntity(object):
             del self.children[dep_name]
             del dep.target.parents[self.name]
 
+    def rmv_all_parent_deps(self):
+        '''Remove all parent dependencies of an entity'''
+        for dpname in self.children.keys():
+            self.remove_dep(dpname)
+
+    def rmv_all_child_deps(self):
+        '''Remove all child dependencies of an entity'''
+        for dpname in self.children.keys():
+            self.remove_dep(dep_name=dpname, parent=False)
+
     def has_child_dep(self, dep_name=None):
         '''
         Determine whether the current object has a child dependency called

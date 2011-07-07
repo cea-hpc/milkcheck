@@ -63,3 +63,7 @@ class BaseService(BaseEntity):
         dependencies are solved start children dependencies.
         '''
         raise NotImplementedError
+
+    def __repr__(self):
+        '''Return a string representing a partial content of the service'''
+        return '%s' % self.name

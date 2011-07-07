@@ -8,8 +8,9 @@ This module contains the UserView class definition.
 # classes
 import logging
 import logging.config
-from os import environ
-from sys import stderr, stdout
+from time import sleep
+from sys import stdout
+from ClusterShell.Worker.Popen import WorkerPopen
 from MilkCheck.UI.UserView import UserView
 from MilkCheck.UI.OptionParser import McOptionParser
 from MilkCheck.UI.OptionParser import InvalidOptionError
@@ -18,7 +19,124 @@ from MilkCheck.Engine.Service import Service, ActionNotFoundError
 from MilkCheck.ActionManager import action_manager_self
 from MilkCheck.ServiceManager import service_manager_self
 from MilkCheck.ServiceManager import ServiceNotFoundError
+from MilkCheck.Engine.BaseEntity import DONE_WITH_WARNINGS
 from MilkCheck.Engine.BaseEntity import TIMED_OUT, TOO_MANY_ERRORS, ERROR, DONE
+
+class ConsoleDisplay(object):
+    '''
+    ConsoleDisplay provides methods allowing the CLI to print
+    formatted messages on STDOUT.
+    '''
+    _COLORS = {
+                'GREEN': '\033[1;32m%s\033[0m',
+                'YELLOW': '\033[1;33m%s\033[0m',
+                'RED': '\033[1;31m%s\033[0m',
+                'MAGENTA': '\033[95m%s\033[0m',
+                'CYAN': '\033[94m%s\033[0m'
+              }
+
+    def __init__(self):
+        stdout.write('\n')
+        stdout.flush()
+        self.pl_width = 0
+
+    def string_color(self, strg, color):
+        '''Return a string formatted with a special color'''
+        return '%s' % self._COLORS[color] % strg 
+
+    def print_version(self, version):
+        '''Display the current version of MilkCheck'''
+        stdout.write(version)
+        stdout.flush()
+
+    def print_running_tasks(self):
+        '''Remove current line and print the current running tasks'''
+        rtasks = [t.parent.name for t in action_manager_self().running_tasks]
+        if rtasks:
+            tasks_disp = '[%s]' % ','.join(rtasks)
+            stdout.write('\r%s\r%s' % (self.pl_width*' ', tasks_disp))
+            stdout.flush()
+            self.pl_width = len(tasks_disp)
+
+    def print_status(self, entity, colors=True):
+        '''Remove current line and print the status of an entity onSTDOUT'''
+        line = ''
+        if entity.status in (TIMED_OUT, TOO_MANY_ERRORS, ERROR) and colors:
+            line = '\r%-50s%30s\n' % (entity.name, 
+            '[%s]' % self.string_color(entity.status, 'RED'))
+        elif entity.status is DONE_WITH_WARNINGS and colors:
+            line = '\r%-50s%30s\n' % (entity.name, 
+            '[%s]' % self.string_color('WARNING', 'YELLOW'))
+        elif entity.status is DONE and colors:
+            line = '\r%-50s%30s\n' % (entity.name, 
+            '[%s]' % self.string_color('OK', 'GREEN'))
+        else:
+            line = '\r%-50s%30s\n' % (entity.name, '[%s]' % entity.status)
+        self.pl_width = len(line)
+        stdout.write(line)
+        stdout.flush()
+
+    def print_action_command(self, action):
+        '''Remove the current line and write informations about the command'''
+        line = ''
+        if action.target:
+            line = '\r%s %s %s %s\n > %s \n' % \
+                (self.string_color(action.name, 'MAGENTA'),
+                 action.parent.name,
+                 self.string_color('on', 'MAGENTA'),
+                 action.resolve_property('target'), 
+                 self.string_color(
+                 action.resolve_property('command'), 'CYAN'))
+        else:
+            line = '\r%s %s %s localhost \n > %s \n' % \
+                (self.string_color(action.name, 'MAGENTA'),
+                 action.parent.name,
+                 self.string_color('on', 'MAGENTA'), 
+                 self.string_color(
+                 action.resolve_property('command'), 'CYAN'))
+        self.pl_width = len(line)
+        stdout.write(line)
+        stdout.flush()
+
+    def print_action_results(self, action):
+        '''Remove the current line and write grouped results of an action'''
+        line = '\r%s %s %s %.2f s' % \
+                (self.string_color(action.name, 'MAGENTA'),
+                 action.parent.name,
+                 self.string_color('ran in', 'MAGENTA'),
+                 action.duration)
+        # Local action
+        if isinstance(action.worker, WorkerPopen):
+            output = None
+            if action.worker.read():
+                output = '\n > %s : %s\n > %s : %d' % \
+                    (self.string_color('localhost', 'CYAN'), 
+                     action.worker.read(),
+                     self.string_color('exit code', 'CYAN'), 
+                     action.worker.retcode())
+            else:
+                output = '\n > %s > %s : %d' % \
+                    (self.string_color('localhost', 'CYAN'),
+                     self.string_color('exit code', 'CYAN'), 
+                     action.worker.retcode())
+            line = '%s%s\n' % (line, output)
+        # Remote action
+        else:
+            output = None
+            for out, nodes in action.worker.iter_buffers():
+                output = '\n > %s : %s\n > %s : %d' % \
+                    (self.string_color(nodes, 'CYAN'), out,
+                        self.string_color('exit code', 'CYAN'),
+                        action.worker.node_retcode(nodes[0]))
+                line = '%s%s\n' % (line, output)
+            for rc, nodes in action.worker.iter_retcodes():
+                output = '\n > %s \n > %s : %d' % \
+                (self.string_color(nodes, 'CYAN'),
+                    self.string_color('exit code', 'CYAN'), rc)
+                line = '%s%s\n' % (line, output)
+        self.pl_width = len(line)
+        stdout.write(line)
+        stdout.flush()
 
 class CommandLineInterface(UserView):
     '''
@@ -35,6 +153,8 @@ class CommandLineInterface(UserView):
         self._options = None
         # Store the arguments parsed
         self._args = None
+        # Displayer
+        self._console = ConsoleDisplay()
         # Profiling mode (help in unit tests)
         self.profiling = False
         # Used in profiling mode
@@ -43,16 +163,11 @@ class CommandLineInterface(UserView):
         self.count_average_verbmsg = 0
         self.count_high_verbmsg = 0
 
-        # HAS TO BE REMOVED AND SET UP IN THE MAIN
-        logging.config.fileConfig(environ['PYTHONPATH']+
-            '/MilkCheck/Log/mc_logging.conf')
-
     def execute(self, command_line):
         '''
         Ask for the manager to execute orders given by the command line.
         '''
         watcher = logging.getLogger('watcher')
-        userMessenger = logging.getLogger('user')
         self._mop = McOptionParser()
         self._mop.configure_mop()
         try:
@@ -65,12 +180,18 @@ class CommandLineInterface(UserView):
             self.count_low_verbmsg = 0
             self.count_average_verbmsg = 0
             self.count_high_verbmsg = 0
-            # Case 1 : we call services and we are able to add constraints
-            if len(self._args) > 1:
+            # Case 1 : call services referenced in the manager with
+            # the required action
+            if self._args:
                 try:
-                    manager.call_services(
-                        self._args[:len(self._args)-1], self._args[-1],
-                            opts=self._options)
+                    # Compute all services with the required action
+                    if len(self._args) == 1:
+                        manager.call_services(None, self._args[0],
+                                opts=self._options)
+                    else:
+                        manager.call_services(
+                            self._args[:len(self._args)-1], self._args[-1],
+                                opts=self._options)
                 except ServiceNotFoundError, exc:
                     watcher.error(' %s' % exc)
                 except ActionNotFoundError, exc:
@@ -83,54 +204,23 @@ class CommandLineInterface(UserView):
                 manager.load_config(self._options.config_dir)
             # Case 4: If version option detected so print version number
             elif self._options.version:
-                userMessenger.info(self._options.version)
+                self._console.print_version(self._options.version)
             else:
                 self._mop.print_help()
-
-    def __print_service_banner(self, service):
-        '''
-        This service print the banner specifying that a service is going
-        to be compute.
-        '''
-        userMessenger = logging.getLogger('user')
-        msg_len = len('%s - %s' %(service.name, service.desc))
-        if msg_len + 2 <= 80:
-            userMessenger.info('\n+%s+' % (80*'-'))
-            userMessenger.info(
-            '|%s%s|' % \
-            (' %s - %s ' %(service.name, service.desc),
-                (80-(msg_len+2))*' '))
-            userMessenger.info('+%s+' % (80*'-'))
-        else:
-            msg = '%s - %s' %(obj.name, obj.desc)
-            userMessenger.info('\n+%s+',(len(msg)+2)*'-')
-            userMessenger.info('| %s - %s |' \
-            %(obj.name, obj.last_action().name))
-            userMessenger.info('+%s+',(len(msg)+2)*'-')
-
-    def __print_msg_status(self, msg, status):
-        userMessenger = logging.getLogger('user')
-        msg_len = len('%s' % msg)+len('[%s]' % status)
-        if msg_len <= 79 :
-            userMessenger.info(
-                '%s %s' % (msg, '%s[%s]' %(((79 - msg_len)+2)*' ', status)))
-        else:
-            userMessenger.info('%s [%s]' % (msg, status))
 
     def ev_started(self, obj):
         '''
         Something has started on the object given as parameter. This migh be
         the beginning of a command one a node, an action or a service.
         '''
-        userMessenger = logging.getLogger('user')
+        sleep(0.5)
         if isinstance(obj, Action) and self._options.verbosity >= 2:
-            userMessenger.info('    > %s %s :\n      command %s on %s' % \
-            (obj.name, obj.parent.name, obj.command, obj.target))
+            self._console.print_action_command(obj)
+            self._console.print_running_tasks()
             if self.profiling:
                 self.count_average_verbmsg += 1
-        elif isinstance(obj, Service) and not obj.simulate and \
-                self._options.verbosity >= 1:
-            self.__print_service_banner(obj)
+        elif isinstance(obj, Service) and self._options.verbosity >= 1:
+            self._console.print_running_tasks()
             if self.profiling:
                 self.count_low_verbmsg += 1
 
@@ -139,28 +229,21 @@ class CommandLineInterface(UserView):
         Something is complete on the object given as parameter. This migh be
         the end of a command on a node,  an action or a service.
         '''
-        userMessenger = logging.getLogger('user')
-        #if isinstance(obj, NodeInfo) and self._options.verbosity >= 3:
-            #userMessenger.info('        ===> %s' % obj)
-            #if obj.node_buffer:
-                #userMessenger.info('        [buffer]')
-                #userMessenger.info('        %s', obj.node_buffer)
-            #if self.profiling:
-                #self.count_high_verbmsg += 1
+        sleep(0.5)
         if isinstance(obj, Action) and self._options.verbosity >= 3:
-            self.__print_msg_status(
-                '    > action %s of service %s ran in %f second(s)' \
-                    %(obj.name, obj.parent.name, obj.duration),
-                        obj.status)
+            self._console.print_action_results(obj)
+            self._console.print_running_tasks()
             if self.profiling:
                 self.count_high_verbmsg += 1
-        elif isinstance(obj, Service) and not obj.simulate and \
-            self._options.verbosity >= 1:
-            self.__print_msg_status('    > %s %s - %s' \
-                %(obj.last_action().name,
-                    obj.name,
-                        obj.last_action().desc),
-                            obj.status)
+        elif isinstance(obj, Action) and \
+            obj.status in (TIMED_OUT, TOO_MANY_ERRORS, ERROR) and \
+                 self._options.verbosity >= 2:
+            self._console.print_action_results(obj)
+            self._console.print_running_tasks()
+            if self.profiling:
+                self.count_average_verbmsg += 1
+        elif isinstance(obj, Service) and self._options.verbosity >= 1:
+            self._console.print_running_tasks()
             if self.profiling:
                 self.count_low_verbmsg += 1
 
@@ -169,22 +252,16 @@ class CommandLineInterface(UserView):
         Status of the object given as parameter. Actions or Service's status
         might have changed.
         '''
-        userMessenger = logging.getLogger('user')
         if isinstance(obj, Action) and self._options.verbosity >= 3 and \
             obj.status not in (TIMED_OUT, TOO_MANY_ERRORS, ERROR, DONE) and \
                 not obj.parent.simulate:
-            self.__print_msg_status('    > action %s of service %s' \
-                %(obj.name, obj.parent.name), obj.status)
             if self.profiling:
                 self.count_average_verbmsg += 1
-        elif isinstance(obj, Service) and self._options.verbosity >= 3 and \
-            obj.status not in (TIMED_OUT, TOO_MANY_ERRORS, ERROR, DONE) and \
+        elif isinstance(obj, Service) and self._options.verbosity >= 1 and \
+            obj.status in (TIMED_OUT, TOO_MANY_ERRORS, ERROR, DONE) and \
                 not obj.simulate:
-            self.__print_msg_status('    > %s %s - %s' \
-            %(obj.last_action().name,
-                    obj.name,
-                        obj.last_action().desc,
-                            ), obj.status)
+            self._console.print_status(obj)
+            self._console.print_running_tasks()
             if self.profiling:
                 self.count_low_verbmsg += 1
 
@@ -193,12 +270,8 @@ class CommandLineInterface(UserView):
         Object given as parameter has been delayed. This event is only raised
         when an action was delayed
         '''
-        userMessenger = logging.getLogger('user')
         if isinstance(obj, Action) and not obj.parent.simulate and \
-            self._options.verbosity >= 2:
-            userMessenger.info(
-                '    > %s %s has been delayed during %d second(s)'\
-            % (obj.name, obj.parent.name, obj.delay))
+            self._options.verbosity >= 3:
             if self.profiling:
                 self.count_average_verbmsg += 1
 
@@ -209,24 +282,7 @@ class CommandLineInterface(UserView):
         Action A triggers Action B
         Service A triggers Service B
         '''
-        userMessenger = logging.getLogger('user')
-        if isinstance(obj_source, Action) and \
-                isinstance(obj_triggered, Action) and \
-                    self._options.verbosity >= 3:
-            userMessenger.info(
-            '    > action %s of service %s has triggered action %s'\
-                % (obj_source.name, obj_source.parent.name,
-                        obj_triggered.name))
-            if self.profiling:
-                self.count_high_verbmsg += 1
-        elif isinstance(obj_source, Service) and \
-                isinstance(obj_triggered, Service) and \
-                    not obj_source.simulate and \
-                        self._options.verbosity >= 3:
-            userMessenger.info('    > service %s has triggered service %s'\
-                % (obj_source.name, obj_triggered.name))
-            if self.profiling:
-                self.count_high_verbmsg += 1
+        pass
 
     def get_totalmsg_count(self):
         '''Sum all counter to know how many message the CLI got'''
