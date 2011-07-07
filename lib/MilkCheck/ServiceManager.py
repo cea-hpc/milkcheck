@@ -183,9 +183,9 @@ class ServiceManager(EntityManager):
                     source.add_dep(target=service)
             source.run(action)
             if reverse:
-                source.rmv_all_child_deps()
+                source.clear_child_deps()
             else:
-                source.rmv_all_parent_deps()
+                source.clear_parent_deps()
             self._graph_changed = True
         # Perform the required service
         elif len(services) == 1:
@@ -213,9 +213,9 @@ class ServiceManager(EntityManager):
                         %service)
             source.run(action)
             if reverse:
-                source.rmv_all_child_deps()
+                source.clear_child_deps()
             else:
-                source.rmv_all_parent_deps()
+                source.clear_parent_deps()
             self._graph_changed = True
 
     def load_config(self, conf):

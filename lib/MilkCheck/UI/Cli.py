@@ -8,7 +8,6 @@ This module contains the UserView class definition.
 # classes
 import logging
 import logging.config
-from time import sleep
 from sys import stdout
 from ClusterShell.Worker.Popen import WorkerPopen
 from MilkCheck.UI.UserView import UserView
@@ -62,45 +61,45 @@ class ConsoleDisplay(object):
         '''Remove current line and print the status of an entity onSTDOUT'''
         line = ''
         if entity.status in (TIMED_OUT, TOO_MANY_ERRORS, ERROR) and colors:
-            line = '\r%-50s%30s\n' % (entity.name, 
-            '[%s]' % self.string_color(entity.status, 'RED'))
+            line = '%-50s%30s' % (entity.name, 
+                '[%s]' % self.string_color(entity.status, 'RED'))
         elif entity.status is DONE_WITH_WARNINGS and colors:
-            line = '\r%-50s%30s\n' % (entity.name, 
-            '[%s]' % self.string_color('WARNING', 'YELLOW'))
+            line = '%-50s%30s' % (entity.name, 
+                '[%s]' % self.string_color('WARNING', 'YELLOW'))
         elif entity.status is DONE and colors:
-            line = '\r%-50s%30s\n' % (entity.name, 
-            '[%s]' % self.string_color('OK', 'GREEN'))
+            line = '%-50s%30s' % (entity.name, 
+                '[%s]' % self.string_color('OK', 'GREEN'))
         else:
-            line = '\r%-50s%30s\n' % (entity.name, '[%s]' % entity.status)
+            line = '%-50s%30s' % (entity.name, '[%s]' % entity.status)
         self.pl_width = len(line)
-        stdout.write(line)
+        stdout.write('\r%s\n' % line)
         stdout.flush()
 
     def print_action_command(self, action):
         '''Remove the current line and write informations about the command'''
         line = ''
         if action.target:
-            line = '\r%s %s %s %s\n > %s \n' % \
+            line = '%s %s %s %s\n > %s' % \
                 (self.string_color(action.name, 'MAGENTA'),
                  action.parent.name,
                  self.string_color('on', 'MAGENTA'),
                  action.resolve_property('target'), 
                  self.string_color(
-                 action.resolve_property('command'), 'CYAN'))
+                    action.resolve_property('command'), 'CYAN'))
         else:
-            line = '\r%s %s %s localhost \n > %s \n' % \
+            line = '%s %s %s localhost \n > %s' % \
                 (self.string_color(action.name, 'MAGENTA'),
                  action.parent.name,
                  self.string_color('on', 'MAGENTA'), 
                  self.string_color(
-                 action.resolve_property('command'), 'CYAN'))
+                    action.resolve_property('command'), 'CYAN'))
         self.pl_width = len(line)
-        stdout.write(line)
+        stdout.write('\r%s\n' % line)
         stdout.flush()
 
     def print_action_results(self, action):
         '''Remove the current line and write grouped results of an action'''
-        line = '\r%s %s %s %.2f s' % \
+        line = '%s %s %s %.2f s' % \
                 (self.string_color(action.name, 'MAGENTA'),
                  action.parent.name,
                  self.string_color('ran in', 'MAGENTA'),
@@ -109,33 +108,44 @@ class ConsoleDisplay(object):
         if isinstance(action.worker, WorkerPopen):
             output = None
             if action.worker.read():
-                output = '\n > %s : %s\n > %s : %d' % \
+                output = '\n > %s: %s\n > %s : %d' % \
                     (self.string_color('localhost', 'CYAN'), 
                      action.worker.read(),
                      self.string_color('exit code', 'CYAN'), 
                      action.worker.retcode())
             else:
-                output = '\n > %s > %s : %d' % \
+                output = '\n > %s > %s: %d' % \
                     (self.string_color('localhost', 'CYAN'),
                      self.string_color('exit code', 'CYAN'), 
                      action.worker.retcode())
-            line = '%s%s\n' % (line, output)
+            line = '%s%s' % (line, output)
         # Remote action
         else:
             output = None
             for out, nodes in action.worker.iter_buffers():
-                output = '\n > %s : %s\n > %s : %d' % \
+                output = '\n > %s: %s\n > %s : %d' % \
                     (self.string_color(nodes, 'CYAN'), out,
-                        self.string_color('exit code', 'CYAN'),
-                        action.worker.node_retcode(nodes[0]))
+                     self.string_color('exit code', 'CYAN'),
+                     action.worker.node_retcode(nodes[0]))
                 line = '%s%s\n' % (line, output)
             for rc, nodes in action.worker.iter_retcodes():
                 output = '\n > %s \n > %s : %d' % \
-                (self.string_color(nodes, 'CYAN'),
-                    self.string_color('exit code', 'CYAN'), rc)
-                line = '%s%s\n' % (line, output)
+                    (self.string_color(nodes, 'CYAN'),
+                     self.string_color('exit code', 'CYAN'), rc)
+                line = '%s%s' % (line, output)
         self.pl_width = len(line)
-        stdout.write(line)
+        stdout.write('\r%s\n' % line)
+        stdout.flush()
+        
+    def print_delayed_action(self, action):
+        '''Display a message specifying that this action has been delayed'''
+        line = '%s %s %s %s s' % \
+            (self.string_color(action.name, 'MAGENTA'),
+             action.parent.name,
+             self.string_color('will fire in', 'MAGENTA'),
+             action.delay)
+        self.pl_width = len(line)
+        stdout.write('\r%s\n' % line)
         stdout.flush()
 
 class CommandLineInterface(UserView):
@@ -190,7 +200,7 @@ class CommandLineInterface(UserView):
                                 opts=self._options)
                     else:
                         manager.call_services(
-                            self._args[:len(self._args)-1], self._args[-1],
+                            self._args[:-1], self._args[-1],
                                 opts=self._options)
                 except ServiceNotFoundError, exc:
                     watcher.error(' %s' % exc)
@@ -213,7 +223,6 @@ class CommandLineInterface(UserView):
         Something has started on the object given as parameter. This migh be
         the beginning of a command one a node, an action or a service.
         '''
-        sleep(0.5)
         if isinstance(obj, Action) and self._options.verbosity >= 2:
             self._console.print_action_command(obj)
             self._console.print_running_tasks()
@@ -229,7 +238,6 @@ class CommandLineInterface(UserView):
         Something is complete on the object given as parameter. This migh be
         the end of a command on a node,  an action or a service.
         '''
-        sleep(0.5)
         if isinstance(obj, Action) and self._options.verbosity >= 3:
             self._console.print_action_results(obj)
             self._console.print_running_tasks()
@@ -252,12 +260,7 @@ class CommandLineInterface(UserView):
         Status of the object given as parameter. Actions or Service's status
         might have changed.
         '''
-        if isinstance(obj, Action) and self._options.verbosity >= 3 and \
-            obj.status not in (TIMED_OUT, TOO_MANY_ERRORS, ERROR, DONE) and \
-                not obj.parent.simulate:
-            if self.profiling:
-                self.count_average_verbmsg += 1
-        elif isinstance(obj, Service) and self._options.verbosity >= 1 and \
+        if isinstance(obj, Service) and self._options.verbosity >= 1 and \
             obj.status in (TIMED_OUT, TOO_MANY_ERRORS, ERROR, DONE) and \
                 not obj.simulate:
             self._console.print_status(obj)
@@ -270,8 +273,9 @@ class CommandLineInterface(UserView):
         Object given as parameter has been delayed. This event is only raised
         when an action was delayed
         '''
-        if isinstance(obj, Action) and not obj.parent.simulate and \
-            self._options.verbosity >= 3:
+        if isinstance(obj, Action) and self._options.verbosity >= 3:
+            self._console.print_delayed_action(obj)
+            self._console.print_running_tasks()
             if self.profiling:
                 self.count_average_verbmsg += 1
 

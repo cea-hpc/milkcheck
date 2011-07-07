@@ -13,7 +13,7 @@ from MilkCheck.Engine.Action import ActionEventHandler
 from MilkCheck.Callback import call_back_self
 
 # Symbols
-from MilkCheck.Callback import EV_STARTED, EV_COMPLETE
+from MilkCheck.Callback import EV_STARTED, EV_COMPLETE, EV_DELAYED
 
 class ActionManager(EntityManager):
     """
@@ -53,6 +53,7 @@ class ActionManager(EntityManager):
         assert isinstance(action, Action), 'Object should be an action'
         if not action.parent.simulate:
             self.add_task(action)
+            call_back_self().notify(action, EV_DELAYED)
         self._master_task.timer(handler=ActionEventHandler(action),
         fire=action.delay)
 

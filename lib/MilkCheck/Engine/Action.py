@@ -17,7 +17,8 @@ from MilkCheck.Callback import call_back_self
 from MilkCheck.Engine.BaseEntity import DONE, TIMED_OUT, TOO_MANY_ERRORS
 from MilkCheck.Engine.BaseEntity import WAITING_STATUS
 from MilkCheck.Engine.BaseEntity import NO_STATUS, ERROR
-from MilkCheck.Callback import EV_COMPLETE, EV_DELAYED, EV_STARTED
+from MilkCheck.Callback import EV_COMPLETE, EV_STARTED
+from MilkCheck.Callback import EV_TRIGGER_DEP, EV_STATUS_CHANGED
 
 class MilkCheckEventHandler(EventHandler):
     '''
@@ -167,12 +168,16 @@ class Action(BaseEntity):
         assert status in (NO_STATUS, WAITING_STATUS, DONE, \
         TOO_MANY_ERRORS, TIMED_OUT),'Bad action status'
         self.status = status
+        call_back_self().notify(self, EV_STATUS_CHANGED)
         if status not in (NO_STATUS, WAITING_STATUS):
             if not self.parent.simulate:
                 call_back_self().notify(self, EV_COMPLETE)
             if self.children:
                 for dep in self.children.values():
                     if dep.target.is_ready():
+                        if not self.parent.simulate:
+                            call_back_self().notify(
+                            (self, dep.target), EV_TRIGGER_DEP)
                         dep.target.prepare()
             else:
                 self.parent.update_status(self.status)
@@ -242,7 +247,6 @@ class Action(BaseEntity):
             
         if self.delay > 0 and allow_delay:
             # Action will be started as soon as the timer is done
-            call_back_self().notify(self, EV_DELAYED)
             action_manager_self().perform_delayed_action(self)
         else:
             # Fire this action

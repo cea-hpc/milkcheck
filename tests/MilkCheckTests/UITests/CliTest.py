@@ -51,28 +51,30 @@ class CommandLineInterfaceTests(TestCase):
         i2.desc = 'I am the service I2'
 
         # Actions S1
-        start_s1 = Action('start', 'localhost, 127.0.0.1', '/bin/true')
-        stop_s1 = Action('stop', 'localhost,127.0.0.1', '/bin/true')
+        start_s1 = Action('start', 'localhost, fortoy8', '/bin/true')
+        start_s1.delay = 2
+        stop_s1 = Action('stop', 'localhost,fortoy8', '/bin/true')
+        stop_s1.delay = 2
         s1.add_actions(start_s1, stop_s1)
         # Actions S2
-        start_s2 = Action('start', 'localhost,127.0.0.1', '/bin/true')
-        stop_s2 = Action('stop', 'localhost,127.0.0.1', '/bin/true')
+        start_s2 = Action('start', 'localhost,fortoy8', '/bin/true')
+        stop_s2 = Action('stop', 'localhost,fortoy8', '/bin/true')
         s2.add_actions(start_s2, stop_s2)
         # Actions S3
-        start_s3 = Action('start', 'localhost,127.0.0.1', '/bin/false')
-        stop_s3 = Action('stop', 'localhost, 127.0.0.1', '/bin/false')
+        start_s3 = Action('start', 'localhost,fortoy8', '/bin/false')
+        stop_s3 = Action('stop', 'localhost,fortoy8', '/bin/false')
         s3.add_actions(start_s3, stop_s3)
         # Actions S4
-        start_s4 = Action('start', 'localhost,127.0.0.1', '/bin/true')
-        stop_s4 = Action('stop', 'localhost,127.0.0.1', '/bin/true')
+        start_s4 = Action('start', 'localhost,fortoy8', 'hostname')
+        stop_s4 = Action('stop', 'localhost,fortoy8', '/bin/true')
         s4.add_actions(start_s4, stop_s4)
         # Actions I1
-        start_i1 = Action('start', 'localhost,127.0.0.1', '/bin/true')
-        stop_i1 = Action('stop', 'localhost,127.0.0.1', '/bin/true')
+        start_i1 = Action('start', 'localhost,fortoy8', '/bin/true')
+        stop_i1 = Action('stop', 'localhost,fortoy8', '/bin/true')
         i1.add_actions(start_i1, stop_i1)
         # Actions I2
-        start_i2 = Action('start', 'localhost,127.0.0.1', '/bin/true')
-        stop_i2 = Action('stop', 'localhost,127.0.0.1', '/bin/true')
+        start_i2 = Action('start', 'localhost,fortoy8', '/bin/true')
+        stop_i2 = Action('stop', 'localhost,fortoy8', '/bin/true')
         i2.add_actions(start_i2, stop_i2)
 
         # Build graph
@@ -96,21 +98,25 @@ class CommandLineInterfaceTests(TestCase):
     def test_execute_service_from_CLI(self):
         '''Execute a service from the CLI'''
         cli = CommandLineInterface()
-        cli.execute(['G1', 'stop', '-vvv'])
+        cli.execute(['G1', 'stop', '-vvv', '-x', 'fortoy8'])
+        manager = service_manager_self()
+        self.assertEqual(manager.entities['S1'].status, DONE)
+        self.assertEqual(manager.entities['S3'].status, TOO_MANY_ERRORS)
+        self.assertEqual(manager.entities['G1'].status, ERROR)
 
     def test_execute_services_verbosity(self):
         '''Test method execute to run services with different verbosity'''
         cli = CommandLineInterface()
         cli.profiling = True
-        cli.execute(['S3', 'start', '-v'])
+        cli.execute(['S3', 'start'])
         self.assertTrue(cli.count_low_verbmsg > 0)
         self.assertTrue(cli.count_average_verbmsg == 0)
         self.assertTrue(cli.count_high_verbmsg == 0)
-        cli.execute(['S3', 'start', '-vv'])
+        cli.execute(['S3', 'start', '-v'])
         self.assertTrue(cli.count_low_verbmsg > 0)
         self.assertTrue(cli.count_average_verbmsg > 0)
         self.assertTrue(cli.count_high_verbmsg == 0)
-        cli.execute(['S3', 'start', '-vvv'])
+        cli.execute(['S3', 'start', '-vv'])
         self.assertTrue(cli.count_low_verbmsg > 0)
         self.assertTrue(cli.count_average_verbmsg > 0)
         self.assertTrue(cli.count_high_verbmsg > 0)
@@ -125,7 +131,7 @@ class CommandLineInterfaceTests(TestCase):
         # Execute start on S1 with verbosity at level one, do not process
         # the node S3 moreover hijack cluster nodes aury11 and aury12
         cli.profiling = True
-        cli.execute(['S1', 'start', '-vvv', '-X', 'S3'])
+        cli.execute(['S1', 'start', '-vvv', '-X', 'S3', '-x', 'fortoy8'])
         manager = service_manager_self()
         self.assertEqual(manager.entities['S1'].status, DONE)
         self.assertEqual(manager.entities['S2'].status, DONE)
@@ -135,10 +141,10 @@ class CommandLineInterfaceTests(TestCase):
         self.assertTrue(cli.count_average_verbmsg > 0)
         self.assertTrue(cli.count_high_verbmsg > 0)
 
-    def test_execute_nodes_exlcusion(self):
+    def test_execute_nodes_exclusion(self):
         '''Test nodes exlcusion from the CLI'''
         cli = CommandLineInterface()
-        cli.execute(['S3', 'stop', '-vvv', '-x', '127.0.0.1'])
+        cli.execute(['S3', 'stop', '-vvv', '-x', 'fortoy8'])
         manager = service_manager_self()
         self.assertEqual(manager.entities['S2'].status, NO_STATUS)
         self.assertEqual(manager.entities['S4'].status, NO_STATUS)
@@ -153,7 +159,7 @@ class CommandLineInterfaceTests(TestCase):
     def test_execute_nodes_only(self):
         '''Test mandatory nodes from CLI'''
         cli = CommandLineInterface()
-        cli.execute(['S1', 'start', '-d', '-n', '127.0.0.1'])
+        cli.execute(['S1', 'start', '-d', '-n', 'localhost'])
         manager = service_manager_self()
         self.assertEqual(manager.entities['S1'].status, ERROR)
         self.assertEqual(manager.entities['S2'].status, DONE)
@@ -161,10 +167,50 @@ class CommandLineInterfaceTests(TestCase):
         self.assertEqual(manager.entities['S4'].status, DONE)
         self.assertEqual(manager.entities['G1'].status, DONE)
         self.assertTrue(manager.entities['S1']._actions['start'].target  ==\
-            NodeSet('127.0.0.1'))
+            NodeSet('localhost'))
         self.assertTrue(manager.entities['S2']._actions['start'].target  ==\
-            NodeSet('127.0.0.1'))
+            NodeSet('localhost'))
         self.assertTrue(manager.entities['S3']._actions['start'].target  ==\
-            NodeSet('127.0.0.1'))
+            NodeSet('localhost'))
         self.assertTrue(manager.entities['S4']._actions['start'].target  ==\
-            NodeSet('127.0.0.1'))
+            NodeSet('localhost'))
+
+    def test_execute_multiple_services(self):
+        '''Test execution of S2 and G1 at the same time'''
+        cli = CommandLineInterface()
+        cli.execute(['S2', 'G1', 'start', '-d', '-x', 'fortoy8'])
+        manager = service_manager_self()
+        self.assertEqual(manager.entities['S2'].status, DONE)
+        self.assertEqual(manager.entities['G1'].status, DONE)
+
+    def test_execute_multiple_services_reverse(self):
+        '''Test execution of S2 and G1 at the same time'''
+        cli = CommandLineInterface()
+        cli.execute(['S2', 'G1', 'stop', '-d', '-x', 'fortoy8'])
+        manager = service_manager_self()
+        self.assertEqual(manager.entities['S1'].status, DONE)
+        self.assertEqual(manager.entities['S3'].status, TOO_MANY_ERRORS)
+        self.assertEqual(manager.entities['S2'].status, DONE)
+        self.assertEqual(manager.entities['G1'].status, ERROR)
+
+    def test_execute_overall_graph(self):
+        '''Test no services required so make all'''
+        cli = CommandLineInterface()
+        cli.execute(['start', '-d', '-x', 'fortoy8'])
+        manager = service_manager_self()
+        self.assertEqual(manager.entities['S1'].status, ERROR)
+        self.assertEqual(manager.entities['S2'].status, DONE)
+        self.assertEqual(manager.entities['S3'].status, TOO_MANY_ERRORS)
+        self.assertEqual(manager.entities['S4'].status, DONE)
+        self.assertEqual(manager.entities['G1'].status, DONE)
+
+    def test_execute_overall_graph_reverse(self):
+        '''Test no services required so make all reverse'''
+        cli = CommandLineInterface()
+        cli.execute(['stop', '-d', '-x', 'fortoy8'])
+        manager = service_manager_self()
+        self.assertEqual(manager.entities['S1'].status, DONE)
+        self.assertEqual(manager.entities['S2'].status, DONE)
+        self.assertEqual(manager.entities['S3'].status, TOO_MANY_ERRORS)
+        self.assertEqual(manager.entities['S4'].status, ERROR)
+        self.assertEqual(manager.entities['G1'].status, ERROR)
