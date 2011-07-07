@@ -126,10 +126,7 @@ class McOptionParser(OptionParser):
 
     def __check_service_mode(self, option, opt, value, parser):
         '''Check whether we are in the service execution mode.'''
-        if len(self.largs) <= 1:
-            self.error(
-                '%s cannot be used, service(s) or action missing' % option)
-        elif self.values.print_servs:
+        if self.values.print_servs:
             self.error('%s cannot be used with -n, -x or -X' % option)
         elif option.dest in ('only_nodes', 'hijack_nodes'):
             if self.values.only_nodes and option.dest is 'hijack_nodes':
