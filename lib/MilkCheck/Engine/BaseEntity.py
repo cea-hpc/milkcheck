@@ -364,7 +364,7 @@ class BaseEntity(object):
             if symbols[sym] is None and sym in self.variables:
                 symbols[sym] = self.variables[sym]
             elif symbols[sym] is None and hasattr(self, sym.lower()):
-                symbols[sym] = '%s' % self.resolve_property(sym.lower())
+                symbols[sym] = self.resolve_property(sym.lower())
 
         if all_solved(symbols):
             return
@@ -407,7 +407,7 @@ class BaseEntity(object):
                  if symbols:
                     self._lookup_variables(symbols)
                     for (symb, value) in symbols.items():
-                        pvalue = sub('%%%s' % symb, value, pvalue)
+                        pvalue = sub('%%%s' % symb, str(value), pvalue)
         return pvalue
 
     def inherits_from(self, entity):

@@ -286,19 +286,25 @@ class BaseEntityTest(unittest.TestCase):
         group = BaseEntity('group_service')
         group.add_var('GVAR', 'group')
         service.parent = group
-        symbols = {'VAR': None, 'GVAR': None, 'TARGET': None}
+        symbols = {'VAR': None, 'GVAR': None, 'TARGET': None, 'NAME': None}
         service._lookup_variables(symbols)
         self.assertEqual(symbols['VAR'], 'test')
         self.assertEqual(symbols['GVAR'], 'group')
-        self.assertEqual(symbols['TARGET'], '')
+        self.assertEqual(symbols['TARGET'], NodeSet())
+        self.assertEqual(symbols['NAME'], 'test_service')
 
     def test_resolve_property1(self):
         '''Test replacement of symbols within a property'''
         service = BaseEntity('test_service')
         service.add_var('NODES', 'localhost,127.0.0.1')
+        service.desc = 'start %NAME on %TARGET'
         service.target = '%NODES'
         self.assertEqual(service.resolve_property('target'),
             NodeSet('localhost,127.0.0.1'))
+        self.assertEqual(service.resolve_property('name'),
+            'test_service')
+        self.assertEqual(service.resolve_property('desc'),
+            'start test_service on 127.0.0.1,localhost')
 
     def test_resolve_property2(self):
         '''Test with nothing to replace in the property'''
@@ -325,6 +331,14 @@ class BaseEntityTest(unittest.TestCase):
         except InvalidVariableError:
             error = True
         self.assertTrue(error)
+
+    def test_resolve_property5(self):
+        '''Test resolution with a property containing special characters'''
+        service = BaseEntity('test_service')
+        service.add_var('NODES', '@testgrp!@agrp,epsilon')
+        service.target = '%NODES'
+        self.assertEqual(service.resolve_property('target'),
+            NodeSet('@testgrp!@agrp,epsilon'))
 
     def test_inheritance_of_properties1(self):
         '''Test inheritance between entities'''
