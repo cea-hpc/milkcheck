@@ -356,3 +356,14 @@ class BaseEntityTest(unittest.TestCase):
         self.assertEqual(ent2.fanout, 2)
         self.assertEqual(ent2.errors, 3)
         self.assertEqual(ent2.timeout, 15)
+
+    def test_remove_all_parents(self):
+        '''Test remove all parents dependencies'''
+        ent1 = BaseEntity(name='A')
+        ent2 = BaseEntity(name='B')
+        ent3 = BaseEntity(name='C')
+        ent1.add_dep(target=ent2)
+        ent1.add_dep(target=ent3)
+        ent1.rmv_all_parent_deps()
+        self.assertFalse(ent1.has_child_dep('B'))
+        self.assertFalse(ent1.has_child_dep('C'))

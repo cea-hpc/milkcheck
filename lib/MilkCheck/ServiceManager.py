@@ -7,6 +7,8 @@ This module contains the ServiceManager class definition.
 
 # Classes
 from MilkCheck.EntityManager import EntityManager
+from MilkCheck.Engine.Service import Service
+from MilkCheck.Engine.Action import Action
 
 # Exceptions
 from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
@@ -153,7 +155,6 @@ class ServiceManager(EntityManager):
     
     def call_services(self, services, action, opts=None):
         '''Allow the user to call one or multiple services.'''
-        assert services, 'list of services cannot be None or empty'
         assert action, 'action name cannot be None'
 
         # Make sure that the graph is usable
@@ -163,15 +164,59 @@ class ServiceManager(EntityManager):
         if opts:
             self._apply_options(opts)
         # Service are going to use reversed algorithms
+        reverse = False
         if action == 'stop':
-            self._reverse_mod(True)
-        # For each valid service call run
-        for service in services:
-            if service in self.entities:
-                self.entities[service].run(action)
+            reverse = True
+            self._reverse_mod(reverse)
+
+        # Perform all services
+        if not services:
+            source = Service('src')
+            source.simulate = True
+            source.add_action(Action(name=action,command=':'))
+            if reverse:
+                source.algo_reversed = True
+            for service in self.entities.values():
+                if reverse and not service.parents:
+                    service.add_dep(target=source)
+                elif not reverse and not service.children:
+                    source.add_dep(target=service)
+            source.run(action)
+            if reverse:
+                source.rmv_all_child_deps()
+            else:
+                source.rmv_all_parent_deps()
+            self._graph_changed = True
+        # Perform the required service
+        elif len(services) == 1:
+            if services[0] in self.entities:
+                self.entities[services[0]].run(action)
                 self._graph_changed = True
             else:
-                raise ServiceNotFoundError('Undefined service [%s]' %service)
+                raise ServiceNotFoundError('Undefined service [%s]'
+                    % services[0])
+        # Perform required services
+        else:
+            source = Service('src')
+            source.simulate = True
+            if reverse:
+                source.algo_reversed = True
+            source.add_action(Action(name=action,command=':'))
+            for service in services:
+                if service in self.entities:
+                    if reverse:
+                        self.entities[service].add_dep(target=source)
+                    else:
+                        source.add_dep(target=self.entities[service])
+                else:
+                    raise ServiceNotFoundError('Undefined service [%s]'
+                        %service)
+            source.run(action)
+            if reverse:
+                source.rmv_all_child_deps()
+            else:
+                source.rmv_all_parent_deps()
+            self._graph_changed = True
 
     def load_config(self, conf):
         '''
