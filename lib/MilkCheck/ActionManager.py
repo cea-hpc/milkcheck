@@ -10,6 +10,10 @@ from ClusterShell.Task import task_self
 from MilkCheck.EntityManager import EntityManager
 from MilkCheck.Engine.Action import Action
 from MilkCheck.Engine.Action import ActionEventHandler
+from MilkCheck.Callback import call_back_self
+
+# Symbols
+from MilkCheck.Callback import EV_STARTED, EV_COMPLETE
 
 class ActionManager(EntityManager):
     """
@@ -36,7 +40,9 @@ class ActionManager(EntityManager):
         """Perform an immediate action"""
         assert action, 'You cannot perform a NoneType object'
         assert isinstance(action, Action), 'Object should be an action'
-        self.add_task(action)
+        if not action.parent.simulate:
+            self.add_task(action)
+        call_back_self().notify(action.parent, EV_STARTED)
         self._master_task.shell(action.resolve_property('command'),
         nodes=action.resolve_property('target'),
         handler=ActionEventHandler(action), timeout=action.timeout)
@@ -45,10 +51,11 @@ class ActionManager(EntityManager):
         """Perform a delayed action and add it to the running tasks"""
         assert action, 'You cannot perform a NoneType object'
         assert isinstance(action, Action), 'Object should be an action'
-        self.add_task(action)
+        if not action.parent.simulate:
+            self.add_task(action)
         self._master_task.timer(handler=ActionEventHandler(action),
         fire=action.delay)
-        
+
     def add_task(self, task):
         """
         Fanout goes down whether it is lower than the current
@@ -74,7 +81,7 @@ class ActionManager(EntityManager):
             self.entities[fnt].add(task)
             self._tasks_done_count += 1
             self._tasks_count += 1
-    
+
     def remove_task(self, task):
         """
         Fanout goes up whether the current task represents the lower
@@ -89,6 +96,7 @@ class ActionManager(EntityManager):
                 fnt = self.default_fanout
             # Remove task
             self.entities[fnt].remove(task)
+            call_back_self().notify(task.parent, EV_COMPLETE)
 
             # Category is empty so we delete it and we update
             # the value of the current fanout
@@ -101,7 +109,7 @@ class ActionManager(EntityManager):
                     self.fanout = None
             # Current number of task is decremented
             self._tasks_count -= 1
-    
+
     def _is_running_task(self, task):
         """
         Allow us to determine whether a task is running or not

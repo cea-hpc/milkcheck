@@ -132,10 +132,31 @@ class ActionManagerTest(TestCase):
         ser.add_action(action)
         ser.run('start')
         task_manager = action_manager_self()
-        ActionManager._instance = None
         self.assertEqual(task_manager.tasks_done_count, 1)
         self.assertTrue(action.duration < 0.5)
-        
+
+    def test_perform_action_bad_service(self):
+        '''test perform action with a simulate service hooked to the action'''
+        action = Action(name='start', command=':')
+        ser = Service('TEST')
+        ser.simulate = True
+        ser.add_action(action)
+        ser.run('start')
+        task_manager = action_manager_self()
+        self.assertEqual(task_manager.tasks_done_count, 0)
+
+    def test_perform_delayed_action_bad_service(self):
+        '''
+        test perform delayed action with a simulate service hooked to
+        the action
+        '''
+        action = Action(name='start', command=':', timeout=0.01)
+        ser = Service('TEST')
+        ser.simulate = True
+        ser.add_action(action)
+        ser.run('start')
+        task_manager = action_manager_self()
+        self.assertEqual(task_manager.tasks_done_count, 0)
 
     def test_perform_delayed_action(self):
         """test perform an action with a delay"""
