@@ -8,6 +8,7 @@ RunningTasksManager and the ServiceManager itself
 
 # Classes
 from unittest import TestCase
+from ClusterShell.NodeSet import NodeSet
 from MilkCheck.Engine.Service import Service, ActionNotFoundError
 from MilkCheck.Engine.Action import Action
 from MilkCheck.ServiceManager import ServiceManager, service_manager_self
@@ -156,3 +157,17 @@ class ServiceManagerTest(TestCase):
             manager.call_services, ['S1'], 'stup')
         self.assertRaises(ActionNotFoundError,
             manager.call_services, ['S3', 'S4'], 'stup')
+
+    def test_excluded_variable_creation(self):
+        '''Test creation of the variable excluded wether -x is specified'''
+        class MockOptions(object):
+            def __init__(self):
+                 self.hijack_nodes = NodeSet('epsilon[14-18]')
+                 self.config_dir = None
+                 self.hijack_servs = None
+                 self.only_nodes = None
+        manager = service_manager_self()
+        manager.call_services(None, 'start', MockOptions())
+        self.assertTrue('EXCLUDED_NODES' in manager.variables)
+        self.assertEqual(manager.variables['EXCLUDED_NODES'],
+                         NodeSet('epsilon[14-18]'))

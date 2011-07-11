@@ -131,6 +131,8 @@ class ServiceManager(EntityManager):
             self.__update_usable_nodes(options.only_nodes, 'INT')
         # Avoid those nodes
         elif options.hijack_nodes:
+            self.remove_var('EXCLUDED_NODES')
+            self.add_var('EXCLUDED_NODES', options.hijack_nodes)
             self.__update_usable_nodes(options.hijack_nodes, 'DIF')
 
     def __lock_services(self, services):
