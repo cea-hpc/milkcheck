@@ -184,7 +184,7 @@ class CommandLineInterfaceTests(TestCase):
         self.assertEqual(manager.entities['G1'].status, DONE)
 
     def test_execute_multiple_services_reverse(self):
-        '''Test execution of S2 and G1 at the same time'''
+        '''Test reverse execution of S2 and G1 at the same time'''
         cli = CommandLineInterface()
         cli.execute(['S2', 'G1', 'stop', '-d', '-x', 'fortoy8'])
         manager = service_manager_self()
@@ -214,3 +214,17 @@ class CommandLineInterfaceTests(TestCase):
         self.assertEqual(manager.entities['S3'].status, TOO_MANY_ERRORS)
         self.assertEqual(manager.entities['S4'].status, ERROR)
         self.assertEqual(manager.entities['G1'].status, ERROR)
+
+    def test_execute_retcode_zero(self):
+        '''Test whether method execute returns 0 if everything went well'''
+        cli = CommandLineInterface()
+        self.assertEqual(
+            cli.execute(['S2', 'G1', 'start', '-d', '-x', 'fortoy8']), 0)
+
+    def test_execute_retcode_one(self):
+       '''Test whether method execute returns 1 if an exception is raised'''
+       cli = CommandLineInterface()
+       # Unknow action 
+       self.assertEqual(cli.execute(['stup']), 1)
+       # Unknow service
+       self.assertEqual(cli.execute(['start', 'S6']), 1)

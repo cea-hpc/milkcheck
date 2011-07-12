@@ -34,7 +34,7 @@ class MilkCheckConfig(object):
                 match('^[\w]*\.(yaml|yml)$', my_file):
                 self.load_from_stream(
                     open('%s/%s' % (dirname, my_file),'r'))
-    
+
     def load_from_dir(self, directory=None, recursive=False):
         '''
         Load configuration files located within a directory. This method
@@ -52,7 +52,7 @@ class MilkCheckConfig(object):
             else:
                 self._go_through(None, dirname=self._filepath_base,
                     names=listdir(self._filepath_base))
-            
+
     def load_from_stream(self, stream):
         '''
         Load configuration from a stream. A stream could be a string or
@@ -60,21 +60,7 @@ class MilkCheckConfig(object):
         '''
         content = None
         logger = logging.getLogger('watcher')
-        try:
-            print 'Reading configuration...'
-            content = yaml.safe_load_all(stream)
-        except IOError, exc:
-            logger.error('YAML file not found : ')
-        except yaml.YAMLError, exc:
-            if hasattr(exc, 'problem_mark'):
-                logger.error('Error at line %d column %d'
-                    %(exc.problem_mark.line+1, exc.problem_mark.column+1))
-            else:
-                logger.error('Error in configuration file : %s' % exc)
-        except yaml.scanner.ScannerError, exc:
-                logger.error('Error in configuration file : %s' % exc)
-        except Exception:
-                logger.error('Unexepected error in configuration file')
+        content = yaml.safe_load_all(stream)
         if content:
             self._flow.extend(content)
 
@@ -96,10 +82,10 @@ class MilkCheckConfig(object):
         # Get back the manager and make sure that it has been cleaned up
         manager = service_manager_self()
         manager.reset()
-        
+
         dependencies = {}
         variables = {}
-        
+
         # Go through data registred within flow
         for data in self._flow:
             # Parse variables

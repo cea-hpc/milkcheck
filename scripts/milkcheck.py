@@ -5,10 +5,10 @@
 """
 This is the entry point of MilkCheck
 """
-from sys import argv
+import sys
 from MilkCheck.UI.Cli import CommandLineInterface
 
 if __name__ == "__main__":
-
+    '''Entry point of MilkCheck'''
     cli = CommandLineInterface()
-    cli.execute(argv[1:])
+    sys.exit(cli.execute(sys.argv[1:]))

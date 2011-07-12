@@ -8,16 +8,28 @@ This module contains the UserView class definition.
 # classes
 import logging
 import logging.config
-from sys import stdout
+from signal import SIGINT
+from sys import stdout, exc_info
 from ClusterShell.Worker.Popen import WorkerPopen
 from MilkCheck.UI.UserView import UserView
 from MilkCheck.UI.OptionParser import McOptionParser
-from MilkCheck.UI.OptionParser import InvalidOptionError
 from MilkCheck.Engine.Action import Action
-from MilkCheck.Engine.Service import Service, ActionNotFoundError
+from MilkCheck.Engine.Service import Service
 from MilkCheck.ActionManager import action_manager_self
 from MilkCheck.ServiceManager import service_manager_self
+
+# Exceptions
+from yaml.scanner import ScannerError
 from MilkCheck.ServiceManager import ServiceNotFoundError
+from MilkCheck.UI.OptionParser import InvalidOptionError
+from MilkCheck.Engine.BaseEntity import InvalidVariableError
+from MilkCheck.Engine.BaseEntity import UndefinedVariableError
+from MilkCheck.Engine.BaseEntity import VariableAlreadyReferencedError
+from MilkCheck.Engine.BaseEntity import DependencyAlreadyReferenced
+from MilkCheck.Engine.BaseEntity import IllegalDependencyTypeError
+from MilkCheck.Engine.Service import ActionNotFoundError
+
+# Symbols
 from MilkCheck.Engine.BaseEntity import DONE_WITH_WARNINGS
 from MilkCheck.Engine.BaseEntity import TIMED_OUT, TOO_MANY_ERRORS, ERROR, DONE
 
@@ -180,32 +192,19 @@ class CommandLineInterface(UserView):
         watcher = logging.getLogger('watcher')
         self._mop = McOptionParser()
         self._mop.configure_mop()
+        self.count_low_verbmsg = 0
+        self.count_average_verbmsg = 0
+        self.count_high_verbmsg = 0
         try:
             (self._options, self._args) = self._mop.parse_args(command_line)
-        except InvalidOptionError, exc:
-            watcher.error('%s' % exc)
-            self._mop.print_help()
-        else:
             manager = service_manager_self()
-            self.count_low_verbmsg = 0
-            self.count_average_verbmsg = 0
-            self.count_high_verbmsg = 0
             # Case 1 : call services referenced in the manager with
             # the required action
             if self._args:
-                try:
-                    # Compute all services with the required action
-                    if len(self._args) == 1:
-                        manager.call_services(None, self._args[0],
-                                opts=self._options)
-                    else:
-                        manager.call_services(
-                            self._args[:-1], self._args[-1],
-                                opts=self._options)
-                except ServiceNotFoundError, exc:
-                    watcher.error(' %s' % exc)
-                except ActionNotFoundError, exc:
-                    watcher.error(' %s' % exc)
+                # Compute all services with the required action
+                services = self._args[:-1]
+                action = self._args[-1]
+                manager.call_services(services, action, opts=self._options)
             # Case 2 : we just display dependencies of one or several services
             elif self._options.print_servs:
                 print 'TODO : Print service dependencies'
@@ -215,8 +214,29 @@ class CommandLineInterface(UserView):
             # Case 4: If version option detected so print version number
             elif self._options.version:
                 self._console.print_version(self._options.version)
+            # Case 5: Nothing to do so just print MilkCheck help
             else:
                 self._mop.print_help()
+        except (ServiceNotFoundError, 
+                ActionNotFoundError,
+                InvalidVariableError,
+                UndefinedVariableError,
+                VariableAlreadyReferencedError,
+                DependencyAlreadyReferenced,
+                IllegalDependencyTypeError,
+                ScannerError), exc:
+            watcher.error(str(exc))
+            return 1
+        except InvalidOptionError, exc:
+            watcher.error('%s' % exc)
+            self._mop.print_help()
+        except KeyboardInterrupt, exc:
+            watcher.error('Keyboard Interrupt')
+            return (128 + SIGINT)
+        except Exception, exc:
+            watcher.error('Unexpected Exception : %s' % exc)
+            return 1
+        return 0
 
     def ev_started(self, obj):
         '''
