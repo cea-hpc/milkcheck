@@ -381,3 +381,13 @@ class BaseEntityTest(unittest.TestCase):
         ent1.clear_parent_deps()
         self.assertFalse(ent1.has_child_dep('B'))
         self.assertFalse(ent1.has_child_dep('C'))
+
+    def test_fullname(self):
+        '''Test that the property return the fullname of the current entity'''
+        ent1 = BaseEntity('alpha')
+        self.assertEqual(ent1.fullname(), ent1.name)
+        ent2 = BaseEntity('beta')
+        ent3 = BaseEntity('gamma')
+        ent2.parent = ent3
+        ent1.parent = ent2
+        self.assertEqual(ent1.fullname(), 'gamma.beta.alpha')

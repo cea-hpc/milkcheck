@@ -343,6 +343,14 @@ class BaseEntity(object):
 
     algo_reversed = property(fset=set_algo_reversed)
 
+    def fullname(self):
+        '''Return the fullname of the current entity'''
+        names = []
+        if self.parent:
+            names.append(self.parent.fullname())
+        names.append(self.name)
+        return '.'.join(names)
+
     def _lookup_variables(self, symbols):
         '''
         Look for the values of the variables defined in symbols. It search

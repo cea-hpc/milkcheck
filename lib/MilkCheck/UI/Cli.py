@@ -11,7 +11,6 @@ import logging.config
 import fcntl, termios, struct, os
 from signal import SIGINT
 from sys import stdout, stderr
-from ClusterShell.Worker.Popen import WorkerPopen
 from MilkCheck.UI.UserView import UserView
 from MilkCheck.UI.OptionParser import McOptionParser
 from MilkCheck.Engine.Action import Action
@@ -74,12 +73,15 @@ class ConsoleDisplay(object):
     formatted messages on STDOUT.
     '''
     _COLORS = {
-                'GREEN': '\033[1;32m%s\033[0m',
-                'YELLOW': '\033[1;33m%s\033[0m',
-                'RED': '\033[1;31m%s\033[0m',
-                'MAGENTA': '\033[95m%s\033[0m',
-                'CYAN': '\033[94m%s\033[0m'
+                'GREEN': '\033[0;32m%s\033[0m',
+                'YELLOW': '\033[0;33m%s\033[0m',
+                'RED': '\033[0;31m%s\033[0m',
+                'MAGENTA': '\033[0;35m%s\033[0m',
+                'CYAN': '\033[0;36m%s\033[0m'
               }
+    _LARGEST_STATUS = max([len(status) \
+         for status in (DONE_WITH_WARNINGS, TIMED_OUT, TOO_MANY_ERRORS, ERROR,
+                        DONE)])
 
     def __init__(self):
         (width, height) = Terminal.size()
@@ -90,7 +92,10 @@ class ConsoleDisplay(object):
 
     def string_color(self, strg, color):
         '''Return a string formatted with a special color'''
-        return '%s' % self._COLORS[color] % strg 
+        if self._color:
+            return '%s' % self._COLORS[color] % strg
+        else:
+            return '%s' % strg
 
     def print_version(self, version):
         '''Display the current version of MilkCheck'''
@@ -98,104 +103,113 @@ class ConsoleDisplay(object):
         stdout.flush()
 
     def print_running_tasks(self):
-        '''Remove current line and print the current running tasks'''
+        '''Rewrite the current line and print the current running tasks'''
         rtasks = [t.parent.name for t in action_manager_self().running_tasks]
         if rtasks:
             tasks_disp = '[%s]' % ','.join(rtasks)
-            stdout.write('\r%s\r%s' % (self.pl_width*' ', tasks_disp))
+            width = min(self._pl_width,self._term_width)
+            stdout.write('\r%s\r%s\r' % (width * ' ', tasks_disp))
             stdout.flush()
-            self.pl_width = len(tasks_disp)
+            self._pl_width = len(tasks_disp)
 
-    def print_status(self, entity, colors=True):
+    def __rprint(self, line):
+        '''Rewrite the current line and display line and jump to the next one'''
+        width = min(self._pl_width,self._term_width)
+        stderr.write('\r%s\r%s\n' % (width * ' ', line))
+        self._pl_width = len(line)
+
+    def print_status(self, entity):
         '''Remove current line and print the status of an entity onSTDOUT'''
-        line = ''
-        if entity.status in (TIMED_OUT, TOO_MANY_ERRORS, ERROR) and colors:
-            line = '%-50s%30s' % (entity.name, 
-                '[%s]' % self.string_color(entity.status, 'RED'))
-        elif entity.status is DONE_WITH_WARNINGS and colors:
-            line = '%-50s%30s' % (entity.name, 
-                '[%s]' % self.string_color('WARNING', 'YELLOW'))
-        elif entity.status is DONE and colors:
-            line = '%-50s%30s' % (entity.name, 
-                '[%s]' % self.string_color('OK', 'GREEN'))
+        msg_width = self._term_width - (self._LARGEST_STATUS + 4)
+        line = '%%-%ds%%%ds' % (msg_width, (self._LARGEST_STATUS + 4))
+        if entity.status in (TIMED_OUT, TOO_MANY_ERRORS, ERROR):
+            line = line % (entity.fullname(),
+                '[%s]' % \
+                    self.string_color(
+                    entity.status.center(self._LARGEST_STATUS), 'RED'))
+        elif entity.status is DONE_WITH_WARNINGS:
+            line = line % (entity.fullname(),
+                '[%s]' % \
+                self.string_color('WARNING'.center(self._LARGEST_STATUS),
+                                  'YELLOW'))
+        elif entity.status is DONE:
+            line = line % (entity.fullname(),
+                '[%s]' % \
+                self.string_color('OK'.center(self._LARGEST_STATUS),
+                                  'GREEN'))
         else:
-            line = '%-50s%30s' % (entity.name, '[%s]' % entity.status)
-        self.pl_width = len(line)
-        stdout.write('\r%s\n' % line)
-        stdout.flush()
+            line = line % (entity.name, '[%s]' % entity.status)
+        self.__rprint(line)
 
     def print_action_command(self, action):
         '''Remove the current line and write informations about the command'''
-        line = ''
-        if action.target:
-            line = '%s %s %s %s\n > %s' % \
-                (self.string_color(action.name, 'MAGENTA'),
-                 action.parent.name,
-                 self.string_color('on', 'MAGENTA'),
-                 action.resolve_property('target'), 
-                 self.string_color(
-                    action.resolve_property('command'), 'CYAN'))
+        target = action.resolve_property('target') or 'localhost'
+        line = '%s %s %s %s\n > %s' % \
+            (self.string_color(action.name, 'MAGENTA'),
+             action.parent.fullname(),
+             self.string_color('on', 'MAGENTA'), target,
+             self.string_color(
+                action.resolve_property('command'), 'CYAN'))
+        self.__rprint(line)
+
+    def __gen_local_action_output(self, action):
+        '''Generate a string which sums up the execution of a local action'''
+        output = ''
+        if action.worker.read():
+            for lbuf in action.worker.read().splitlines():
+                output += '\n > %s: %s' % \
+                    (self.string_color('localhost', 'CYAN'), lbuf)
+        if action.worker.retcode() == 0:
+            output += '\n > %s exit code %s' % \
+                (self.string_color('localhost', 'CYAN'),
+                 self.string_color(action.worker.retcode(), 'GREEN'))
         else:
-            line = '%s %s %s localhost \n > %s' % \
-                (self.string_color(action.name, 'MAGENTA'),
-                 action.parent.name,
-                 self.string_color('on', 'MAGENTA'), 
-                 self.string_color(
-                    action.resolve_property('command'), 'CYAN'))
-        self.pl_width = len(line)
-        stdout.write('\r%s\n' % line)
-        stdout.flush()
+            output += '\n > %s exit code %s' % \
+                (self.string_color('localhost', 'CYAN'),
+                 self.string_color(action.worker.retcode(), 'RED'))
+        return output
+
+    def __gen_remote_action_output(self, action):
+        '''Generate a string which sums up the execution of a remote action'''
+        output = ''
+        for out, nodes in action.worker.iter_buffers():
+            for lbuf in out.splitlines():
+                output += '\n > %s: %s' % \
+                    (self.string_color(nodes, 'CYAN'), lbuf)
+
+        for rcd, nodes in action.worker.iter_retcodes():
+            if rcd == 0:
+                output += '\n > %s exit code %s' % \
+                    (self.string_color(nodes, 'CYAN'),
+                    self.string_color(rcd, 'GREEN'))
+            else:
+                output += '\n > %s exit code %s' % \
+                    (self.string_color(nodes, 'CYAN'),
+                    self.string_color(rcd, 'RED'))
+        return output
 
     def print_action_results(self, action):
         '''Remove the current line and write grouped results of an action'''
-        line = '%s %s %s %.2f s' % \
-                (self.string_color(action.name, 'MAGENTA'),
-                 action.parent.name,
-                 self.string_color('ran in', 'MAGENTA'),
-                 action.duration)
+        line = '%s %s ran in %.2f s' % \
+            (self.string_color(action.name, 'MAGENTA'),
+             action.parent.fullname(),
+             action.duration)
         # Local action
-        if isinstance(action.worker, WorkerPopen):
-            output = None
-            if action.worker.read():
-                output = '\n > %s: %s\n > %s : %d' % \
-                    (self.string_color('localhost', 'CYAN'), 
-                     action.worker.read(),
-                     self.string_color('exit code', 'CYAN'), 
-                     action.worker.retcode())
-            else:
-                output = '\n > %s > %s: %d' % \
-                    (self.string_color('localhost', 'CYAN'),
-                     self.string_color('exit code', 'CYAN'), 
-                     action.worker.retcode())
-            line = '%s%s' % (line, output)
+        if action.worker.current_node is None:
+            line += self.__gen_local_action_output(action)
         # Remote action
         else:
-            output = None
-            for out, nodes in action.worker.iter_buffers():
-                output = '\n > %s: %s\n > %s : %d' % \
-                    (self.string_color(nodes, 'CYAN'), out,
-                     self.string_color('exit code', 'CYAN'),
-                     action.worker.node_retcode(nodes[0]))
-                line = '%s%s\n' % (line, output)
-            for rc, nodes in action.worker.iter_retcodes():
-                output = '\n > %s \n > %s : %d' % \
-                    (self.string_color(nodes, 'CYAN'),
-                     self.string_color('exit code', 'CYAN'), rc)
-                line = '%s%s' % (line, output)
-        self.pl_width = len(line)
-        stdout.write('\r%s\n' % line)
-        stdout.flush()
-        
+            line += self.__gen_remote_action_output(action)
+        self.__rprint(line)
+
     def print_delayed_action(self, action):
         '''Display a message specifying that this action has been delayed'''
         line = '%s %s %s %s s' % \
             (self.string_color(action.name, 'MAGENTA'),
-             action.parent.name,
+             action.parent.fullname(),
              self.string_color('will fire in', 'MAGENTA'),
              action.delay)
-        self.pl_width = len(line)
-        stdout.write('\r%s\n' % line)
-        stdout.flush()
+        self.__rprint(line)
 
 class CommandLineInterface(UserView):
     '''
@@ -270,6 +284,9 @@ class CommandLineInterface(UserView):
         except KeyboardInterrupt, exc:
             watcher.error('Keyboard Interrupt')
             return (128 + SIGINT)
+        except ScannerError, exc:
+            watcher.error('Bad syntax in config file :\n%s' % exc)
+            return 1
         except Exception, exc:
             watcher.error('Unexpected Exception : %s' % exc)
             return 1
