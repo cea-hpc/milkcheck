@@ -8,8 +8,9 @@ This module contains the UserView class definition.
 # classes
 import logging
 import logging.config
+import fcntl, termios, struct, os
 from signal import SIGINT
-from sys import stdout, exc_info
+from sys import stdout, stderr
 from ClusterShell.Worker.Popen import WorkerPopen
 from MilkCheck.UI.UserView import UserView
 from MilkCheck.UI.OptionParser import McOptionParser
@@ -33,6 +34,40 @@ from MilkCheck.Engine.Service import ActionNotFoundError
 from MilkCheck.Engine.BaseEntity import DONE_WITH_WARNINGS
 from MilkCheck.Engine.BaseEntity import TIMED_OUT, TOO_MANY_ERRORS, ERROR, DONE
 
+class Terminal(object):
+    '''Allow the displayer to get informations from the terminal'''
+
+    @classmethod
+    def _ioctl_gwinsz(cls, fds):
+        '''Try to determine terminal width'''
+        try:
+            data = fcntl.ioctl(fds, termios.TIOCGWINSZ, '1234')
+            crt = struct.unpack('hh', data)
+        except (IOError, struct.error, ValueError):
+            return None
+        return crt
+
+    @classmethod
+    def size(cls):
+        '''Return a tuple which contain the terminal size or default size'''
+        crt = cls._ioctl_gwinsz(0) or cls._ioctl_gwinsz(1) or \
+             cls._ioctl_gwinsz(2)
+        if not crt:
+            try:
+                fds = os.open(os.ctermid(), os.O_RDONLY)
+                crt = cls._ioctl_gwinsz(fds)
+                os.close(fds)
+            except OSError:
+                pass
+        if not crt:
+            crt = (os.environ.get('LINES', 25), os.environ.get('COLUMNS', 80))
+        return int(crt[1]), int(crt[0])
+
+    @classmethod
+    def isatty(cls):
+        '''Determine if the current terminal is teletypewriter'''
+        return stdout.isatty() and stderr.isatty()
+
 class ConsoleDisplay(object):
     '''
     ConsoleDisplay provides methods allowing the CLI to print
@@ -47,9 +82,11 @@ class ConsoleDisplay(object):
               }
 
     def __init__(self):
-        stdout.write('\n')
-        stdout.flush()
-        self.pl_width = 0
+        (width, height) = Terminal.size()
+        self._term_width = width
+        self._term_height = height
+        self._pl_width = 0
+        self._color = Terminal.isatty()
 
     def string_color(self, strg, color):
         '''Return a string formatted with a special color'''
