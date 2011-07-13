@@ -281,8 +281,8 @@ class CommandLineInterface(UserView):
         might have changed.
         '''
         if isinstance(obj, Service) and self._options.verbosity >= 1 and \
-            obj.status in (TIMED_OUT, TOO_MANY_ERRORS, ERROR, DONE) and \
-                not obj.simulate:
+            obj.status in (TIMED_OUT, TOO_MANY_ERRORS, ERROR, DONE,
+                           DONE_WITH_WARNINGS) and not obj.simulate:
             self._console.print_status(obj)
             self._console.print_running_tasks()
             if self.profiling:
