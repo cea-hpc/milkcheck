@@ -13,10 +13,14 @@ from MilkCheck.ServiceManager import service_manager_self
 from MilkCheck.Engine.Service import Service
 from MilkCheck.Engine.Action import Action
 from MilkCheck.Engine.ServiceGroup import ServiceGroup
-from MilkCheck.Engine.BaseEntity import DONE, NO_STATUS, TOO_MANY_ERRORS
-from MilkCheck.Engine.BaseEntity import ERROR
 from MilkCheck.Callback import CallbackHandler
 from ClusterShell.NodeSet import NodeSet
+
+# Symbols
+from MilkCheck.Engine.BaseEntity import DONE, NO_STATUS, TOO_MANY_ERRORS
+from MilkCheck.Engine.BaseEntity import ERROR
+from MilkCheck.UI.UserView import RC_OK, RC_WARNING, RC_ERROR, RC_EXCEPTION
+from MilkCheck.UI.UserView import RC_UNKNOWN_EXCEPTION
 
 class CommandLineInterfaceTests(TestCase):
     '''Tests cases of the command line interface'''
@@ -24,14 +28,14 @@ class CommandLineInterfaceTests(TestCase):
     def setUp(self):
         '''
         Set up the graph of services within the service manager
-        
+
         Graphe
                 ---> S2
             S1                            --> I1 
                         ---> G1 --> (sour)       --> (sink)
                 ---> S3                   --> I2 
                         ---> S4
-                        
+
         Each node has an action start and an action stop
         '''
         ServiceManager._instance = None 
@@ -98,29 +102,30 @@ class CommandLineInterfaceTests(TestCase):
     def test_execute_service_from_CLI(self):
         '''Execute a service from the CLI'''
         cli = CommandLineInterface()
-        cli.execute(['G1', 'stop', '-vvv', '-x', 'fortoy8'])
+        retcode = cli.execute(['G1', 'stop', '-vvv', '-x', 'fortoy8'])
         manager = service_manager_self()
         self.assertEqual(manager.entities['S1'].status, DONE)
         self.assertEqual(manager.entities['S3'].status, TOO_MANY_ERRORS)
         self.assertEqual(manager.entities['G1'].status, ERROR)
+        self.assertEqual(retcode, RC_ERROR)
 
     def test_execute_services_verbosity(self):
         '''Test method execute to run services with different verbosity'''
         cli = CommandLineInterface()
         cli.profiling = True
-        cli.execute(['S3', 'start'])
+        self.assertEqual(cli.execute(['S3', 'start']), RC_ERROR)
         self.assertTrue(cli.count_low_verbmsg > 0)
         self.assertTrue(cli.count_average_verbmsg == 0)
         self.assertTrue(cli.count_high_verbmsg == 0)
-        cli.execute(['S3', 'start', '-v'])
+        self.assertEqual(cli.execute(['S3', 'start', '-v']), RC_ERROR)
         self.assertTrue(cli.count_low_verbmsg > 0)
         self.assertTrue(cli.count_average_verbmsg > 0)
         self.assertTrue(cli.count_high_verbmsg == 0)
-        cli.execute(['S3', 'start', '-vv'])
+        self.assertEqual(cli.execute(['S3', 'start', '-vv']), RC_ERROR)
         self.assertTrue(cli.count_low_verbmsg > 0)
         self.assertTrue(cli.count_average_verbmsg > 0)
         self.assertTrue(cli.count_high_verbmsg > 0)
-        cli.execute(['S3', 'start', '-d'])
+        self.assertEqual(cli.execute(['S3', 'start', '-d']), RC_ERROR)
         self.assertTrue(cli.count_low_verbmsg > 0)
         self.assertTrue(cli.count_average_verbmsg > 0)
         self.assertTrue(cli.count_high_verbmsg > 0)
@@ -131,8 +136,10 @@ class CommandLineInterfaceTests(TestCase):
         # Execute start on S1 with verbosity at level one, do not process
         # the node S3 moreover hijack cluster nodes aury11 and aury12
         cli.profiling = True
-        cli.execute(['S1', 'start', '-vvv', '-X', 'S3', '-x', 'fortoy8'])
+        retcode = cli.execute(
+            ['S1', 'start', '-vvv', '-X', 'S3', '-x', 'fortoy8'])
         manager = service_manager_self()
+        self.assertEqual(retcode, RC_OK)
         self.assertEqual(manager.entities['S1'].status, DONE)
         self.assertEqual(manager.entities['S2'].status, DONE)
         self.assertEqual(manager.entities['S4'].status, NO_STATUS)
@@ -144,8 +151,9 @@ class CommandLineInterfaceTests(TestCase):
     def test_execute_nodes_exclusion(self):
         '''Test nodes exlcusion from the CLI'''
         cli = CommandLineInterface()
-        cli.execute(['S3', 'stop', '-vvv', '-x', 'fortoy8'])
+        retcode = cli.execute(['S3', 'stop', '-vvv', '-x', 'fortoy8'])
         manager = service_manager_self()
+        self.assertEqual(retcode, RC_ERROR)
         self.assertEqual(manager.entities['S2'].status, NO_STATUS)
         self.assertEqual(manager.entities['S4'].status, NO_STATUS)
         self.assertEqual(manager.entities['G1'].status, NO_STATUS)
@@ -159,8 +167,9 @@ class CommandLineInterfaceTests(TestCase):
     def test_execute_nodes_only(self):
         '''Test mandatory nodes from CLI'''
         cli = CommandLineInterface()
-        cli.execute(['S1', 'start', '-d', '-n', 'localhost'])
+        retcode = cli.execute(['S1', 'start', '-d', '-n', 'localhost'])
         manager = service_manager_self()
+        self.assertEqual(retcode, RC_ERROR)
         self.assertEqual(manager.entities['S1'].status, ERROR)
         self.assertEqual(manager.entities['S2'].status, DONE)
         self.assertEqual(manager.entities['S3'].status, TOO_MANY_ERRORS)
@@ -178,16 +187,18 @@ class CommandLineInterfaceTests(TestCase):
     def test_execute_multiple_services(self):
         '''Test execution of S2 and G1 at the same time'''
         cli = CommandLineInterface()
-        cli.execute(['S2', 'G1', 'start', '-d', '-x', 'fortoy8'])
+        retcode = cli.execute(['S2', 'G1', 'start', '-d', '-x', 'fortoy8'])
         manager = service_manager_self()
+        self.assertEqual(retcode, RC_OK)
         self.assertEqual(manager.entities['S2'].status, DONE)
         self.assertEqual(manager.entities['G1'].status, DONE)
 
     def test_execute_multiple_services_reverse(self):
         '''Test reverse execution of S2 and G1 at the same time'''
         cli = CommandLineInterface()
-        cli.execute(['S2', 'G1', 'stop', '-d', '-x', 'fortoy8'])
+        retcode = cli.execute(['S2', 'G1', 'stop', '-d', '-x', 'fortoy8'])
         manager = service_manager_self()
+        self.assertEqual(retcode, RC_ERROR)
         self.assertEqual(manager.entities['S1'].status, DONE)
         self.assertEqual(manager.entities['S3'].status, TOO_MANY_ERRORS)
         self.assertEqual(manager.entities['S2'].status, DONE)
@@ -196,8 +207,9 @@ class CommandLineInterfaceTests(TestCase):
     def test_execute_overall_graph(self):
         '''Test no services required so make all'''
         cli = CommandLineInterface()
-        cli.execute(['start', '-d', '-x', 'fortoy8'])
+        retcode = cli.execute(['start', '-d', '-x', 'fortoy8'])
         manager = service_manager_self()
+        self.assertEqual(retcode, RC_ERROR)
         self.assertEqual(manager.entities['S1'].status, ERROR)
         self.assertEqual(manager.entities['S2'].status, DONE)
         self.assertEqual(manager.entities['S3'].status, TOO_MANY_ERRORS)
@@ -207,24 +219,26 @@ class CommandLineInterfaceTests(TestCase):
     def test_execute_overall_graph_reverse(self):
         '''Test no services required so make all reverse'''
         cli = CommandLineInterface()
-        cli.execute(['stop', '-d', '-x', 'fortoy8'])
+        retcode = cli.execute(['stop', '-d', '-x', 'fortoy8'])
         manager = service_manager_self()
+        self.assertEqual(retcode, RC_ERROR)
         self.assertEqual(manager.entities['S1'].status, DONE)
         self.assertEqual(manager.entities['S2'].status, DONE)
         self.assertEqual(manager.entities['S3'].status, TOO_MANY_ERRORS)
         self.assertEqual(manager.entities['S4'].status, ERROR)
         self.assertEqual(manager.entities['G1'].status, ERROR)
 
-    def test_execute_retcode_zero(self):
-        '''Test whether method execute returns 0 if everything went well'''
-        cli = CommandLineInterface()
-        self.assertEqual(
-            cli.execute(['S2', 'G1', 'start', '-d', '-x', 'fortoy8']), 0)
-
-    def test_execute_retcode_one(self):
-       '''Test whether method execute returns 1 if an exception is raised'''
+    def test_execute_retcode_exception(self):
+       '''
+       Test if the method execute returns 9 if a known exception is raised
+       '''
        cli = CommandLineInterface()
-       # Unknow action 
-       self.assertEqual(cli.execute(['stup']), 1)
-       # Unknow service
-       self.assertEqual(cli.execute(['start', 'S6']), 1)
+       self.assertEqual(cli.execute(['stup']), RC_EXCEPTION)
+       self.assertEqual(cli.execute(['start', 'S6']), RC_EXCEPTION)
+
+    def test_execute_retcode_unknow_exception(self):
+        '''
+        Test if the method execute returns 12 if an unknown exception is raised
+        '''
+        cli = CommandLineInterface()
+        self.assertEqual(cli.execute([8, 9]), RC_UNKNOWN_EXCEPTION)

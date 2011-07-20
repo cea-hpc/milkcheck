@@ -15,7 +15,9 @@ from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
 from MilkCheck.Engine.BaseEntity import VariableAlreadyReferencedError
 
 # Symbols
-from MilkCheck.Engine.BaseEntity import LOCKED
+from MilkCheck.Engine.BaseEntity import LOCKED, DONE_WITH_WARNINGS, ERROR
+from MilkCheck.Engine.BaseEntity import TOO_MANY_ERRORS
+from MilkCheck.UI.UserView import RC_OK, RC_WARNING, RC_ERROR
 
 class ServiceNotFoundError(MilkCheckEngineError):
     '''
@@ -38,7 +40,7 @@ class ServiceManager(EntityManager):
     The service manager has to handle call to services. It implements
     features allowing us to get dependencies of service and so on.
     '''
-    
+
     def __init__(self):
         EntityManager.__init__(self)
         # Variables declared in the global scope
@@ -51,7 +53,7 @@ class ServiceManager(EntityManager):
         for service in self.entities.values():
             service.reset()
         self._graph_changed = False
-            
+
     def has_service(self, service):
         '''Determine if the service is registered within the manager'''
         return service in self.entities.values()
@@ -157,11 +159,26 @@ class ServiceManager(EntityManager):
             'Invalid mode, should be DIF, INT or None'
         for service in self.entities.values():
             service.update_target(nodeset, mode)
-    
+
+    def __retcode(self, source):
+        '''
+        Determine a retcode from a the last point of the graph
+        RETCODE: 0 verything went as we expected
+        RETCODE: 3 means that the status is DONE_WITH_WARNING
+        RETCODE: 6 means that the status is ERROR
+        '''
+        if source.status is DONE_WITH_WARNINGS:
+            return RC_WARNING
+        elif source.status in (ERROR, TOO_MANY_ERRORS):
+            return RC_ERROR
+        else:
+            return RC_OK
+
     def call_services(self, services, action, opts=None):
         '''Allow the user to call one or multiple services.'''
         assert action, 'action name cannot be None'
-
+        # Retcode
+        retcode = 0
         # Make sure that the graph is usable
         if self._graph_changed:
             self.__refresh_graph()
@@ -191,6 +208,7 @@ class ServiceManager(EntityManager):
                 source.clear_child_deps()
             else:
                 source.clear_parent_deps()
+            retcode = self.__retcode(source)
             self._graph_changed = True
         # Perform the required service
         elif len(services) == 1:
@@ -200,6 +218,7 @@ class ServiceManager(EntityManager):
             else:
                 raise ServiceNotFoundError('Undefined service [%s]'
                     % services[0])
+            retcode = self.__retcode(self.entities[services[0]])
         # Perform required services
         else:
             source = Service('src')
@@ -221,7 +240,9 @@ class ServiceManager(EntityManager):
                 source.clear_child_deps()
             else:
                 source.clear_parent_deps()
+            retcode = self.__retcode(source)
             self._graph_changed = True
+        return retcode
 
     def load_config(self, conf):
         '''

@@ -32,6 +32,7 @@ from MilkCheck.Engine.Service import ActionNotFoundError
 # Symbols
 from MilkCheck.Engine.BaseEntity import DONE_WITH_WARNINGS
 from MilkCheck.Engine.BaseEntity import TIMED_OUT, TOO_MANY_ERRORS, ERROR, DONE
+from MilkCheck.UI.UserView import RC_OK, RC_EXCEPTION, RC_UNKNOWN_EXCEPTION
 
 class Terminal(object):
     '''Allow the displayer to get informations from the terminal'''
@@ -246,6 +247,7 @@ class CommandLineInterface(UserView):
         self.count_low_verbmsg = 0
         self.count_average_verbmsg = 0
         self.count_high_verbmsg = 0
+        retcode = RC_OK
         try:
             (self._options, self._args) = self._mop.parse_args(command_line)
             manager = service_manager_self()
@@ -255,7 +257,8 @@ class CommandLineInterface(UserView):
                 # Compute all services with the required action
                 services = self._args[:-1]
                 action = self._args[-1]
-                manager.call_services(services, action, opts=self._options)
+                retcode = manager.call_services(services, action,
+                                                opts=self._options)
             # Case 2 : we just display dependencies of one or several services
             elif self._options.print_servs:
                 print 'TODO : Print service dependencies'
@@ -277,20 +280,21 @@ class CommandLineInterface(UserView):
                 IllegalDependencyTypeError,
                 ScannerError), exc:
             watcher.error(str(exc))
-            return 1
+            return RC_EXCEPTION
         except InvalidOptionError, exc:
             watcher.error('%s' % exc)
             self._mop.print_help()
+            return RC_EXCEPTION
         except KeyboardInterrupt, exc:
             watcher.error('Keyboard Interrupt')
             return (128 + SIGINT)
         except ScannerError, exc:
             watcher.error('Bad syntax in config file :\n%s' % exc)
-            return 1
+            return RC_EXCEPTION
         except Exception, exc:
             watcher.error('Unexpected Exception : %s' % exc)
-            return 1
-        return 0
+            return RC_UNKNOWN_EXCEPTION
+        return retcode
 
     def ev_started(self, obj):
         '''

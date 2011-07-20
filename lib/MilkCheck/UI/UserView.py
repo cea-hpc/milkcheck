@@ -8,6 +8,13 @@ This module contains the UserView class definition.
 from MilkCheck.Callback import CoreEvent
 from MilkCheck.Callback import CallbackHandler, call_back_self
 
+# Definition of retcodes
+RC_OK = 0
+RC_WARNING = 3
+RC_ERROR = 6
+RC_EXCEPTION = 9
+RC_UNKNOWN_EXCEPTION = 12 
+
 class UserView(CoreEvent):
     '''
     This class models the operation that can be performed from the User
