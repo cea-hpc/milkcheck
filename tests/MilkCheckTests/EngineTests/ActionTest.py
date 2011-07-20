@@ -15,7 +15,7 @@ from ClusterShell.NodeSet import NodeSet
 # Symbols
 from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, TIMED_OUT, ERROR
 from MilkCheck.Engine.BaseEntity import TOO_MANY_ERRORS, WAITING_STATUS
-from MilkCheck.Engine.BaseEntity import DONE_WITH_WARNINGS 
+from MilkCheck.Engine.BaseEntity import WARNING 
 
 class ActionTest(TestCase):
     """Define the unit tests for the object action."""

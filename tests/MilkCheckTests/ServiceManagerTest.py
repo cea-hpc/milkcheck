@@ -136,7 +136,7 @@ class ServiceManagerTest(TestCase):
         self.assertEqual(s4.status, DONE)
 
     def test_call_services_retcode0(self):
-        '''Test call_services return 0 wether source is DONE'''
+        '''Test call_services return 0 whether source is DONE'''
         manager = service_manager_self()
         s1 = Service('S1')
         s2 = Service('S2')
@@ -153,7 +153,7 @@ class ServiceManagerTest(TestCase):
         self.assertEqual(manager.call_services([], 'start'), RC_OK)
 
     def test_call_services_retcode3(self):
-        '''Test call_services return 3 wether source is WARNING'''
+        '''Test call_services return 3 whether source is WARNING'''
         manager = service_manager_self()
         s1 = Service('S1')
         s2 = Service('S2')
@@ -170,7 +170,7 @@ class ServiceManagerTest(TestCase):
         self.assertEqual(manager.call_services([], 'start'), RC_WARNING)
 
     def test_call_services_retcode6(self):
-        '''Test call_services return 6 wether source is ERROR'''
+        '''Test call_services return 6 whether source is ERROR'''
         manager = service_manager_self()
         s1 = Service('S1')
         s2 = Service('S2')

@@ -15,7 +15,7 @@ from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
 from MilkCheck.Engine.BaseEntity import VariableAlreadyReferencedError
 
 # Symbols
-from MilkCheck.Engine.BaseEntity import LOCKED, DONE_WITH_WARNINGS, ERROR
+from MilkCheck.Engine.BaseEntity import LOCKED, WARNING, ERROR
 from MilkCheck.Engine.BaseEntity import TOO_MANY_ERRORS
 from MilkCheck.UI.UserView import RC_OK, RC_WARNING, RC_ERROR
 
@@ -167,7 +167,7 @@ class ServiceManager(EntityManager):
         RETCODE: 3 means that the status is DONE_WITH_WARNING
         RETCODE: 6 means that the status is ERROR
         '''
-        if source.status is DONE_WITH_WARNINGS:
+        if source.status is WARNING:
             return RC_WARNING
         elif source.status in (ERROR, TOO_MANY_ERRORS):
             return RC_ERROR

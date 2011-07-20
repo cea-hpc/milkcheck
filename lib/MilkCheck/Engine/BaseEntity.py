@@ -26,7 +26,7 @@ WAITING_STATUS = 'WAITING_STATUS'
 DONE = 'DONE'
 
 # Compute starting by the entity is done but it encountered some issues
-DONE_WITH_WARNINGS = 'DONE_WITH_WARNINGS'
+WARNING = 'WARNING'
 
 # Time allowed for the entity to perform a task is over whereas the task
 # itself is not done
@@ -326,12 +326,12 @@ class BaseEntity(object):
                 if dep.is_strong():
                     return ERROR
                 elif temp_dep_status is not NO_STATUS:
-                    temp_dep_status = DONE_WITH_WARNINGS
+                    temp_dep_status = WARNING
             elif dep.target.status is WAITING_STATUS:
                 return WAITING_STATUS
-            elif dep.target.status is DONE_WITH_WARNINGS and \
+            elif dep.target.status is WARNING and \
                 temp_dep_status is not NO_STATUS:
-                temp_dep_status = DONE_WITH_WARNINGS
+                temp_dep_status = WARNING
             elif dep.target.status is NO_STATUS:
                 temp_dep_status = NO_STATUS
         return temp_dep_status

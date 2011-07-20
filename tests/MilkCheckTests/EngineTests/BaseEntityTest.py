@@ -16,7 +16,7 @@ from MilkCheck.Engine.Dependency import Dependency
 from MilkCheck.Engine.Dependency import CHECK, REQUIRE, REQUIRE_WEAK
 from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, WAITING_STATUS
 from MilkCheck.Engine.BaseEntity import TIMED_OUT, ERROR, TOO_MANY_ERRORS
-from MilkCheck.Engine.BaseEntity import DONE_WITH_WARNINGS
+from MilkCheck.Engine.BaseEntity import WARNING
 
 # Exceptions
 from MilkCheck.Engine.BaseEntity import IllegalDependencyTypeError
@@ -205,12 +205,12 @@ class BaseEntityTest(unittest.TestCase):
         service = BaseEntity("test_service")
         serv_a = BaseEntity("A")
         serv_b = BaseEntity("B")
-        serv_a.status = DONE_WITH_WARNINGS
+        serv_a.status = WARNING
         service.add_dep(serv_a)
         service.add_dep(serv_b, CHECK)
         self.assertEqual(service.eval_deps_status(), NO_STATUS)
         serv_a.status = NO_STATUS
-        serv_b.status = DONE_WITH_WARNINGS
+        serv_b.status = WARNING
         self.assertEqual(service.eval_deps_status(), NO_STATUS)
 
     def test_eval_deps_waiting(self):
@@ -235,7 +235,7 @@ class BaseEntityTest(unittest.TestCase):
         self.assertEqual(service.eval_deps_status(), ERROR)
 
     def test_eval_deps_warnings(self):
-        """Test that eval_deps_status return DONE_WITH_WARNINGS"""
+        """Test that eval_deps_status return WARNING"""
         service = BaseEntity("test_service")
         serv_a = BaseEntity("A")
         serv_b = BaseEntity("B")
@@ -243,10 +243,10 @@ class BaseEntityTest(unittest.TestCase):
         service.add_dep(serv_b, REQUIRE_WEAK)
         serv_b.status = TOO_MANY_ERRORS
         serv_a.status = TIMED_OUT
-        self.assertEqual(service.eval_deps_status(), DONE_WITH_WARNINGS)
+        self.assertEqual(service.eval_deps_status(), WARNING)
         serv_a.status = DONE
-        serv_b.status = DONE_WITH_WARNINGS
-        self.assertEqual(service.eval_deps_status(), DONE_WITH_WARNINGS)
+        serv_b.status = WARNING
+        self.assertEqual(service.eval_deps_status(), WARNING)
 
     def test_lookup_variables1(self):
         '''Test variables resolution through a single entity'''

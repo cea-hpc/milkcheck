@@ -18,7 +18,7 @@ from MilkCheck.Engine.Service import ActionNotFoundError
 # Symbols
 from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, TIMED_OUT, ERROR
 from MilkCheck.Engine.BaseEntity import TOO_MANY_ERRORS, WAITING_STATUS
-from MilkCheck.Engine.BaseEntity import DONE_WITH_WARNINGS, LOCKED 
+from MilkCheck.Engine.BaseEntity import WARNING, LOCKED 
 from MilkCheck.Engine.Dependency import CHECK, REQUIRE, REQUIRE_WEAK
         
 class ServiceTest(TestCase):
@@ -235,7 +235,7 @@ class ServiceTest(TestCase):
 
         serv.run('start')
 
-        self.assertEqual(serv.status, DONE_WITH_WARNINGS)
+        self.assertEqual(serv.status, WARNING)
         self.assertEqual(serv_a.status, TOO_MANY_ERRORS)
         self.assertEqual(serv_b.status, DONE)
 
@@ -316,7 +316,7 @@ class ServiceTest(TestCase):
         serv_base_error.run('start')
 
         self.assertEqual(serv_base_error.status, ERROR)
-        self.assertEqual(serv_ok_warnings.status, DONE_WITH_WARNINGS)
+        self.assertEqual(serv_ok_warnings.status, WARNING)
         self.assertEqual(serv_error.status, ERROR)
         self.assertEqual(serv_timed_out.status, TIMED_OUT)
 
@@ -363,7 +363,7 @@ class ServiceTest(TestCase):
         self.assertEqual(serv_c.status, ERROR)
         self.assertEqual(serv_b.status, DONE)
         self.assertEqual(serv_x.status, DONE)
-        self.assertEqual(serv_a.status, DONE_WITH_WARNINGS)
+        self.assertEqual(serv_a.status, WARNING)
         
     def test_prepare_delayed_action(self):
         """Test prepare Service with a delayed action"""

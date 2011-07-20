@@ -16,7 +16,7 @@ from MilkCheck.Engine.Action import Action
 # Symbols
 from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, TIMED_OUT
 from MilkCheck.Engine.BaseEntity import WAITING_STATUS, ERROR
-from MilkCheck.Engine.BaseEntity import DONE_WITH_WARNINGS, TOO_MANY_ERRORS
+from MilkCheck.Engine.BaseEntity import WARNING, TOO_MANY_ERRORS
 from MilkCheck.Engine.Dependency import CHECK, REQUIRE_WEAK
 
 class CoreTest(TestCase):
@@ -76,9 +76,9 @@ class CoreTest(TestCase):
         self.assertEqual(grp2.status, ERROR)
         self.assertEqual(s3.status, ERROR)
         self.assertEqual(s2.status, ERROR)
-        self.assertEqual(grp1.status, DONE_WITH_WARNINGS)
-        self.assertEqual(s1.status, DONE_WITH_WARNINGS)
-        self.assertEqual(group_init.status, DONE_WITH_WARNINGS)
+        self.assertEqual(grp1.status, WARNING)
+        self.assertEqual(s1.status, WARNING)
+        self.assertEqual(group_init.status, WARNING)
 
     def test_core_behaviour_reverse(self):
         '''Test ability of the core to solve a large graph in reverse mode'''

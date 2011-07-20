@@ -30,7 +30,7 @@ from MilkCheck.Engine.BaseEntity import IllegalDependencyTypeError
 from MilkCheck.Engine.Service import ActionNotFoundError
 
 # Symbols
-from MilkCheck.Engine.BaseEntity import DONE_WITH_WARNINGS
+from MilkCheck.Engine.BaseEntity import WARNING
 from MilkCheck.Engine.BaseEntity import TIMED_OUT, TOO_MANY_ERRORS, ERROR, DONE
 from MilkCheck.UI.UserView import RC_OK, RC_EXCEPTION, RC_UNKNOWN_EXCEPTION
 
@@ -81,7 +81,7 @@ class ConsoleDisplay(object):
                 'CYAN': '\033[0;36m%s\033[0m'
               }
     _LARGEST_STATUS = max([len(status) \
-         for status in (DONE_WITH_WARNINGS, TIMED_OUT, TOO_MANY_ERRORS, ERROR,
+         for status in (WARNING, TIMED_OUT, TOO_MANY_ERRORS, ERROR,
                         DONE)])
 
     def __init__(self):
@@ -128,10 +128,10 @@ class ConsoleDisplay(object):
                 '[%s]' % \
                     self.string_color(
                     entity.status.center(self._LARGEST_STATUS), 'RED'))
-        elif entity.status is DONE_WITH_WARNINGS:
+        elif entity.status is WARNING:
             line = line % (entity.fullname(),
                 '[%s]' % \
-                self.string_color('WARNING'.center(self._LARGEST_STATUS),
+                self.string_color(entity.status.center(self._LARGEST_STATUS),
                                   'YELLOW'))
         elif entity.status is DONE:
             line = line % (entity.fullname(),
@@ -340,7 +340,7 @@ class CommandLineInterface(UserView):
         '''
         if isinstance(obj, Service) and self._options.verbosity >= 1 and \
             obj.status in (TIMED_OUT, TOO_MANY_ERRORS, ERROR, DONE,
-                           DONE_WITH_WARNINGS) and not obj.simulate:
+                           WARNING) and not obj.simulate:
             self._console.print_status(obj)
             self._console.print_running_tasks()
             if self.profiling:

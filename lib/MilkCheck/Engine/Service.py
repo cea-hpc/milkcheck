@@ -17,7 +17,7 @@ from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
 # Symbols
 from MilkCheck.Engine.BaseEntity import NO_STATUS, TOO_MANY_ERRORS
 from MilkCheck.Engine.BaseEntity import WAITING_STATUS, ERROR, DONE
-from MilkCheck.Engine.BaseEntity import DONE_WITH_WARNINGS, TIMED_OUT
+from MilkCheck.Engine.BaseEntity import WARNING, TIMED_OUT
 from MilkCheck.Callback import EV_STATUS_CHANGED, EV_TRIGGER_DEP
 
 class ActionNotFoundError(MilkCheckEngineError):
@@ -123,11 +123,11 @@ class Service(BaseService):
         dependencies are solved start children dependencies.
         '''
         assert status in (TIMED_OUT, TOO_MANY_ERRORS, DONE, \
-                            DONE_WITH_WARNINGS, NO_STATUS, WAITING_STATUS, \
+                            WARNING, NO_STATUS, WAITING_STATUS, \
                                 ERROR)
 
         if self.warnings and self.last_action().status is DONE:
-            self.status = DONE_WITH_WARNINGS
+            self.status = WARNING
         else:
             self.status = status
 
@@ -196,7 +196,7 @@ class Service(BaseService):
                 self.update_status(ERROR)
             else:
                 # Just flag if dependencies encountered problem
-                if deps_status == DONE_WITH_WARNINGS:
+                if deps_status == WARNING:
                     self.warnings = True
 
                 # Look for uncompleted dependencies 

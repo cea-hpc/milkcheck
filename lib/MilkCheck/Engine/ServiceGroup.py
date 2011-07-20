@@ -14,7 +14,7 @@ from MilkCheck.Engine.Dependency import Dependency
 from MilkCheck.Engine.Dependency import REQUIRE
 from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, TIMED_OUT
 from MilkCheck.Engine.BaseEntity import WAITING_STATUS, ERROR
-from MilkCheck.Engine.BaseEntity import DONE_WITH_WARNINGS, TOO_MANY_ERRORS
+from MilkCheck.Engine.BaseEntity import WARNING, TOO_MANY_ERRORS
 
 # Exceptions
 from MilkCheck.ServiceManager import ServiceNotFoundError
@@ -202,9 +202,9 @@ class ServiceGroup(Service):
             final_status = ERROR
         elif extd_status is NO_STATUS or intd_status is NO_STATUS:
             final_status = NO_STATUS
-        elif extd_status is DONE_WITH_WARNINGS or \
-            intd_status is DONE_WITH_WARNINGS:
-            final_status = DONE_WITH_WARNINGS
+        elif extd_status is WARNING or \
+            intd_status is WARNING:
+            final_status = WARNING
         return final_status
 
     def _process_dependencies(self, deps):
@@ -228,7 +228,7 @@ class ServiceGroup(Service):
         else:
             # The group node is a fake we just change his status
             if self.warnings:
-                self.update_status(DONE_WITH_WARNINGS)
+                self.update_status(WARNING)
             else:
                 self.update_status(DONE)
 

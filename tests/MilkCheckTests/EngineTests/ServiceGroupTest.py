@@ -16,7 +16,7 @@ from ClusterShell.NodeSet import NodeSet
 # Symbols
 from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, TIMED_OUT
 from MilkCheck.Engine.BaseEntity import WAITING_STATUS, ERROR
-from MilkCheck.Engine.BaseEntity import DONE_WITH_WARNINGS, TOO_MANY_ERRORS
+from MilkCheck.Engine.BaseEntity import WARNING, TOO_MANY_ERRORS
 from MilkCheck.Engine.Dependency import CHECK, REQUIRE_WEAK
 
 class ServiceGroupTest(TestCase):
@@ -68,7 +68,7 @@ class ServiceGroupTest(TestCase):
         action.status = DONE
         ser1.add_action(action)
         ser1.warnings = True
-        ser1.status = DONE_WITH_WARNINGS
+        ser1.status = WARNING
         group.add_inter_dep(target=ser1)
         group.status = ERROR
         group.reset()
@@ -267,7 +267,7 @@ class ServiceGroupTest(TestCase):
         e1 = Service('E1')
         e2 = Service('E2')
         e1.status = DONE
-        e2.status = DONE_WITH_WARNINGS
+        e2.status = WARNING
         group.add_dep(target=e1)
         group.add_dep(target=e2)
         group._source.status = WAITING_STATUS
@@ -395,7 +395,7 @@ class ServiceGroupTest(TestCase):
         self.assertEqual(inter_serv3.status, DONE)
 
     def test_prepare_group_with_errors_one(self):
-        '''Test prepare a group terminated by DONE_WITH_WARNINGS'''
+        '''Test prepare a group terminated by WARNING'''
         # Group
         group = ServiceGroup('GROUP')
         # Internal
@@ -425,11 +425,11 @@ class ServiceGroupTest(TestCase):
         group.add_dep(target=ext_serv2, sgth=REQUIRE_WEAK)
         # Prepare group
         group.run('start')
-        self.assertEqual(group.status, DONE_WITH_WARNINGS)
+        self.assertEqual(group.status, WARNING)
         self.assertEqual(ext_serv1.status, DONE)
         self.assertEqual(ext_serv2.status, TOO_MANY_ERRORS)
         self.assertEqual(inter_serv1.status, DONE)
-        self.assertEqual(inter_serv2.status, DONE_WITH_WARNINGS)
+        self.assertEqual(inter_serv2.status, WARNING)
         self.assertEqual(inter_serv3.status, TOO_MANY_ERRORS)
 
     def test_prepare_group_with_errors_two(self):
