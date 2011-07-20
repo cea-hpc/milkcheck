@@ -120,6 +120,11 @@ class ServiceManager(EntityManager):
         '''
         # Load the configuration located within the directory
         if options.config_dir:
+            self.reset()
+            if options.hijack_nodes:
+                self.add_var('EXCLUDED_NODES', options.hijack_nodes)
+            else:
+                self.add_var('EXCLUDED_NODES', '')
             self.load_config(options.config_dir)
 
         # Avoid some of the services referenced in the graph
@@ -131,8 +136,6 @@ class ServiceManager(EntityManager):
             self.__update_usable_nodes(options.only_nodes, 'INT')
         # Avoid those nodes
         elif options.hijack_nodes:
-            self.remove_var('EXCLUDED_NODES')
-            self.add_var('EXCLUDED_NODES', options.hijack_nodes)
             self.__update_usable_nodes(options.hijack_nodes, 'DIF')
 
     def __lock_services(self, services):

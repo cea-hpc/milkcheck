@@ -293,6 +293,50 @@ class BaseEntityTest(unittest.TestCase):
         self.assertEqual(symbols['TARGET'], NodeSet())
         self.assertEqual(symbols['NAME'], 'test_service')
 
+    def test_resolve_value1(self):
+        '''Test no replacement to do so just return the initial value'''
+        service = BaseEntity('test_service')
+        self.assertEqual(service._resolve('hello world'), 'hello world')
+
+    def test_resolve_value2(self):
+        '''Test replacement of variable referenced in the entity'''
+        service = BaseEntity('test_service')
+        service.add_var('NODES', 'localhost,127.0.0.1')
+        self.assertEqual(service._resolve('%NODES'), 'localhost,127.0.0.1')
+
+    def test_resolve_value3(self):
+        '''Test multiple variable replacements'''
+        service = BaseEntity('test_service')
+        service.add_var('NODES', 'localhost,127.0.0.1')
+        self.assertEqual(service._resolve('%NODES %NAME'),
+                         'localhost,127.0.0.1 test_service')
+
+    def test_resolve_value4(self):
+        '''Test resolution of an expression'''
+        service = BaseEntity('test_service')
+        self.assertEqual(service._resolve('$(echo hello world)'),
+                         'hello world')
+
+    def test_resolve_value5(self):
+        '''Test combining resolution of variables and expressions'''
+        service = BaseEntity('test_service')
+        service.add_var('NODES', 'localhost,127.0.0.1')
+        self.assertEqual(service._resolve('%NODES $(echo hello world) %NAME'),
+                         'localhost,127.0.0.1 hello world test_service')
+
+    def test_resolve_value6(self):
+        '''Test resolution of variable inside an expression'''
+        service = BaseEntity('test_service')
+        self.assertEqual(service._resolve('$(echo %NAME)'),
+                         'test_service')
+
+    def test_resolve_value7(self):
+        '''Test resolution of recursive expressions'''
+        service = BaseEntity('test_service')
+        service.add_var('NODES', 'localhost,127.0.0.1')
+        self.assertEqual(service._resolve('$(echo %NAME $(echo %NODES))'),
+                         'test_service localhost,127.0.0.1')
+
     def test_resolve_property1(self):
         '''Test replacement of symbols within a property'''
         service = BaseEntity('test_service')

@@ -79,9 +79,8 @@ class MilkCheckConfig(object):
         Instanciate services, variables and service group. This methods
         also populate the service manager.
         '''
-        # Get back the manager and make sure that it has been cleaned up
+        # Get back the manager
         manager = service_manager_self()
-        manager.reset()
 
         dependencies = {}
         variables = {}

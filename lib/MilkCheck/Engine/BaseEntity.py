@@ -7,7 +7,7 @@ This module contains the BaseEntity class definition
 
 # Classes
 from subprocess import Popen, PIPE
-from re import sub, findall, match, search
+from re import sub, findall, match, search, escape
 from ClusterShell.NodeSet import NodeSet
 from MilkCheck.Engine.Dependency import Dependency
 
@@ -68,7 +68,7 @@ class UndefinedVariableError(MilkCheckEngineError):
     variable located in a command
     '''
     def __init__(self, varname):
-        msg = "Variable %s undefined" % (varname)
+        msg = "Variable %s undefined" % varname
         MilkCheckEngineError.__init__(self, msg)
 
 class InvalidVariableError(MilkCheckEngineError):
@@ -77,9 +77,9 @@ class InvalidVariableError(MilkCheckEngineError):
     through the shell but the retcode is greater than one.
     '''
     def __init__(self, varname):
-        msg = "Cannot evaluate variable %s" % (varname)
+        msg = "Cannot evaluate expression %s" % varname
         MilkCheckEngineError.__init__(self, msg)
-    
+
 class BaseEntity(object):
     '''
     This class is abstract and shall not be instanciated.
@@ -89,22 +89,22 @@ class BaseEntity(object):
     def __init__(self, name, target=None):
         # Entity name
         self.name = name
-        
+
         # Each entity has a status which it state
         self.status = NO_STATUS
-        
+
         # Description of an entity
         self.desc = ''
-        
+
         # Maximum window for parallelism. A None fanout means
         # that the task will be limited by the default value of
         # ClusterShell 64
         self.fanout = -1
-        
+
         # Nodes on which the entity is launched
         self.target = target
         self._target_backup = self.target
-        
+
         # Maximum error authorized for the entity. -1 means that
         # we do not want any error
         self.errors = -1
@@ -114,10 +114,10 @@ class BaseEntity(object):
 
         # Parent of the current object. Must be a subclass of BaseEntity
         self.parent = None
-        
+
         # Parents dependencies (e.g A->B so B is the parent of A)
         self.parents = {}
-        
+
         # Children dependencies (e.g A<-B) so A is a child of B)
         self.children = {}
 
@@ -164,11 +164,10 @@ class BaseEntity(object):
 
     def set_target(self, value):
         '''Assign nodeset to _target'''
-        if match('\$\(.+\)', '%s' %value) or search('%[\w]+', '%s' %value):
-            self._target = value
-            self.target = NodeSet(self.resolve_property('target'))
-        else:
-            self._target = NodeSet(value)
+        if match('\${1}\(.+\)', '%s' % value) or \
+           search('%{1}\w+', '%s' % value):
+            value = self._resolve(value)
+        self._target = NodeSet(value)
 
     target = property(fset=set_target, fget=get_target)
 
@@ -388,34 +387,54 @@ class BaseEntity(object):
                     if value is None:
                         raise UndefinedVariableError(name)
 
-    def resolve_property(self, prop):
+    def _resolve(self, value):
         '''
-        Resolve the variables contained within the property. It proceeds by
-        looking for the values required to replace the symbols.
+        This method takes a string containing symbols. Those strings may
+        look like to : 
+            + $(nodeset -f epsilon[5-8] -x epsilon7)
+            + %CMD echo $(nodeset -f epsilon[5-8])
+            + ps -e | grep myprogram
+        After computation this method return a string with all the symbols
+        resolved
         '''
-        pvalue = None
-        if hasattr(self, prop):
-             pvalue = getattr(self, prop)
-             # Evaluated by the shell
-             fprint = match('\$\((?P<command>.+)\)', '%s' % pvalue)
-             if fprint and fprint.group('command'):
-                cmd = Popen(fprint.group('command').split(' '),
-                    stdout=PIPE, stderr=PIPE)
+        sym = {}
+        exp = {}
+        # First step consist in finding the different symbols of the string
+        for fprint in findall('(\${1}\(.+\)|%{1}\w+)', str(value)):
+            if match('\${1}\(.+\)', fprint):
+                if search('(\${1}\(.+\)|%{1}\w+)', fprint[2:-1]):
+                    exp[fprint] = self._resolve(fprint[2:-1])
+                else:
+                     exp[fprint] = fprint[2:-1]
+                cmd = Popen(exp[fprint].split(' '),
+                            stdout=PIPE, stderr=PIPE)
                 (stdout, stderr) = cmd.communicate()
                 cmd.stdout.close()
                 cmd.stderr.close()
                 if cmd.wait() == 0:
-                    pvalue = stdout.rstrip('\n')
+                    exp[fprint] = stdout.rstrip('\n')
                 else:
-                    raise InvalidVariableError(pvalue)
-             else:
-                 symbols = {}
-                 for symb in findall('%{1}[\w]+', '%s' % pvalue):
-                     symbols[symb.lstrip('%')] = None
-                 if symbols:
-                    self._lookup_variables(symbols)
-                    for (symb, value) in symbols.items():
-                        pvalue = sub('%%%s' % symb, str(value), pvalue)
+                    raise InvalidVariableError(value)
+            else:
+                sym[fprint.lstrip('%')] = None
+                self._lookup_variables(sym)
+        # Next perfom replacement of the variables
+        for (sym_pattern, new_value) in sym.items():
+            value = sub('%%%s' % sym_pattern, str(new_value), str(value))
+        # Next perform replacement of expressions
+        for (exp_pattern, new_value) in exp.items():
+            value = str(value).replace(exp_pattern, str(new_value))
+        return value
+
+    def resolve_property(self, prop):
+        '''
+        Resolve the variables contained within the property. It proceeds by
+        looking for the values required to replace the symbols. This method
+        returns None whether the property does not exist.
+        '''
+        pvalue = None
+        if hasattr(self, prop):
+            pvalue = self._resolve(getattr(self, prop))
         return pvalue
 
     def inherits_from(self, entity):
