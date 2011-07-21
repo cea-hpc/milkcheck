@@ -84,7 +84,7 @@ class McOptionParser(OptionParser):
 
         eng.add_option('-x', '--exclude-nodes', action='callback',
                  callback=self.__check_service_mode, type='nodeset',
-                 dest='hijack_nodes',
+                 dest='excluded_nodes',
                  help='Exclude the cluster\'s nodes specified')
 
         eng.add_option('-X', '--exclude-service', action='append',
@@ -117,7 +117,7 @@ class McOptionParser(OptionParser):
     def __check_printdep_mode(self, option, opt, value, parser):
         '''Check whether we are in printdeps mode.'''
         if self.values.only_nodes or \
-                self.values.hijack_nodes or \
+                self.values.excluded_nodes or \
                     self.values.hijack_servs:
             self.error('%s cannot be used with -n, -x or -X' % option)
         self.__consume_args_callback(option, value)
@@ -128,9 +128,9 @@ class McOptionParser(OptionParser):
         '''Check whether we are in the service execution mode.'''
         if self.values.print_servs:
             self.error('%s cannot be used with -n, -x or -X' % option)
-        elif option.dest in ('only_nodes', 'hijack_nodes'):
-            if self.values.only_nodes and option.dest is 'hijack_nodes':
+        elif option.dest in ('only_nodes', 'excluded_nodes'):
+            if self.values.only_nodes and option.dest is 'excluded_nodes':
                 self.values.only_nodes.difference_update(value)
-            elif self.values.hijack_nodes and option.dest is 'only_nodes':
-                value.difference_update(self.values.hijack_nodes)
+            elif self.values.excluded_nodes and option.dest is 'only_nodes':
+                value.difference_update(self.values.excluded_nodes)
             setattr(self.values, option.dest, value)

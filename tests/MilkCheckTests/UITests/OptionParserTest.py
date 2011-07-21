@@ -90,8 +90,8 @@ class McOptionParserTest(TestCase):
         self.assertRaises(InvalidOptionError,
             mop.parse_args, ['-c', '/duke/'])
 
-    def test_option_hijack_nodes(self):
-        '''Test usage of the hijack_nodes option'''
+    def test_option_excluded_nodes(self):
+        '''Test usage of the excluded_nodes option'''
         mop = McOptionParser()
         mop.configure_mop()
         (options, args) = \
@@ -99,7 +99,7 @@ class McOptionParserTest(TestCase):
             '-n', 'fortoy[8-15]', '-x', 'fortoy[8-12]'])
         self.assertTrue('fortoy[13-15]' in options.only_nodes)
         self.assertFalse('fortoy[8-9]'  in options.only_nodes)
-        self.assertTrue('fortoy[8-12]' in options.hijack_nodes)
+        self.assertTrue('fortoy[8-12]' in options.excluded_nodes)
 
     def test_option_version(self):
         '''Test usage of option --version'''

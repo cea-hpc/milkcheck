@@ -134,7 +134,7 @@ class CommandLineInterfaceTests(TestCase):
         '''Test exclusion of services from the CLI'''
         cli = CommandLineInterface()
         # Execute start on S1 with verbosity at level one, do not process
-        # the node S3 moreover hijack cluster nodes aury11 and aury12
+        # the node S3 moreover excluded nodes
         cli.profiling = True
         retcode = cli.execute(
             ['S1', 'start', '-vvv', '-X', 'S3', '-x', 'fortoy8'])
