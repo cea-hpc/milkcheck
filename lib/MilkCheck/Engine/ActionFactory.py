@@ -15,14 +15,16 @@ class ActionFactory(object):
 
     @staticmethod
     def create_action(name, target=None, command=None, timeout=0, delay=0):
+        '''Return an action created from the parameters'''
         return Action(name, target, command, timeout, delay)
-        
+
     @staticmethod
     def create_action_from_dict(serialized_act):
+        '''Return an action created from the dictionnary'''
         name = serialized_act.iterkeys().next()
         action = Action(name)
         if 'delay' in serialized_act[name]:
-           action.delay = serialized_act[name]['delay'] 
+            action.delay = serialized_act[name]['delay'] 
         for item in serialized_act[name]:
             if item == 'target':
                 action.target = serialized_act[name][item]

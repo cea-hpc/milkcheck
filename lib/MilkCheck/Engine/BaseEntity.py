@@ -8,7 +8,7 @@ This module contains the BaseEntity class definition
 # Classes
 import logging
 from subprocess import Popen, PIPE
-from re import sub, findall, match, search, escape
+from re import sub, findall, match, search
 from ClusterShell.NodeSet import NodeSet
 from MilkCheck.Engine.Dependency import Dependency
 
@@ -407,7 +407,7 @@ class BaseEntity(object):
                 if search('(\${1}\(.+\)|%{1}\w+)', fprint[2:-1]):
                     exp[fprint] = self._resolve(fprint[2:-1])
                 else:
-                     exp[fprint] = fprint[2:-1]
+                    exp[fprint] = fprint[2:-1]
                 cmd = Popen(exp[fprint].split(' '),
                             stdout=PIPE, stderr=PIPE)
                 (stdout, stderr) = cmd.communicate()

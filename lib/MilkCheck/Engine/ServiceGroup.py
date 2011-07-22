@@ -238,10 +238,10 @@ class ServiceGroup(Service):
             self._last_action = action_name
 
     def inherits_from(self, entity):
-       '''Inherit properties from entity'''
-       BaseEntity.inherits_from(self, entity)
-       for subservice in self.iter_subservices():
-           subservice.inherits_from(self)
+        '''Inherit properties from entity'''
+        BaseEntity.inherits_from(self, entity)
+        for subservice in self.iter_subservices():
+            subservice.inherits_from(self)
 
     def set_algo_reversed(self, flag):
         """Updates dependencies if reversed flag is specified"""

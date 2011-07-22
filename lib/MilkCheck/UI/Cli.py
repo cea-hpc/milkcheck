@@ -103,14 +103,14 @@ class ConsoleDisplay(object):
         rtasks = [t.parent.name for t in action_manager_self().running_tasks]
         if rtasks:
             tasks_disp = '[%s]' % ','.join(rtasks)
-            width = min(self._pl_width,self._term_width)
+            width = min(self._pl_width, self._term_width)
             stdout.write('\r%s\r%s\r' % (width * ' ', tasks_disp))
             stdout.flush()
             self._pl_width = len(tasks_disp)
 
     def __rprint(self, line):
         '''Rewrite the current line and display line and jump to the next one'''
-        width = min(self._pl_width,self._term_width)
+        width = min(self._pl_width, self._term_width)
         stderr.write('\r%s\r%s\n' % (width * ' ', line))
         self._pl_width = len(line)
 

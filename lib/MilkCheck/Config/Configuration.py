@@ -4,13 +4,13 @@
 '''
 This module contains the
 '''
+import sys
 import yaml
 import logging
 import logging.config
-from sys import exit
 from os import environ, listdir
 from os.path import walk, isdir
-from os.path import isfile, abspath
+from os.path import isfile
 from re import match, compile, error
 from MilkCheck.ServiceManager import service_manager_self
 from MilkCheck.Engine.ServiceFactory import ServiceFactory, DepWrapper
@@ -57,7 +57,6 @@ class MilkCheckConfig(object):
         file descriptor
         '''
         content = None
-        logger = logging.getLogger('watcher')
         content = yaml.safe_load_all(stream)
         if content:
             self._flow.extend(content)
@@ -69,7 +68,6 @@ class MilkCheckConfig(object):
         empty.
         '''
         if self._flow:
-            manager = service_manager_self()
             self._build_services()
 
     def _build_services(self):
@@ -79,9 +77,7 @@ class MilkCheckConfig(object):
         '''
         # Get back the manager
         manager = service_manager_self()
-
         dependencies = {}
-        variables = {}
 
         # Go through data registred within flow
         for data in self._flow:
@@ -146,20 +142,20 @@ class SyntaxChecker(object):
         logger = logging.getLogger('watcher')
 
         if not file_rules_path:
-            file_rules_path = '%s/%s'\
-            %(environ['PYTHONPATH'],'MilkCheck/Config/checksyn.yaml')
+            file_rules_path = '%s/%s' \
+            % (environ['PYTHONPATH'],'MilkCheck/Config/checksyn.yaml')
         try:
             checking = yaml.load(open('%s' %(file_rules_path),'r'))
         except IOError, exc:
             logger.error('Config file required syntax checking not found')
-            exit(2)
+            sys.exit(2)
         except yaml.YAMLError, exc:
             if hasattr(exc, 'problem_mark'):
                 logger.error('Error at line %d column %d'
                     %(exc.problem_mark.line+1, exc.problem_mark.column+1))
             else:
                 logger.error('Error in configuration file : %s' % exc)
-            exit(2)
+            sys.exit(2)
         except Exception, exc:
             logger.error('Unexpected error : %s' %exc)
         else:
@@ -167,12 +163,12 @@ class SyntaxChecker(object):
                 self._places = checking['places']
             else:
                 logger.error('Missing checking lement : places')
-                exit(2)
+                sys.exit(2)
             if 'rules' in checking:
                 self._rules = self._compile_regex_rules(checking['rules'])
             else:
                 logger.error('Missing checking element : rules')
-                exit(2)
+                sys.exit(2)
 
     def _compile_regex_rules(self, regexps):
         '''Compile all regex found in the dictionnary of rules : self._rules'''
@@ -201,11 +197,10 @@ class SyntaxChecker(object):
         else:
             return False
         return doc_valid
-        
+
     def _validate_placement(self, data):
         '''Validate the place of the different properties in the document.'''
         pass
-                
 
     def _validate_content(self, data):
         '''

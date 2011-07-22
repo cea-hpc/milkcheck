@@ -195,7 +195,7 @@ class ServiceManager(EntityManager):
         if not services:
             source = Service('src')
             source.simulate = True
-            source.add_action(Action(name=action,command=':'))
+            source.add_action(Action(name=action, command=':'))
             if reverse:
                 source.algo_reversed = True
             for service in self.entities.values():
@@ -225,7 +225,7 @@ class ServiceManager(EntityManager):
             source.simulate = True
             if reverse:
                 source.algo_reversed = True
-            source.add_action(Action(name=action,command=':'))
+            source.add_action(Action(name=action, command=':'))
             for service in services:
                 if service in self.entities:
                     if reverse:
