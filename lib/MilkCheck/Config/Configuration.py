@@ -24,8 +24,6 @@ class MilkCheckConfig(object):
     def __init__(self, directory=None):
         self._filepath_base = '../conf/base/'
         self._flow = []
-        logging.config.fileConfig(environ['PYTHONPATH']+
-            '/MilkCheck/Log/mc_logging.conf')
 
     def _go_through(self, arg, dirname=None, names=None):
         '''List the files in dirname'''
@@ -145,10 +143,6 @@ class SyntaxChecker(object):
         self._places = {}
         # Contains the overall content
         checking = None
-
-        # HAS TO BE REMOVED AND SET UP IN THE MAIN
-        logging.config.fileConfig(environ['PYTHONPATH']+
-            '/MilkCheck/Log/mc_logging.conf')
         logger = logging.getLogger('watcher')
 
         if not file_rules_path:

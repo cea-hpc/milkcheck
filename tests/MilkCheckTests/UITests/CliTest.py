@@ -234,11 +234,11 @@ class CommandLineInterfaceTests(TestCase):
        '''
        cli = CommandLineInterface()
        self.assertEqual(cli.execute(['stup']), RC_EXCEPTION)
-       self.assertEqual(cli.execute(['start', 'S6']), RC_EXCEPTION)
+       self.assertEqual(cli.execute(['S6', 'start']), RC_EXCEPTION)
 
     def test_execute_retcode_unknow_exception(self):
         '''
         Test if the method execute returns 12 if an unknown exception is raised
         '''
         cli = CommandLineInterface()
-        self.assertEqual(cli.execute([8, 9]), RC_UNKNOWN_EXCEPTION)
+        self.assertRaises(TypeError, cli.execute, [8, 9])

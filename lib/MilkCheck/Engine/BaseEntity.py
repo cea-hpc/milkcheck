@@ -6,6 +6,7 @@ This module contains the BaseEntity class definition
 """
 
 # Classes
+import logging
 from subprocess import Popen, PIPE
 from re import sub, findall, match, search, escape
 from ClusterShell.NodeSet import NodeSet
@@ -397,6 +398,7 @@ class BaseEntity(object):
         After computation this method return a string with all the symbols
         resolved
         '''
+        origvalue = value
         sym = {}
         exp = {}
         # First step consist in finding the different symbols of the string
@@ -424,6 +426,9 @@ class BaseEntity(object):
         # Next perform replacement of expressions
         for (exp_pattern, new_value) in exp.items():
             value = str(value).replace(exp_pattern, str(new_value))
+        if origvalue != value:
+            logger = logging.getLogger('milkcheck')
+            logger.info("Variable content '%s' replaced by '%s'", origvalue, value)
         return value
 
     def resolve_property(self, prop):

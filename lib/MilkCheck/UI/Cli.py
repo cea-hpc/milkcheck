@@ -224,6 +224,9 @@ class CommandLineInterface(UserView):
         self._args = None
         # Displayer
         self._console = ConsoleDisplay()
+
+        self._logger = self.__install_logger()
+
         # Profiling mode (help in unit tests)
         self.profiling = False
         # Used in profiling mode
@@ -236,7 +239,6 @@ class CommandLineInterface(UserView):
         '''
         Ask for the manager to execute orders given by the command line.
         '''
-        watcher = logging.getLogger('watcher')
         self._mop = McOptionParser()
         self._mop.configure_mop()
         self.count_low_verbmsg = 0
@@ -245,6 +247,9 @@ class CommandLineInterface(UserView):
         retcode = RC_OK
         try:
             (self._options, self._args) = self._mop.parse_args(command_line)
+            if self._options.debug:
+                self._logger.setLevel(logging.DEBUG)
+
             manager = service_manager_self()
             # Case 1 : call services referenced in the manager with
             # the required action
@@ -268,20 +273,24 @@ class CommandLineInterface(UserView):
                 DependencyAlreadyReferenced,
                 IllegalDependencyTypeError,
                 ScannerError), exc:
-            watcher.error(str(exc))
+            self._logger.error(str(exc))
             return RC_EXCEPTION
         except InvalidOptionError, exc:
-            watcher.error('%s' % exc)
+            self._logger.error(str(exc))
             self._mop.print_help()
             return RC_EXCEPTION
         except KeyboardInterrupt, exc:
-            watcher.error('Keyboard Interrupt')
+            self._logger.error('Keyboard Interrupt')
             return (128 + SIGINT)
         except ScannerError, exc:
-            watcher.error('Bad syntax in config file :\n%s' % exc)
+            self._logger.error('Bad syntax in config file :\n%s' % exc)
             return RC_EXCEPTION
         except Exception, exc:
-            watcher.error('Unexpected Exception : %s' % exc)
+            # In debug mode, propagate the error
+            if getattr(self._options, 'debug', True):
+                raise
+            else:
+                self._logger.error('Unexpected Exception : %s' % exc)
             return RC_UNKNOWN_EXCEPTION
         return retcode
 
@@ -354,6 +363,31 @@ class CommandLineInterface(UserView):
         Service A triggers Service B
         '''
         pass
+
+    @classmethod
+    def __install_logger(cls):
+        '''Install the various logging methods.'''
+
+        # create logger
+        logger = logging.getLogger('milkcheck')
+        logger.setLevel(logging.WARNING)
+
+        # create console handler and set level to debug
+        console = logging.StreamHandler()
+        console.setLevel(logging.DEBUG)
+
+        # create formatter
+        formatter = logging.Formatter(
+                         '[%(asctime)s] %(levelname)-8s - %(message)s',
+                         datefmt="%H:%M:%S")
+
+        # add formatter to console
+        console.setFormatter(formatter)
+
+        # add console to logger
+        logger.addHandler(console)
+
+        return logger
 
     def get_totalmsg_count(self):
         '''Sum all counter to know how many message the CLI got'''
