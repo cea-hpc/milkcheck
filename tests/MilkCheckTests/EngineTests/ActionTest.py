@@ -188,3 +188,10 @@ class ActionTest(TestCase):
         self.assertTrue(a3.duration)
         self.assertEqual(a4.status, TOO_MANY_ERRORS)
         self.assertTrue(a4.duration)
+
+    def test_action_with_variables(self):
+        action = Action('start', 'localhost', 'echo \$([ "%VAR1" != "" ] && echo "-x %VAR1")')
+        service = Service('TEST')
+        service.add_actions(action)
+        service.add_var('VAR1', 'foo')
+        action.run()

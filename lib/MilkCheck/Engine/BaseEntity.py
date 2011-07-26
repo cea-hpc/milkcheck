@@ -7,8 +7,9 @@ This module contains the BaseEntity class definition
 
 # Classes
 import logging
+import string
 from subprocess import Popen, PIPE
-from re import sub, findall, match, search
+from re import sub, search
 from ClusterShell.NodeSet import NodeSet
 from MilkCheck.Engine.Dependency import Dependency
 
@@ -78,7 +79,7 @@ class InvalidVariableError(MilkCheckEngineError):
     through the shell but the retcode is greater than one.
     '''
     def __init__(self, varname):
-        msg = "Cannot evaluate expression %s" % varname
+        msg = "Cannot evaluate expression '%s'" % varname
         MilkCheckEngineError.__init__(self, msg)
 
 class BaseEntity(object):
@@ -165,10 +166,7 @@ class BaseEntity(object):
 
     def set_target(self, value):
         '''Assign nodeset to _target'''
-        if match('\${1}\(.+\)', '%s' % value) or \
-           search('%{1}\w+', '%s' % value):
-            value = self._resolve(value)
-        self._target = NodeSet(value)
+        self._target = NodeSet(self._resolve(value))
 
     target = property(fset=set_target, fget=get_target)
 
@@ -351,42 +349,27 @@ class BaseEntity(object):
         names.append(self.name)
         return '.'.join(names)
 
-    def _lookup_variables(self, symbols):
+    def _lookup_variable(self, varname):
         '''
-        Look for the values of the variables defined in symbols. It search
-        recursively in the parent of the current object. As soon as all the
-        variables have been solved the algorithm stops and return a dictionnary
-        with the value of the variables. If we cannot solve all variables it
-        raise an UndefinedVariableError
+        Return the value of the specified variable name.
+
+        If is not found in current object, it searches recursively in the
+        parent object.
+        If it cannot solve the variable name, it raises UndefinedVariableError.
         '''
-        # Determine whether the symbols were solved
         from MilkCheck.ServiceManager import service_manager_self
-        def all_solved(symbols):
-            for sym in symbols:
-                if not symbols[sym]:
-                    return False
-            return True
 
-        # Look for the variables in the object itself
-        for sym in symbols:
-            if symbols[sym] is None and sym in self.variables:
-                symbols[sym] = self.variables[sym]
-            elif symbols[sym] is None and hasattr(self, sym.lower()):
-                symbols[sym] = self.resolve_property(sym.lower())
-
-        if all_solved(symbols):
-            return
+        if varname in self.variables:
+            return self.variables[varname]
+        # XXX: Declare a list of authorized automatic variables
+        elif hasattr(self, varname.lower()):
+            return self.resolve_property(varname.lower())
         elif self.parent:
-            self.parent._lookup_variables(symbols)
+            return self.parent._lookup_variable(varname)
+        elif varname in service_manager_self().variables:
+            return service_manager_self().variables[varname]
         else:
-            for sym in symbols:
-                if symbols[sym] is None and\
-                    sym in service_manager_self().variables:
-                    symbols[sym] = service_manager_self().variables[sym]
-            if not all_solved(symbols):
-                for (name, value) in symbols.items():
-                    if value is None:
-                        raise UndefinedVariableError(name)
+            raise UndefinedVariableError(varname)
 
     def _resolve(self, value):
         '''
@@ -396,39 +379,52 @@ class BaseEntity(object):
             + %CMD echo $(nodeset -f epsilon[5-8])
             + ps -e | grep myprogram
         After computation this method return a string with all the symbols
-        resolved
+        resolved.
+        The '%' character could be inserted using '%%'.
         '''
         origvalue = value
-        sym = {}
-        exp = {}
-        # First step consist in finding the different symbols of the string
-        for fprint in findall('(\${1}\(.+\)|%{1}\w+)', str(value)):
-            if match('\${1}\(.+\)', fprint):
-                if search('(\${1}\(.+\)|%{1}\w+)', fprint[2:-1]):
-                    exp[fprint] = self._resolve(fprint[2:-1])
-                else:
-                    exp[fprint] = fprint[2:-1]
-                cmd = Popen(exp[fprint].split(' '),
-                            stdout=PIPE, stderr=PIPE)
-                (stdout, stderr) = cmd.communicate()
-                cmd.stdout.close()
-                cmd.stderr.close()
-                if cmd.wait() == 0:
-                    exp[fprint] = stdout.rstrip('\n')
-                else:
-                    raise InvalidVariableError(value)
-            else:
-                sym[fprint.lstrip('%')] = None
-                self._lookup_variables(sym)
-        # Next perfom replacement of the variables
-        for (sym_pattern, new_value) in sym.items():
-            value = sub('%%%s' % sym_pattern, str(new_value), str(value))
-        # Next perform replacement of expressions
-        for (exp_pattern, new_value) in exp.items():
-            value = str(value).replace(exp_pattern, str(new_value))
+        logger = logging.getLogger('milkcheck')
+
+        # For compat: if provided value is not a str, we should not convert
+        # it to a str if nothing matches.
+        # XXX: Are we sure we want this behaviour?
+        if len(str(value)) == 0 or not search('\$\(.+\)|%\w+', str(value)):
+            return value
+
+        # Perform variable replacement
+        class _MyTemplate(string.Template):
+            """Implement MilkCheck variable syntax templating."""
+            delimiter = '%'
+        class _VarSource(dict):
+            """Simulate a dict which each item is a variable lookup."""
+            def __init__(self, entity):
+                dict.__init__(self)
+                self._entity = entity
+            def __getitem__(self, item):
+                value = str(self._entity._lookup_variable(item))
+                return self._entity._resolve(value)
+        value = _MyTemplate(str(value)).substitute(_VarSource(self))
+
+        # Command substitution
+        def repl(pattern):
+            '''Replace a command execution pattern by its result.'''
+            cmd = Popen(pattern.group(1), stdout=PIPE, stderr=PIPE, shell=True)
+            stdout = cmd.communicate()[0]
+            logger.debug("External command exited with %d: '%s'" %
+                         (cmd.returncode, stdout))
+            if cmd.returncode >= 126:
+                raise InvalidVariableError(pattern.group(1))
+            return self._resolve(stdout.rstrip('\n'))
+        value = sub('\$\((.+?)\)', repl, str(value))
+
+        # Replace escape caracter '%'
+        value = sub('%%', '%', str(value))
+
+        # Debugging
         if origvalue != value:
-            logger = logging.getLogger('milkcheck')
-            logger.info("Variable content '%s' replaced by '%s'", origvalue, value)
+            logger.info("Variable content '%s' replaced by '%s'",
+                        origvalue, value)
+
         return value
 
     def resolve_property(self, prop):

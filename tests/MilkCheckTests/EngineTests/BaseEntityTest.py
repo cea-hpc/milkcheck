@@ -11,6 +11,7 @@ import unittest
 from ClusterShell.NodeSet import NodeSet, NodeSetException
 from MilkCheck.Engine.BaseEntity import BaseEntity
 from MilkCheck.Engine.Dependency import Dependency
+from MilkCheck.ServiceManager import service_manager_self
 
 # Symbols
 from MilkCheck.Engine.Dependency import CHECK, REQUIRE, REQUIRE_WEAK
@@ -248,142 +249,6 @@ class BaseEntityTest(unittest.TestCase):
         serv_b.status = WARNING
         self.assertEqual(service.eval_deps_status(), WARNING)
 
-    def test_lookup_variables1(self):
-        '''Test variables resolution through a single entity'''
-        service = BaseEntity('test_service')
-        service.add_var('VAR', 'test')
-        symbols = {'VAR': None}
-        service._lookup_variables(symbols)
-        self.assertEqual(symbols['VAR'], 'test')
-
-    def test_lookup_variables2(self):
-        '''Test variables resolution through multiple entities'''
-        service = BaseEntity('test_service')
-        service.add_var('VAR', 'test')
-        group = BaseEntity('group_service')
-        group.add_var('GVAR', 'group')
-        service.parent = group
-        symbols = {'VAR': None, 'GVAR': None}
-        service._lookup_variables(symbols)
-        self.assertEqual(symbols['VAR'], 'test')
-        self.assertEqual(symbols['GVAR'], 'group')
-
-    def test_lookup_variables3(self):
-        '''Test variables resolution with an undefined var'''
-        service = BaseEntity('test_service')
-        service.add_var('VAR', 'test')
-        group = BaseEntity('group_service')
-        group.add_var('GVAR', 'group')
-        service.parent = group
-        symbols = {'VAR': None, 'GVAR': None, 'BAD_VAR': None}
-        self.assertRaises(UndefinedVariableError,
-            service._lookup_variables, symbols)
-
-    def test_lookup_variables4(self):
-        '''Test variables resolution with a var referencing a property'''
-        service = BaseEntity('test_service')
-        service.add_var('VAR', 'test')
-        group = BaseEntity('group_service')
-        group.add_var('GVAR', 'group')
-        service.parent = group
-        symbols = {'VAR': None, 'GVAR': None, 'TARGET': None, 'NAME': None}
-        service._lookup_variables(symbols)
-        self.assertEqual(symbols['VAR'], 'test')
-        self.assertEqual(symbols['GVAR'], 'group')
-        self.assertEqual(symbols['TARGET'], NodeSet())
-        self.assertEqual(symbols['NAME'], 'test_service')
-
-    def test_resolve_value1(self):
-        '''Test no replacement to do so just return the initial value'''
-        service = BaseEntity('test_service')
-        self.assertEqual(service._resolve('hello world'), 'hello world')
-
-    def test_resolve_value2(self):
-        '''Test replacement of variable referenced in the entity'''
-        service = BaseEntity('test_service')
-        service.add_var('NODES', 'localhost,127.0.0.1')
-        self.assertEqual(service._resolve('%NODES'), 'localhost,127.0.0.1')
-
-    def test_resolve_value3(self):
-        '''Test multiple variable replacements'''
-        service = BaseEntity('test_service')
-        service.add_var('NODES', 'localhost,127.0.0.1')
-        self.assertEqual(service._resolve('%NODES %NAME'),
-                         'localhost,127.0.0.1 test_service')
-
-    def test_resolve_value4(self):
-        '''Test resolution of an expression'''
-        service = BaseEntity('test_service')
-        self.assertEqual(service._resolve('$(echo hello world)'),
-                         'hello world')
-
-    def test_resolve_value5(self):
-        '''Test combining resolution of variables and expressions'''
-        service = BaseEntity('test_service')
-        service.add_var('NODES', 'localhost,127.0.0.1')
-        self.assertEqual(service._resolve('%NODES $(echo hello world) %NAME'),
-                         'localhost,127.0.0.1 hello world test_service')
-
-    def test_resolve_value6(self):
-        '''Test resolution of variable inside an expression'''
-        service = BaseEntity('test_service')
-        self.assertEqual(service._resolve('$(echo %NAME)'),
-                         'test_service')
-
-    def test_resolve_value7(self):
-        '''Test resolution of recursive expressions'''
-        service = BaseEntity('test_service')
-        service.add_var('NODES', 'localhost,127.0.0.1')
-        self.assertEqual(service._resolve('$(echo %NAME $(echo %NODES))'),
-                         'test_service localhost,127.0.0.1')
-
-    def test_resolve_property1(self):
-        '''Test replacement of symbols within a property'''
-        service = BaseEntity('test_service')
-        service.add_var('NODES', 'localhost,127.0.0.1')
-        service.desc = 'start %NAME on %TARGET'
-        service.target = '%NODES'
-        self.assertEqual(service.resolve_property('target'),
-            NodeSet('localhost,127.0.0.1'))
-        self.assertEqual(service.resolve_property('name'),
-            'test_service')
-        self.assertEqual(service.resolve_property('desc'),
-            'start test_service on 127.0.0.1,localhost')
-
-    def test_resolve_property2(self):
-        '''Test with nothing to replace in the property'''
-        service = BaseEntity('test_service')
-        group = BaseEntity('group_service')
-        service.parent = group
-        self.assertEqual(service.resolve_property('parent'), group)
-
-    def test_resolve_property3(self):
-        '''Test resolution with a property containing a shell variable'''
-        service = BaseEntity('test_service')
-        service.target = '$(echo localhost,127.0.0.1)'
-        self.assertEqual(service.resolve_property('target'),
-            NodeSet('localhost,127.0.0.1'))
-
-    def test_resolve_property4(self):
-        '''
-        Test resolution with a property containing an invalid shell variable
-        '''
-        service = BaseEntity('test_service')
-        error = False
-        try:
-            service.target = '$(/bin/false)'
-        except InvalidVariableError:
-            error = True
-        self.assertTrue(error)
-
-    def test_resolve_property5(self):
-        '''Test resolution with a property containing special characters'''
-        service = BaseEntity('test_service')
-        service.add_var('NODES', '@testgrp!@agrp,epsilon')
-        service.target = '%NODES'
-        self.assertEqual(service.resolve_property('target'),
-            NodeSet('@testgrp!@agrp,epsilon'))
-
     def test_inheritance_of_properties1(self):
         '''Test inheritance between entities'''
         ent1 = BaseEntity(name='parent', target='aury[10-16]')
@@ -435,3 +300,167 @@ class BaseEntityTest(unittest.TestCase):
         ent2.parent = ent3
         ent1.parent = ent2
         self.assertEqual(ent1.fullname(), 'gamma.beta.alpha')
+
+class VariableBaseEntityTest(unittest.TestCase):
+    """Tests cases for the class variable management methods for BaseEntity."""
+
+    def test_lookup_variables1(self):
+        '''Test variables resolution through a single entity'''
+        service = BaseEntity('test_service')
+        service.add_var('VAR', 'test')
+        self.assertEqual(service._lookup_variable('VAR'), 'test')
+
+    def test_lookup_variables2(self):
+        '''Test variables resolution through multiple entities'''
+        service = BaseEntity('test_service')
+        service.add_var('VAR', 'test')
+        group = BaseEntity('group_service')
+        group.add_var('GVAR', 'group')
+        service.parent = group
+        self.assertEqual(service._lookup_variable('VAR'), 'test')
+        self.assertEqual(service._lookup_variable('GVAR'), 'group')
+
+    def test_lookup_variables3(self):
+        '''Test variables resolution with an undefined var'''
+        service = BaseEntity('test_service')
+        service.add_var('VAR', 'test')
+        group = BaseEntity('group_service')
+        group.add_var('GVAR', 'group')
+        service.parent = group
+        self.assertRaises(UndefinedVariableError,
+                          service._lookup_variable, 'BAD_VAR')
+
+    def test_lookup_variables4(self):
+        '''Test variables resolution with a var referencing a property'''
+        service = BaseEntity('test_service')
+        service.add_var('VAR', 'test')
+        group = BaseEntity('group_service')
+        group.add_var('GVAR', 'group')
+        service.parent = group
+        self.assertEqual(service._lookup_variable('GVAR'), 'group')
+        self.assertEqual(service._lookup_variable('TARGET'), NodeSet())
+        self.assertEqual(service._lookup_variable('NAME'), 'test_service')
+
+    def test_lookup_global_variables(self):
+        '''Test global variables resolution'''
+        service = BaseEntity('test_service')
+        service_manager_self().add_var('MGRVAR', 'test')
+        self.assertEqual(service._lookup_variable('MGRVAR'), 'test')
+
+    def test_resolve_value1(self):
+        '''Test no replacement to do so just return the initial value'''
+        service = BaseEntity('test_service')
+        self.assertEqual(service._resolve('hello world'), 'hello world')
+
+    def test_resolve_value2(self):
+        '''Test replacement of variable referenced in the entity'''
+        service = BaseEntity('test_service')
+        service.add_var('NODES', 'localhost,127.0.0.1')
+        self.assertEqual(service._resolve('%NODES'), 'localhost,127.0.0.1')
+
+    def test_resolve_value3(self):
+        '''Test multiple variable replacements'''
+        service = BaseEntity('test_service')
+        service.add_var('NODES', 'localhost,127.0.0.1')
+        self.assertEqual(service._resolve('%NODES %NAME'),
+                         'localhost,127.0.0.1 test_service')
+
+    def test_resolve_value4(self):
+        '''Test resolution of an expression'''
+        service = BaseEntity('test_service')
+        self.assertEqual(service._resolve('$(echo hello world)'),
+                         'hello world')
+
+    def test_resolve_value5(self):
+        '''Test combining resolution of variables and expressions'''
+        service = BaseEntity('test_service')
+        service.add_var('NODES', 'localhost,127.0.0.1')
+        self.assertEqual(service._resolve('%NODES $(echo hello world) %NAME'),
+                         'localhost,127.0.0.1 hello world test_service')
+
+    def test_resolve_value6(self):
+        '''Test resolution of variable inside an expression'''
+        service = BaseEntity('test_service')
+        self.assertEqual(service._resolve('$(echo %NAME)'),
+                         'test_service')
+
+    def test_resolve_property1(self):
+        '''Test replacement of symbols within a property'''
+        service = BaseEntity('test_service')
+        service.add_var('NODES', 'localhost,127.0.0.1')
+        service.desc = 'start %NAME on %TARGET'
+        service.target = '%NODES'
+        self.assertEqual(service.resolve_property('target'),
+            NodeSet('localhost,127.0.0.1'))
+        self.assertEqual(service.resolve_property('name'),
+            'test_service')
+        self.assertEqual(service.resolve_property('desc'),
+            'start test_service on 127.0.0.1,localhost')
+
+    def test_resolve_property2(self):
+        '''Test with nothing to replace in the property'''
+        service = BaseEntity('test_service')
+        group = BaseEntity('group_service')
+        service.parent = group
+        self.assertEqual(service.resolve_property('parent'), group)
+
+    def test_resolve_property3(self):
+        '''Test resolution with a property containing a shell variable'''
+        service = BaseEntity('test_service')
+        service.target = '$(echo localhost,127.0.0.1)'
+        self.assertEqual(service.resolve_property('target'),
+            NodeSet('localhost,127.0.0.1'))
+
+    def test_resolve_property4(self):
+        '''Command substitution with a non-zero exit code should be ok'''
+        service = BaseEntity('test_service')
+        service.add_var('NODES', '$(/bin/false)')
+        self.assertEqual(service._resolve('%NODES'), '')
+
+    def test_resolve_property5(self):
+        '''Test resolution with a property containing special characters'''
+        service = BaseEntity('test_service')
+        service.add_var('NODES', '@testgrp!@agrp,epsilon')
+        service.target = '%NODES'
+        self.assertEqual(service.resolve_property('target'),
+            NodeSet('@testgrp!@agrp,epsilon'))
+
+    def test_resolve_2_variables(self):
+        '''Test resolution with two adjacent variables'''
+        service = BaseEntity('test_service')
+        service.add_var('FOO', 'foo')
+        service.add_var('BAR', 'bar')
+        self.assertEqual(service._resolve('%FOO%BAR'), 'foobar')
+
+    def test_resolve_escape_char(self):
+        '''Test resolution with a variable escaping %'''
+        service = BaseEntity('test_service')
+        service.add_var('FOO', 'Keep my %%noeval!')
+        self.assertEqual(service._resolve('%FOO'), 'Keep my %noeval!')
+
+    def test_resolve_recurse(self):
+        '''Test recursive variable resolution'''
+        service = BaseEntity('test_service')
+        service.add_var('foo', 'key')
+        service.add_var('bar', 'Keep my %foo')
+        self.assertEqual(service._resolve('%bar'), 'Keep my key')
+
+    def test_resolve_command_substitution(self):
+        '''Test command substitution'''
+        service = BaseEntity('test_service')
+        service.add_var('EXCLUDED_NODES', 'foo')
+        self.assertEqual(
+            service._resolve(
+                 '$([ -n "%EXCLUDED_NODES" ] && echo "-n %EXCLUDED_NODES")'),
+            '-n foo')
+
+    def test_resolve_2_command_substitutions(self):
+        '''Test 2 command substitutions'''
+        service = BaseEntity('test_service')
+        service.add_var('EXCLUDED_NODES', 'foo')
+        service.add_var('SELECTED_NODES', 'bar')
+        self.assertEqual(
+            service._resolve(
+                 '$([ -n "%SELECTED_NODES" ] && echo "-n %SELECTED_NODES")'
+                 + ' $([ -n "%EXCLUDED_NODES" ] && echo "-x %EXCLUDED_NODES")'),
+            '-n bar -x foo')
