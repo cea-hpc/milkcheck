@@ -1,0 +1,7 @@
+service:
+    name: ping
+    desc: Ping all needed servers
+    actions:
+        status:
+            cmd: nodeset -S "\n" -e @servers | fping -r1 -u
+---

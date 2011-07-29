@@ -20,7 +20,8 @@ rpm: version $(TARBALL) $(SPECFILE) $(RPMTOPDIR)
 	rpmbuild --define "_topdir $(RPMTOPDIR)" --define "_sourcedir $$PWD" --define "version $(VERSION)" -ba $(SPECFILE)
 
 $(TARBALL): version
-	git archive --prefix=$(NAME)-$(VERSION)/ HEAD scripts lib setup.py | gzip -9 >$@
+	git archive --prefix=$(NAME)-$(VERSION)/ HEAD conf/samples scripts lib setup.py | gzip -9 >$@
+#	VERSION=$(VERSION) ./setup.py sdist -d .
 
 .PHONY: rpm clean all version
 

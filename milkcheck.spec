@@ -28,6 +28,9 @@ actions, all of them based on shell commands.
 rm -rf %{buildroot}
 %{__python} setup.py install -O1 --skip-build --root %{buildroot}
 
+# config files
+install -d %{buildroot}/%{_sysconfdir}/%{name}/conf/samples
+install -p -m 0644 conf/samples/*.yaml %{buildroot}/%{_sysconfdir}/%{name}/conf/samples
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -35,6 +38,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root,-)
+%config %{_sysconfdir}/%{name}
 %{python_sitelib}/MilkCheck/
 %{python_sitelib}/MilkCheck-*-py?.?.egg-info
 %{_bindir}/milkcheck
