@@ -114,19 +114,27 @@ class ServiceManager(EntityManager):
         for service in args:
             self.forget_service(service)
 
+    def _variable_options(self, options):
+        '''Automatic variables based on command line options.'''
+        if options:
+            # -n NODES
+            self.add_var('SELECTED_NODES', str(options.only_nodes or ''))
+            # -x NODES
+            self.add_var('EXCLUDED_NODES', str(options.excluded_nodes or ''))
+        else:
+            for varname in ('selected_node', 'excluded_nodes'):
+                self.add_var(varname.upper(), '')
+
     def _apply_options(self, options):
         '''
         This apply a sequence of modifications on the graph. A modification
         can be an update of the nodes usable by the services or whatever that
         is referenced within options.  
         '''
+
         # Load the configuration located within the directory
         if options.config_dir:
-            self.reset()
-            if options.excluded_nodes:
-                self.add_var('EXCLUDED_NODES', options.excluded_nodes)
-            else:
-                self.add_var('EXCLUDED_NODES', '')
+            self.entities.clear()
             self.load_config(options.config_dir)
 
         # Avoid some of the services referenced in the graph
@@ -179,6 +187,12 @@ class ServiceManager(EntityManager):
         assert action, 'action name cannot be None'
         # Retcode
         retcode = 0
+
+        self.variables.clear()
+
+        # Create global variable from command line options
+        self._variable_options(opts)
+
         # Make sure that the graph is usable
         if self._graph_changed:
             self.__refresh_graph()

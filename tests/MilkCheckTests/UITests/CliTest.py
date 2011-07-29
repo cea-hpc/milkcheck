@@ -242,3 +242,19 @@ class CommandLineInterfaceTests(TestCase):
         '''
         cli = CommandLineInterface()
         self.assertRaises(TypeError, cli.execute, [8, 9])
+
+    def test_command_line_default_variables(self):
+        '''Test default values of automatic variables from command line.'''
+        cli = CommandLineInterface()
+        cli.execute(['status'])
+        manager = service_manager_self()
+        self.assertEqual(manager.variables['SELECTED_NODES'], '')
+        self.assertEqual(manager.variables['EXCLUDED_NODES'], '')
+
+    def test_command_line_variables(self):
+        '''Test automatic variables from command line options.'''
+        cli = CommandLineInterface()
+        cli.execute(['status', '-n', 'foo[1-5]', '-x', 'fortoy8'])
+        manager = service_manager_self()
+        self.assertEqual(manager.variables['SELECTED_NODES'], 'foo[1-5]')
+        self.assertEqual(manager.variables['EXCLUDED_NODES'], 'fortoy8')
