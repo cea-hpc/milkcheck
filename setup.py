@@ -1,13 +1,17 @@
 #!/usr/bin/env python
 
+import os, sys
 from setuptools import setup, find_packages
-import os
 
 if not os.access('scripts/milkcheck', os.F_OK):
     os.symlink('milkcheck.py', 'scripts/milkcheck')
 
+if not os.getenv('VERSION'):
+    print >>sys.stderr, "Please defined a VERSION= variable"
+    sys.exit(1)
+
 setup(name='MilkCheck',
-      version='0.6',
+      version=os.getenv('VERSION'),
       license='CEA-DAM',
       description='Parallele command execution manager',
       author='Aurelien Degremont',
