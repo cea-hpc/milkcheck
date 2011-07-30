@@ -32,7 +32,8 @@ class ServiceAlreadyReferencedError(MilkCheckEngineError):
     Define an exception raised when you tried to register a services which
     is already referenced by the manager.
     '''
-    def __init__(self, message='Service is already referenced by the manager'):
+    def __init__(self, svcname):
+        message = "Service '%s' is already referenced by the manager" % svcname
         MilkCheckEngineError.__init__(self, message)
 
 class ServiceManager(EntityManager):
@@ -79,7 +80,7 @@ class ServiceManager(EntityManager):
         '''Add a new service to the manager.'''
         assert service, 'service added cannot be None'
         if service.name in self.entities:
-            raise ServiceAlreadyReferencedError
+            raise ServiceAlreadyReferencedError(service.name)
         else:
             self.entities[service.name] = service
 
