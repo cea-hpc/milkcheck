@@ -85,5 +85,4 @@ class McOptionParserTest(TestCase):
         '''Test usage of option --version'''
         mop = McOptionParser()
         mop.configure_mop()
-        (options, args) = mop.parse_args(['--version'])
-        self.assertTrue(options.version)
+        self.assertRaises(SystemExit, mop.parse_args, ['--version'])

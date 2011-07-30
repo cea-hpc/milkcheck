@@ -98,11 +98,6 @@ class ConsoleDisplay(object):
         else:
             return '%s' % strg
 
-    def print_version(self, version):
-        '''Display the current version of MilkCheck'''
-        stdout.write(version)
-        stdout.flush()
-
     def print_running_tasks(self):
         '''Rewrite the current line and print the current running tasks'''
         rtasks = [t.parent.name for t in action_manager_self().running_tasks]
@@ -262,9 +257,6 @@ class CommandLineInterface(UserView):
             # Case 3 : Just load another configuration
             elif self._options.config_dir:
                 manager.load_config(self._options.config_dir)
-            # Case 4: If version option detected so print version number
-            elif self._options.version:
-                self._console.print_version(self._options.version)
             # Case 5: Nothing to do so just print MilkCheck help
             else:
                 self._mop.print_help()

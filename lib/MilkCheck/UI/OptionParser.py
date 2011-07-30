@@ -9,10 +9,8 @@ from optparse import OptionParser, OptionGroup, Option
 from copy import copy
 from os.path import isdir
 from ClusterShell.NodeSet import NodeSet, NodeSetException
+import MilkCheck
 
-# MilkCheck version
-__VERSION__ = 1.0
-__LAST_RELEASE__ = 'Friday, July 2011'
 
 class InvalidOptionError(Exception):
     '''Exception raised when the parser ran against an unexpected option.'''
@@ -43,19 +41,16 @@ class McOptionParser(OptionParser):
     '''
 
     def __init__(self, usage=None, option_class=MilkCheckOption, **kwargs):
-        OptionParser.__init__(self, usage,
-            version=__VERSION__, option_class=option_class, **kwargs)
+        version = "%%prog %s" % MilkCheck.__version__
+        usage = "usage: %prog [options] [SERVICE...] ACTION"
+        OptionParser.__init__(self, usage, version=version,
+                              option_class=option_class, **kwargs)
 
     def configure_mop(self):
         '''Populate the parser with the specified options.'''
         # Display options
         self.add_option('-v', '--verbose', action='count', dest='verbosity',
                         default=1, help='Increase or decrease verbosity')
-
-        self.set_conflict_handler('resolve')
-        self.add_option('-v', '--version', action='callback',
-                        callback=self.__check_version_mode, dest='version',
-                        help='Version number of MilkCheck')
 
         self.add_option('-d', '--debug', action='callback',
                         callback=self.__config_debug, dest='debug',
@@ -102,17 +97,10 @@ class McOptionParser(OptionParser):
         else:
             self.error('-c/--config-dir should be a valid directory')
 
-
-    def __check_version_mode(self, option, opt, value, parser):
-        '''Check that not any option is used with --version'''
-        setattr(self.values, option.dest, 'MilkCheck %s - Last release on %s'
-        % (self.version, __LAST_RELEASE__))
-
     def __check_service_mode(self, option, opt, value, parser):
         '''Check whether we are in the service execution mode.'''
-        if option.dest in ('only_nodes', 'excluded_nodes'):
-            if self.values.only_nodes and option.dest is 'excluded_nodes':
-                self.values.only_nodes.difference_update(value)
-            elif self.values.excluded_nodes and option.dest is 'only_nodes':
-                value.difference_update(self.values.excluded_nodes)
-            setattr(self.values, option.dest, value)
+        if self.values.only_nodes and option.dest is 'excluded_nodes':
+            self.values.only_nodes.difference_update(value)
+        elif self.values.excluded_nodes and option.dest is 'only_nodes':
+            value.difference_update(self.values.excluded_nodes)
+        setattr(self.values, option.dest, value)
