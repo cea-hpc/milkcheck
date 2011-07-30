@@ -34,6 +34,8 @@ from MilkCheck.Engine.BaseEntity import WARNING
 from MilkCheck.Engine.BaseEntity import TIMED_OUT, TOO_MANY_ERRORS, ERROR, DONE
 from MilkCheck.UI.UserView import RC_OK, RC_EXCEPTION, RC_UNKNOWN_EXCEPTION
 
+MAXTERMWIDTH = 120
+
 class Terminal(object):
     '''Allow the displayer to get informations from the terminal'''
 
@@ -85,9 +87,9 @@ class ConsoleDisplay(object):
                         DONE)])
 
     def __init__(self):
-        (width, height) = Terminal.size()
-        self._term_width = width
-        self._term_height = height
+        width = Terminal.size()[0]
+        # On very wide terminal, do not put the status too far away
+        self._term_width = min(width, MAXTERMWIDTH)
         self._pl_width = 0
         self._color = Terminal.isatty()
 
