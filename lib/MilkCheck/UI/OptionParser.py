@@ -67,12 +67,6 @@ class McOptionParser(OptionParser):
                         dest='config_dir',
                         help='Change configuration files directory')
 
-        # Display dependencies option
-        self.add_option('-p', '--printdeps', action='callback',
-                        callback=self.__check_printdep_mode,
-                        dest='print_servs',
-                        help='Print dependencies of the specified service')
-
         # Engine options
         eng = OptionGroup(self, 'Engine parameters',
             'Those options allow you to configure the behaviour of the engine')
@@ -114,21 +108,9 @@ class McOptionParser(OptionParser):
         setattr(self.values, option.dest, 'MilkCheck %s - Last release on %s'
         % (self.version, __LAST_RELEASE__))
 
-    def __check_printdep_mode(self, option, opt, value, parser):
-        '''Check whether we are in printdeps mode.'''
-        if self.values.only_nodes or \
-                self.values.excluded_nodes or \
-                    self.values.hijack_servs:
-            self.error('%s cannot be used with -n, -x or -X' % option)
-        self.__consume_args_callback(option, value)
-        if not self.values.print_servs:
-            self.error('%s service names are missing' % option)
-
     def __check_service_mode(self, option, opt, value, parser):
         '''Check whether we are in the service execution mode.'''
-        if self.values.print_servs:
-            self.error('%s cannot be used with -n, -x or -X' % option)
-        elif option.dest in ('only_nodes', 'excluded_nodes'):
+        if option.dest in ('only_nodes', 'excluded_nodes'):
             if self.values.only_nodes and option.dest is 'excluded_nodes':
                 self.values.only_nodes.difference_update(value)
             elif self.values.excluded_nodes and option.dest is 'only_nodes':

@@ -57,26 +57,6 @@ class McOptionParserTest(TestCase):
         self.assertRaises(InvalidOptionError,
             mop.parse_args, ['robinhood', 'start','-n', '[fortoy5]'])
 
-    def test_option_printdeps(self):
-        '''Test usage of the printdeps option'''
-        mop = McOptionParser()
-        mop.configure_mop()
-        self.assertRaises(InvalidOptionError,
-        mop.parse_args, ['-p', 'robinhood', '-n', 'nodegroup'])
-
-        mop = McOptionParser()
-        mop.configure_mop()
-        self.assertRaises(InvalidOptionError,
-        mop.parse_args, ['-p'])
-
-        mop = McOptionParser()
-        mop.configure_mop()
-        (options, args) = \
-        mop.parse_args(['-p', 'robinhood', 'lustre', 'nfs_mount'])
-        self.assertTrue('robinhood' in options.print_servs)
-        self.assertTrue('lustre' in options.print_servs)
-        self.assertTrue('nfs_mount' in options.print_servs)
-
     def test_option_configdir(self):
         '''Test usage of the configdir option'''
         mop = McOptionParser()

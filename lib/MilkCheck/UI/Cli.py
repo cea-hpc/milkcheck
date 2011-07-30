@@ -259,9 +259,6 @@ class CommandLineInterface(UserView):
                 action = self._args[-1]
                 retcode = manager.call_services(services, action,
                                                 opts=self._options)
-            # Case 2 : we just display dependencies of one or several services
-            elif self._options.print_servs:
-                print 'TODO : Print service dependencies'
             # Case 3 : Just load another configuration
             elif self._options.config_dir:
                 manager.load_config(self._options.config_dir)
