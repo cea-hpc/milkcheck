@@ -56,7 +56,8 @@ class MilkCheckConfig(object):
         Load configuration from a stream. A stream could be a string or
         file descriptor
         '''
-        content = yaml.safe_load_all(stream)
+        # filter() removes empty statement.
+        content = filter(None, yaml.safe_load_all(stream))
         if content:
             self._flow.extend(content)
 

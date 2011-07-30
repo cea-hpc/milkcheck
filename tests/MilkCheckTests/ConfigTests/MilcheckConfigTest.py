@@ -8,6 +8,9 @@ from MilkCheck.ServiceManager import service_manager_self
 class MilkCheckConfigTest(TestCase):
     '''Define the test cases of the class MilkCheckConfig'''
 
+    def tearDown(self):
+        service_manager_self().reset()
+
     def test_instanciation(self):
         '''Try to instanciate an object of the class MilkCheckConfig'''
         self.assertTrue(MilkCheckConfig())
@@ -85,3 +88,29 @@ class MilkCheckConfigTest(TestCase):
         self.assertFalse(wrap.deps['require'])
         self.assertFalse(wrap.deps['check'])
         self.assertFalse(wrap.deps['require_weak'])
+
+    def test_load_with_empty_yaml_document(self):
+        '''Test loading with empty YAML document in flow.'''
+        config = MilkCheckConfig()
+        config.load_from_stream('''---
+# This is en empty document.
+---
+service:
+            name: S1
+            desc: "I'm the service S1"
+            variables:
+                LUSTRE_FS_LIST: store0,work0
+            target: "@client_lustre"
+            actions:
+                start:
+                    check: status
+                    cmd:   shine mount -q -L -f $LUSTRE_FS_LIST
+                stop:
+                    cmd:   shine umount -q -L -f $LUSTRE_FS_LIST
+                status:
+                    cmd :  shine status -q -L -f $LUSTRE_FS_LIST
+                check:
+                    check: status''')
+        config.build_graph()
+        self.assertTrue(config._flow)
+        self.assertTrue(len(config._flow) == 1)
