@@ -18,6 +18,7 @@ from MilkCheck.Engine.Action import Action
 from MilkCheck.Engine.Service import Service
 from MilkCheck.ActionManager import action_manager_self
 from MilkCheck.ServiceManager import service_manager_self
+from MilkCheck.Config.ConfigParser import ConfigParser, ConfigParserError
 
 # Exceptions
 from yaml.scanner import ScannerError
@@ -246,6 +247,12 @@ class CommandLineInterface(UserView):
         retcode = RC_OK
         try:
             (self._options, self._args) = self._mop.parse_args(command_line)
+
+            conf = ConfigParser(self._options)
+
+            # XXX: Quick hack to have a config operational
+            self._options.config_dir = conf['config_dir']
+
             if self._options.debug:
                 self._logger.setLevel(logging.DEBUG)
 
@@ -271,6 +278,7 @@ class CommandLineInterface(UserView):
                 VariableAlreadyReferencedError,
                 DependencyAlreadyReferenced,
                 IllegalDependencyTypeError,
+                ConfigParserError,
                 ScannerError), exc:
             self._logger.error(str(exc))
             return RC_EXCEPTION
