@@ -155,7 +155,8 @@ class ConsoleDisplay(object):
         '''Display command result from output and retcodes.'''
 
         # Build the list of non-zero rc nodes
-        ok_nodes = NodeSet.fromlist((nodes for rc, nodes in iterrc if rc == 0))
+        retcodes = list(iterrc)
+        ok_nodes = NodeSet.fromlist((nds for rc, nds in retcodes if rc == 0))
 
         output = []
         for out, nodes in iterbuf:
@@ -166,13 +167,13 @@ class ConsoleDisplay(object):
                     output.append(' > %s: %s' %
                                   (self.string_color(nodes, 'CYAN'), lbuf))
 
-        for retcode, nodes in iterrc:
+        for retcode, nodes in retcodes:
             if retcode == 0 and not error_only:
-                output.append(' > %s exit code %s' %
+                output.append(' > %s exited with %s' %
                               (self.string_color(nodes, 'CYAN'),
                                self.string_color(retcode, 'GREEN')))
             else:
-                output.append(' > %s exit code %s' %
+                output.append(' > %s exited with %s' %
                               (self.string_color(nodes, 'CYAN'),
                                self.string_color(retcode, 'RED')))
         return output
@@ -319,7 +320,7 @@ class CommandLineInterface(UserView):
                 self.count_high_verbmsg += 1
         elif isinstance(obj, Action) and \
             obj.status in (TIMED_OUT, TOO_MANY_ERRORS, ERROR) and \
-                 self._options.verbosity >= 2:
+                 self._options.verbosity >= 1:
             self._console.print_action_results(obj, 
                                                self._options.verbosity == 1)
             self._console.print_running_tasks()

@@ -115,7 +115,7 @@ class CommandLineInterfaceTests(TestCase):
         cli.profiling = True
         self.assertEqual(cli.execute(['S3', 'start']), RC_ERROR)
         self.assertTrue(cli.count_low_verbmsg > 0)
-        self.assertTrue(cli.count_average_verbmsg == 0)
+        self.assertEqual(cli.count_average_verbmsg, 3)
         self.assertTrue(cli.count_high_verbmsg == 0)
         self.assertEqual(cli.execute(['S3', 'start', '-v']), RC_ERROR)
         self.assertTrue(cli.count_low_verbmsg > 0)
