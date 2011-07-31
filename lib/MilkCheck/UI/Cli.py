@@ -11,6 +11,7 @@ import logging.config
 import fcntl, termios, struct, os
 from signal import SIGINT
 from sys import stdout, stderr
+from ClusterShell.NodeSet import NodeSet
 from MilkCheck.UI.UserView import UserView
 from MilkCheck.UI.OptionParser import McOptionParser
 from MilkCheck.Engine.Action import Action
@@ -150,55 +151,50 @@ class ConsoleDisplay(object):
                 action.resolve_property('command'), 'CYAN'))
         self.__rprint(line)
 
-    def __gen_local_action_output(self, action):
-        '''Generate a string which sums up the execution of a local action'''
-        output = ''
-        if action.worker.read():
-            for lbuf in action.worker.read().splitlines():
-                output += '\n > %s: %s' % \
-                    (self.string_color('localhost', 'CYAN'), lbuf)
-        if action.worker.retcode() == 0:
-            output += '\n > %s exit code %s' % \
-                (self.string_color('localhost', 'CYAN'),
-                 self.string_color(action.worker.retcode(), 'GREEN'))
-        else:
-            output += '\n > %s exit code %s' % \
-                (self.string_color('localhost', 'CYAN'),
-                 self.string_color(action.worker.retcode(), 'RED'))
-        return output
+    def __gen_action_output(self, iterbuf, iterrc, error_only):
+        '''Display command result from output and retcodes.'''
 
-    def __gen_remote_action_output(self, action):
-        '''Generate a string which sums up the execution of a remote action'''
-        output = ''
-        for out, nodes in action.worker.iter_buffers():
-            for lbuf in out.splitlines():
-                output += '\n > %s: %s' % \
-                    (self.string_color(nodes, 'CYAN'), lbuf)
+        # Build the list of non-zero rc nodes
+        ok_nodes = NodeSet.fromlist((nodes for rc, nodes in iterrc if rc == 0))
 
-        for rcd, nodes in action.worker.iter_retcodes():
-            if rcd == 0:
-                output += '\n > %s exit code %s' % \
-                    (self.string_color(nodes, 'CYAN'),
-                    self.string_color(rcd, 'GREEN'))
+        output = []
+        for out, nodes in iterbuf:
+            if error_only:
+                nodes = NodeSet(nodes) - ok_nodes
+            if nodes and out:
+                for lbuf in out.splitlines():
+                    output.append(' > %s: %s' %
+                                  (self.string_color(nodes, 'CYAN'), lbuf))
+
+        for retcode, nodes in iterrc:
+            if retcode == 0 and not error_only:
+                output.append(' > %s exit code %s' %
+                              (self.string_color(nodes, 'CYAN'),
+                               self.string_color(retcode, 'GREEN')))
             else:
-                output += '\n > %s exit code %s' % \
-                    (self.string_color(nodes, 'CYAN'),
-                    self.string_color(rcd, 'RED'))
+                output.append(' > %s exit code %s' %
+                              (self.string_color(nodes, 'CYAN'),
+                               self.string_color(retcode, 'RED')))
         return output
 
-    def print_action_results(self, action):
+    def print_action_results(self, action, error_only=False):
         '''Remove the current line and write grouped results of an action'''
-        line = '%s %s ran in %.2f s' % \
+        line = ['%s %s ran in %.2f s' % \
             (self.string_color(action.name, 'MAGENTA'),
              action.parent.fullname(),
-             action.duration)
+             action.duration)]
         # Local action
         if action.worker.current_node is None:
-            line += self.__gen_local_action_output(action)
+            line += self.__gen_action_output(
+                                       [(action.worker.read(), 'localhost')],
+                                       [(action.worker.retcode(),'localhost')],
+                                       error_only)
         # Remote action
         else:
-            line += self.__gen_remote_action_output(action)
-        self.__rprint(line)
+            line += self.__gen_action_output(action.worker.iter_buffers(),
+                                             action.worker.iter_retcodes(),
+                                             error_only)
+        self.__rprint("\n".join(line))
 
     def print_delayed_action(self, action):
         '''Display a message specifying that this action has been delayed'''
@@ -324,7 +320,8 @@ class CommandLineInterface(UserView):
         elif isinstance(obj, Action) and \
             obj.status in (TIMED_OUT, TOO_MANY_ERRORS, ERROR) and \
                  self._options.verbosity >= 2:
-            self._console.print_action_results(obj)
+            self._console.print_action_results(obj, 
+                                               self._options.verbosity == 1)
             self._console.print_running_tasks()
             if self.profiling:
                 self.count_average_verbmsg += 1
