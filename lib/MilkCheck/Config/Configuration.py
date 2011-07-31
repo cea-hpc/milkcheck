@@ -110,12 +110,12 @@ class MilkCheckConfig(object):
     def _parse_deps(self, data):
         '''Return a DepWrapper containing the different types of dependencies'''
         wrap = DepWrapper()
-        if 'require' in data:
-            wrap.deps['require'] = data['require']
-        if 'require_weak' in data:
-            wrap.deps['require_weak'] = data['require_weak']
-        if 'check' in data:
-            wrap.deps['check'] = data['check']
+        for content in ('require', 'require_weak', 'check'):
+            if content in data:
+                if type(data[content]) is str:
+                    wrap.deps[content] = [ data[content] ]
+                else:
+                    wrap.deps[content] = data[content]
         return wrap
 
     def get_data_flow(self):
