@@ -41,6 +41,10 @@ class ServiceTest(TestCase):
         self.assertEqual(ser2._actions['start'].target, NodeSet('127.0.0.1'))
         self.assertEqual(ser2._actions['stop'].target, NodeSet('localhost'))
 
+    def test_local_variables(self):
+        '''Test Service local variables'''
+        self.assertEqual(Service('foo')._resolve("I'm %SERVICE"), "I'm foo")
+
     def test_update_target(self):
         '''Test update of the target of an service'''
         serv = Service('A')

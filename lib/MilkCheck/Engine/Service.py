@@ -45,6 +45,10 @@ class Service(BaseService):
     introduced by BaseSevice. A Service contains actions, and those actions
     are called and executed on nodes.
     '''
+
+    LOCAL_VARIABLES = BaseService.LOCAL_VARIABLES.copy()
+    LOCAL_VARIABLES['SERVICE'] = 'name'
+
     def __init__(self, name, target=None):
         BaseService.__init__(self, name, target)
 

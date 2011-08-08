@@ -5,3 +5,30 @@ service:
         status:
             cmd: nodeset -S "\n" -e @servers | fping -r1 -u
 ---
+#
+# Automatic variables.
+#
+# Milkcheck generates a list of automatic variables depending
+# on context.
+# %FANOUT          current 'fanout'
+# %TIMEOUT         current 'timeout'
+# %TARGET          current 'target'
+# %DESC            current 'desc'
+# %SERVICE         service name
+# %ACTION          action name
+# %SELECTED_NODES  arguments of -x/--excluded command line flag
+# %EXCLUDED_NODES  arguments of -n/--nodes command line flag
+service:
+    name: crond
+    desc: Command scheduler daemon crond
+    target: @webservers
+    actions:
+        start:
+            # Equivalent to: 'service crond start'
+            cmd: service %SERVICE %ACTION
+        status:
+            # Equivalent to: 'service crond status'
+            cmd: service %SERVICE %ACTION
+        stop:
+            # Equivalent to: 'service crond stop'
+            cmd: service %SERVICE %ACTION

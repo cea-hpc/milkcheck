@@ -33,6 +33,15 @@ class ActionTest(TestCase):
         self.assertEqual(action.timeout, 10)
         self.assertEqual(action.delay, 5)
 
+    def test_local_variables(self):
+        '''Test Action local variables'''
+        action = Action('bar')
+        self.assertEqual(action._resolve("I'm %ACTION"), "I'm bar")
+
+        svc = Service('foo')
+        svc.add_action(action)
+        self.assertEqual(action._resolve("I'm %SERVICE.%ACTION"), "I'm foo.bar")
+
     def test_reset_action(self):
         '''Test resest values of an action'''
         action = Action(name='start', target='fortoy5', command='/bin/true',

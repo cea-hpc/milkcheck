@@ -88,6 +88,15 @@ class BaseEntity(object):
     A BaseEntity object basically represents a node of graph with reference
     on parents and children.
     '''
+
+    LOCAL_VARIABLES = {
+        'NAME':    'name',
+        'FANOUT':  'fanout',
+        'TIMEOUT': 'timeout',
+        'TARGET':  'target',
+        'DESC':    'desc',
+    }
+
     def __init__(self, name, target=None):
         # Entity name
         self.name = name
@@ -361,9 +370,9 @@ class BaseEntity(object):
 
         if varname in self.variables:
             return self.variables[varname]
-        # XXX: Declare a list of authorized automatic variables
-        elif hasattr(self, varname.lower()):
-            return self.resolve_property(varname.lower())
+        elif varname.upper() in self.LOCAL_VARIABLES:
+            value = self.LOCAL_VARIABLES[varname.upper()]
+            return self._resolve(getattr(self, value))
         elif self.parent:
             return self.parent._lookup_variable(varname)
         elif varname in service_manager_self().variables:

@@ -97,6 +97,9 @@ class Action(BaseEntity):
     and contains the code and parameters to execute commands over one or several
     nodes of a cluster. An action might have dependencies with other actions.
     '''
+
+    LOCAL_VARIABLES = BaseEntity.LOCAL_VARIABLES.copy()
+    LOCAL_VARIABLES['ACTION'] = 'name'
     
     def __init__(self, name, target=None, command=None, timeout=-1, delay=0):
         BaseEntity.__init__(self, name=name, target=target)
