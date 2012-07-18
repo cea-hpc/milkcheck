@@ -338,7 +338,7 @@ class VariableBaseEntityTest(unittest.TestCase):
         group.add_var('GVAR', 'group')
         service.parent = group
         self.assertEqual(service._lookup_variable('GVAR'), 'group')
-        self.assertEqual(service._lookup_variable('TARGET'), NodeSet())
+        self.assertEqual(service._lookup_variable('TARGET'), None)
         self.assertEqual(service._lookup_variable('NAME'), 'test_service')
 
     def test_lookup_global_variables(self):

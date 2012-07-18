@@ -160,13 +160,13 @@ class BaseEntity(object):
     def update_target(self, nodeset, mode=None):
         '''Update the attribute target of an entity'''
         assert nodeset, 'The nodeset cannot be None'
-        # Try to resolve the property 
-        self.target = NodeSet(self.resolve_property('target'))
         if not mode:
             self.target = NodeSet(nodeset)
-        elif mode is 'DIF':
+        elif mode is 'DIF' and self.target:
+            self.target = NodeSet(self.resolve_property('target'))
             self.target.difference_update(nodeset)
-        elif mode is 'INT':
+        elif mode is 'INT' and self.target:
+            self.target = NodeSet(self.resolve_property('target'))
             self.target.intersection_update(nodeset)
 
     def get_target(self):
@@ -175,7 +175,9 @@ class BaseEntity(object):
 
     def set_target(self, value):
         '''Assign nodeset to _target'''
-        self._target = NodeSet(self._resolve(value))
+        self._target = None
+        if value is not None:
+            self._target = NodeSet(self._resolve(value))
 
     target = property(fset=set_target, fget=get_target)
 

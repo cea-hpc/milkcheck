@@ -61,9 +61,9 @@ class Service(BaseService):
         assert nodeset, 'The nodeset cannot be None'
         if not mode:
             self.target = nodeset
-        elif mode is 'DIF':
+        elif mode is 'DIF' and self.target:
             self.target.difference_update(nodeset)
-        elif mode is 'INT':
+        elif mode is 'INT' and self.target:
             self.target.intersection_update(nodeset)
         for action in self._actions.values():
             action.update_target(nodeset, mode)
