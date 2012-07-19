@@ -126,10 +126,6 @@ class Service(BaseService):
         Update the current service's status and whether all of his parents
         dependencies are solved start children dependencies.
         '''
-        assert status in (TIMED_OUT, TOO_MANY_ERRORS, DONE, \
-                            WARNING, NO_STATUS, WAITING_STATUS, \
-                                ERROR)
-
         if self.warnings and self.last_action().status is DONE:
             self.status = WARNING
         else:

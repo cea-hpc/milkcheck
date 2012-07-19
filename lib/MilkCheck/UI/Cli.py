@@ -32,7 +32,7 @@ from MilkCheck.Engine.BaseEntity import IllegalDependencyTypeError
 from MilkCheck.Engine.Service import ActionNotFoundError
 
 # Symbols
-from MilkCheck.Engine.BaseEntity import WARNING
+from MilkCheck.Engine.BaseEntity import WARNING, SKIPPED
 from MilkCheck.Engine.BaseEntity import TIMED_OUT, TOO_MANY_ERRORS, ERROR, DONE
 from MilkCheck.UI.UserView import RC_OK, RC_EXCEPTION, RC_UNKNOWN_EXCEPTION
 
@@ -85,7 +85,7 @@ class ConsoleDisplay(object):
                 'CYAN': '\033[0;36m%s\033[0m'
               }
     _LARGEST_STATUS = max([len(status) \
-         for status in (WARNING, TIMED_OUT, TOO_MANY_ERRORS, ERROR,
+         for status in (SKIPPED, WARNING, TIMED_OUT, TOO_MANY_ERRORS, ERROR,
                         DONE)])
 
     def __init__(self):
@@ -127,7 +127,7 @@ class ConsoleDisplay(object):
                 '[%s]' % \
                     self.string_color(
                     entity.status.center(self._LARGEST_STATUS), 'RED'))
-        elif entity.status is WARNING:
+        elif entity.status in (WARNING, SKIPPED):
             line = line % (entity.fullname(),
                 '[%s]' % \
                 self.string_color(entity.status.center(self._LARGEST_STATUS),
@@ -321,7 +321,8 @@ class CommandLineInterface(UserView):
         Something is complete on the object given as parameter. This migh be
         the end of a command on a node,  an action or a service.
         '''
-        if isinstance(obj, Action) and self._options.verbosity >= 3:
+        if isinstance(obj, Action) and self._options.verbosity >= 3 and \
+            obj.status != SKIPPED:
             self._console.print_action_results(obj)
             self._console.print_running_tasks()
             if self.profiling:
@@ -345,8 +346,10 @@ class CommandLineInterface(UserView):
         might have changed.
         '''
         if isinstance(obj, Service) and self._options.verbosity >= 1 and \
+            not (obj.status == SKIPPED and self._options.verbosity < 3) and \
             obj.status in (TIMED_OUT, TOO_MANY_ERRORS, ERROR, DONE,
-                           WARNING) and not obj.simulate:
+                           WARNING, SKIPPED) and not obj.simulate:
+
             self._console.print_status(obj)
             self._console.print_running_tasks()
             if self.profiling:

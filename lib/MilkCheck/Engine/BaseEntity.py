@@ -44,6 +44,9 @@ ERROR = 'ERROR'
 # cannot be processed by the engine.
 LOCKED = 'LOCKED'
 
+# Actions for this entity are not done and are skipped
+SKIPPED = 'SKIPPED'
+
 class MilkCheckEngineError(Exception):
     """Base class for Engine exceptions."""
 
