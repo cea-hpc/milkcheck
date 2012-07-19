@@ -82,22 +82,27 @@ class MilkCheckConfig(object):
 
         # Go through data registred within flow
         for data in self._flow:
-            # Parse variables
-            if 'variables' in data:
-                for (varname, value) in data['variables'].items():
-                    manager.add_var(varname, value)
-            # Parse service
-            elif 'service' in data and 'actions' in data['service']:
-                ser = ServiceFactory.create_service_from_dict(data)
-                wrap = self._parse_deps(data['service'])
-                wrap.source = ser
-                dependencies[ser.name] = wrap
-            # Parse service group
-            elif 'service' in data and 'services' in data['service']:
-                ser = ServiceGroupFactory.create_servicegroup_from_dict(data)
-                wrap = self._parse_deps(data['service'])
-                wrap.source = ser
-                dependencies[ser.name] = wrap
+            for elem, subelems in data.items():
+                # Parse variables
+                if elem == 'variables':
+                    for (varname, value) in subelems.items():
+                        manager.add_var(varname, value)
+                # Parse service
+                elif elem == 'service' and 'actions' in subelems:
+                    ser = ServiceFactory.create_service_from_dict(data)
+                    wrap = self._parse_deps(subelems)
+                    wrap.source = ser
+                    dependencies[ser.name] = wrap
+                # Parse service group
+                elif elem == 'service' and 'services' in subelems:
+                    ser = ServiceGroupFactory.create_servicegroup_from_dict(data)
+                    wrap = self._parse_deps(subelems)
+                    wrap.source = ser
+                    dependencies[ser.name] = wrap
+                else:
+                    # XXX: Raise an exception with a better error handling
+                    raise KeyError("Bad declaration of: %s" % elem)
+
         # Build relations between services
         for (sname, wrap) in dependencies.items():
             for (dtype, values) in wrap.deps.items():
