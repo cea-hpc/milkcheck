@@ -6,10 +6,13 @@ This modules defines the tests cases targeting the class ActionManager
 """
 
 # Classes
+import socket
 from unittest import TestCase
 from MilkCheck.Engine.Action import Action
 from MilkCheck.Engine.Service import Service
 from MilkCheck.ActionManager import ActionManager, action_manager_self
+
+HOSTNAME = socket.gethostname()
 
 class ActionManagerTest(TestCase):
     """Test cases for action_manager_self"""
@@ -160,7 +163,7 @@ class ActionManagerTest(TestCase):
 
     def test_perform_delayed_action(self):
         """test perform an action with a delay"""
-        action = Action('start', 'localhost', 'sleep 3')
+        action = Action('start', HOSTNAME, 'sleep 3')
         ser = Service('TEST')
         ser.add_action(action)
         ser.run('start')

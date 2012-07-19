@@ -6,6 +6,7 @@ This modules defines the tests cases targeting the BaseService
 """
 
 # Classes
+import socket
 from re import findall, search
 from unittest import TestCase
 from MilkCheck.Engine.Action import Action
@@ -16,6 +17,8 @@ from ClusterShell.NodeSet import NodeSet
 from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, TIMED_OUT, ERROR
 from MilkCheck.Engine.BaseEntity import TOO_MANY_ERRORS, WAITING_STATUS
 from MilkCheck.Engine.BaseEntity import WARNING 
+
+HOSTNAME = socket.gethostname().split('.')[0]
 
 class ActionTest(TestCase):
     """Define the unit tests for the object action."""
@@ -99,7 +102,7 @@ class ActionTest(TestCase):
 
     def test_has_timed_out(self):
         """Test has_timed_out_method."""
-        action = Action(name='start', target='localhost',
+        action = Action(name='start', target=HOSTNAME,
                     command='sleep 3', timeout=2)
         service = Service('test_service')
         service.add_action(action)
@@ -109,17 +112,17 @@ class ActionTest(TestCase):
 
     def test_set_retry(self):
         """Test retry assignement"""
-        action =  Action(name='start', target='localhost', command='sleep 3')
+        action =  Action(name='start', target=HOSTNAME, command='sleep 3')
         self.assertRaises(AssertionError, action.set_retry, 5)
-        action =  Action(name='start', target='localhost', command='sleep 3',
+        action =  Action(name='start', target=HOSTNAME, command='sleep 3',
                     delay=3)
         action.retry = 5
         self.assertEqual(action.retry, 5)
 
     def test_schedule(self):
         """Test behaviour method schedule"""
-        a1 = Action(name='start', target='localhost', command='/bin/true')
-        a2 = Action(name='status', target='localhost',
+        a1 = Action(name='start', target=HOSTNAME, command='/bin/true')
+        a2 = Action(name='status', target=HOSTNAME,
                     command='/bin/true', delay=3)
         ser = Service('TEST')
         ser.add_actions(a1, a2)
@@ -130,8 +133,8 @@ class ActionTest(TestCase):
 
     def test_prepare_dep_success(self):
         """Test prepare an action with a single successful dependency"""
-        a1 = Action('start', 'localhost', '/bin/true')
-        a2 = Action('status', 'localhost', '/bin/true')
+        a1 = Action('start', HOSTNAME, '/bin/true')
+        a2 = Action('status', HOSTNAME, '/bin/true')
         ser = Service('TEST')
         a1.add_dep(a2)
         ser.add_actions(a1, a2)
@@ -143,8 +146,8 @@ class ActionTest(TestCase):
 
     def test_prepare_dep_failed(self):
         """Test prepare an action with a single failed dependency"""
-        a1 = Action('start', 'localhost', '/bin/true')
-        a2 = Action('status', 'localhost', '/bin/false')
+        a1 = Action('start', HOSTNAME, '/bin/true')
+        a2 = Action('status', HOSTNAME, '/bin/false')
         ser = Service('TEST')
         a1.add_dep(a2)
         ser.add_actions(a1, a2)
@@ -156,10 +159,10 @@ class ActionTest(TestCase):
 
     def test_prepare_actions_graph(self):
         """Test prepare an action graph without errors"""
-        a1 = Action('start', 'localhost', '/bin/true')
-        a2 = Action('start_engine', 'localhost', '/bin/true')
-        a3 = Action('start_gui', 'localhost', '/bin/true')
-        a4 = Action('empty_home', 'localhost', '/bin/true')
+        a1 = Action('start', HOSTNAME, '/bin/true')
+        a2 = Action('start_engine', HOSTNAME, '/bin/true')
+        a3 = Action('start_gui', HOSTNAME, '/bin/true')
+        a4 = Action('empty_home', HOSTNAME, '/bin/true')
         a1.add_dep(a2)
         a1.add_dep(a3)
         a2.add_dep(a4)
@@ -178,10 +181,10 @@ class ActionTest(TestCase):
 
     def test_prepare_actions_graph_with_errors(self):
         """Test prepare an action graph with errors"""
-        a1 = Action('start', 'localhost', '/bin/true')
-        a2 = Action('start_engine', 'localhost', '/bin/true')
-        a3 = Action('start_gui', 'localhost', '/bin/false')
-        a4 = Action('empty_home', 'localhost', '/bin/false')
+        a1 = Action('start', HOSTNAME, '/bin/true')
+        a2 = Action('start_engine', HOSTNAME, '/bin/true')
+        a3 = Action('start_gui', HOSTNAME, '/bin/false')
+        a4 = Action('empty_home', HOSTNAME, '/bin/false')
         a1.add_dep(a2)
         a1.add_dep(a3)
         a2.add_dep(a4)
@@ -199,7 +202,7 @@ class ActionTest(TestCase):
         self.assertTrue(a4.duration)
 
     def test_action_with_variables(self):
-        action = Action('start', 'localhost', 'echo \$([ "%VAR1" != "" ] && echo "-x %VAR1")')
+        action = Action('start', HOSTNAME, 'echo \$([ "%VAR1" != "" ] && echo "-x %VAR1")')
         service = Service('TEST')
         service.add_actions(action)
         service.add_var('VAR1', 'foo')

@@ -6,6 +6,7 @@ This modules defines the tests cases demonstrating the right behaviour for
 the MilkCheck's engine
 '''
 
+import socket
 from unittest import TestCase
 
 # Classes
@@ -19,6 +20,8 @@ from MilkCheck.Engine.BaseEntity import WAITING_STATUS, ERROR
 from MilkCheck.Engine.BaseEntity import WARNING, TOO_MANY_ERRORS
 from MilkCheck.Engine.Dependency import CHECK, REQUIRE_WEAK
 
+HOSTNAME = socket.gethostname().split('.')[0]
+
 class CoreTest(TestCase):
     '''Define some strong tests cases for the Engine'''
 
@@ -29,10 +32,10 @@ class CoreTest(TestCase):
         grp1_i1 = Service('I1')
         grp1_i2 = Service('I2')
         grp1_i3 = Service('I3')
-        grp1_i1_act = Action('start', 'localhost', '/bin/true')
-        grp1_i2_act = Action('start', 'localhost', '/bin/true')
-        grp1_i2_suc = Action('status', 'localhost', '/bin/true')
-        grp1_i3_act = Action('start', 'localhost', '/bin/true')
+        grp1_i1_act = Action('start', HOSTNAME, '/bin/true')
+        grp1_i2_act = Action('start', HOSTNAME, '/bin/true')
+        grp1_i2_suc = Action('status', HOSTNAME, '/bin/true')
+        grp1_i3_act = Action('start', HOSTNAME, '/bin/true')
         grp1_i1.add_action(grp1_i1_act)
         grp1_i2.add_actions(grp1_i2_act, grp1_i2_suc)
         grp1_i3.add_action(grp1_i3_act)
@@ -44,8 +47,8 @@ class CoreTest(TestCase):
         grp2 = ServiceGroup('GRP2')
         grp2_i1 = Service('I1')
         grp2_i2 = Service('I2')
-        grp2_i1_act = Action('start', 'localhost', '/bin/false')
-        grp2_i2_act = Action('start', 'localhost', '/bin/true')
+        grp2_i1_act = Action('start', HOSTNAME, '/bin/false')
+        grp2_i2_act = Action('start', HOSTNAME, '/bin/true')
         grp2_i1.add_action(grp2_i1_act)
         grp2_i2.add_action(grp2_i2_act)
         grp2.add_inter_dep(target=grp2_i1)
@@ -53,13 +56,13 @@ class CoreTest(TestCase):
         
         # Define Group init
         s1 = Service('S1')
-        s1_act = Action('start', 'localhost', '/bin/true')
+        s1_act = Action('start', HOSTNAME, '/bin/true')
         s1.add_action(s1_act)
         s2 = Service('S2')
-        s2_act = Action('start', 'localhost', '/bin/true')
+        s2_act = Action('start', HOSTNAME, '/bin/true')
         s2.add_action(s2_act)
         s3 = Service('S3')
-        s3_act = Action('start', 'localhost', '/bin/true')
+        s3_act = Action('start', HOSTNAME, '/bin/true')
         s3.add_action(s3_act)
         group_init = ServiceGroup('GROUP_INIT')
         group_init.add_inter_dep(target=s1)
@@ -91,9 +94,9 @@ class CoreTest(TestCase):
         grp1_i2.algo_reversed = True
         grp1_i3 = Service('I3')
         grp1_i3.algo_reversed = True
-        grp1_i1_act = Action('stop', 'localhost', '/bin/true')
-        grp1_i2_act = Action('stop', 'localhost', '/bin/true')
-        grp1_i3_act = Action('stop', 'localhost', '/bin/true')
+        grp1_i1_act = Action('stop', HOSTNAME, '/bin/true')
+        grp1_i2_act = Action('stop', HOSTNAME, '/bin/true')
+        grp1_i3_act = Action('stop', HOSTNAME, '/bin/true')
         grp1_i1.add_action(grp1_i1_act)
         grp1_i2.add_actions(grp1_i2_act)
         grp1_i3.add_action(grp1_i3_act)
@@ -108,8 +111,8 @@ class CoreTest(TestCase):
         grp2_i1.algo_reversed = True
         grp2_i2 = Service('I2')
         grp2_i2.algo_reversed = True
-        grp2_i1_act = Action('stop', 'localhost', '/bin/true')
-        grp2_i2_act = Action('stop', 'localhost', '/bin/true')
+        grp2_i1_act = Action('stop', HOSTNAME, '/bin/true')
+        grp2_i2_act = Action('stop', HOSTNAME, '/bin/true')
         grp2_i1.add_action(grp2_i1_act)
         grp2_i2.add_action(grp2_i2_act)
         grp2.add_inter_dep(target=grp2_i1)
@@ -118,15 +121,15 @@ class CoreTest(TestCase):
         # Define Group init
         s1 = Service('S1')
         s1.algo_reversed = True
-        s1_act = Action('stop', 'localhost', '/bin/true')
+        s1_act = Action('stop', HOSTNAME, '/bin/true')
         s1.add_action(s1_act)
         s2 = Service('S2')
         s2.algo_reversed = True
-        s2_act = Action('stop', 'localhost', '/bin/true')
+        s2_act = Action('stop', HOSTNAME, '/bin/true')
         s2.add_action(s2_act)
         s3 = Service('S3')
         s3.algo_reversed = True
-        s3_act = Action('stop', 'localhost', '/bin/true')
+        s3_act = Action('stop', HOSTNAME, '/bin/true')
         s3.add_action(s3_act)
         group_init = ServiceGroup('GROUP_INIT')
         group_init.algo_reversed = True

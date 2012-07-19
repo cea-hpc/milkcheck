@@ -6,6 +6,7 @@ This modules defines the tests cases targeting the class CommandLineInterface
 """
 
 # Classes
+import socket
 from unittest import TestCase
 from MilkCheck.UI.Cli import CommandLineInterface
 from MilkCheck.ServiceManager import ServiceManager
@@ -21,6 +22,8 @@ from MilkCheck.Engine.BaseEntity import DONE, NO_STATUS, TOO_MANY_ERRORS
 from MilkCheck.Engine.BaseEntity import ERROR
 from MilkCheck.UI.UserView import RC_OK, RC_WARNING, RC_ERROR, RC_EXCEPTION
 from MilkCheck.UI.UserView import RC_UNKNOWN_EXCEPTION
+
+HOSTNAME = socket.gethostname().split('.')[0]
 
 class CommandLineInterfaceTests(TestCase):
     '''Tests cases of the command line interface'''
@@ -55,30 +58,30 @@ class CommandLineInterfaceTests(TestCase):
         i2.desc = 'I am the service I2'
 
         # Actions S1
-        start_s1 = Action('start', 'localhost, fortoy8', '/bin/true')
+        start_s1 = Action('start', HOSTNAME + ', fortoy8', '/bin/true')
         start_s1.delay = 2
-        stop_s1 = Action('stop', 'localhost,fortoy8', '/bin/true')
+        stop_s1 = Action('stop', HOSTNAME + ',fortoy8', '/bin/true')
         stop_s1.delay = 2
         s1.add_actions(start_s1, stop_s1)
         # Actions S2
-        start_s2 = Action('start', 'localhost,fortoy8', '/bin/true')
-        stop_s2 = Action('stop', 'localhost,fortoy8', '/bin/true')
+        start_s2 = Action('start', HOSTNAME + ',fortoy8', '/bin/true')
+        stop_s2 = Action('stop', HOSTNAME + ',fortoy8', '/bin/true')
         s2.add_actions(start_s2, stop_s2)
         # Actions S3
-        start_s3 = Action('start', 'localhost,fortoy8', '/bin/false')
-        stop_s3 = Action('stop', 'localhost,fortoy8', '/bin/false')
+        start_s3 = Action('start', HOSTNAME + ',fortoy8', '/bin/false')
+        stop_s3 = Action('stop', HOSTNAME + ',fortoy8', '/bin/false')
         s3.add_actions(start_s3, stop_s3)
         # Actions S4
-        start_s4 = Action('start', 'localhost,fortoy8', 'hostname')
-        stop_s4 = Action('stop', 'localhost,fortoy8', '/bin/true')
+        start_s4 = Action('start', HOSTNAME + ',fortoy8', 'hostname')
+        stop_s4 = Action('stop', HOSTNAME + ',fortoy8', '/bin/true')
         s4.add_actions(start_s4, stop_s4)
         # Actions I1
-        start_i1 = Action('start', 'localhost,fortoy8', '/bin/true')
-        stop_i1 = Action('stop', 'localhost,fortoy8', '/bin/true')
+        start_i1 = Action('start', HOSTNAME + ',fortoy8', '/bin/true')
+        stop_i1 = Action('stop', HOSTNAME + ',fortoy8', '/bin/true')
         i1.add_actions(start_i1, stop_i1)
         # Actions I2
-        start_i2 = Action('start', 'localhost,fortoy8', '/bin/true')
-        stop_i2 = Action('stop', 'localhost,fortoy8', '/bin/true')
+        start_i2 = Action('start', HOSTNAME + ',fortoy8', '/bin/true')
+        stop_i2 = Action('stop', HOSTNAME + ',fortoy8', '/bin/true')
         i2.add_actions(start_i2, stop_i2)
 
         # Build graph
@@ -160,14 +163,14 @@ class CommandLineInterfaceTests(TestCase):
         self.assertEqual(manager.entities['S1'].status, DONE)
         self.assertEqual(manager.entities['S3'].status, TOO_MANY_ERRORS)
         self.assertTrue(manager.entities['S1']._actions['stop'].target  ==\
-            NodeSet('localhost'))
+            NodeSet(HOSTNAME))
         self.assertTrue(manager.entities['S3']._actions['stop'].target  ==\
-            NodeSet('localhost'))
+            NodeSet(HOSTNAME))
 
     def test_execute_nodes_only(self):
         '''Test mandatory nodes from CLI'''
         cli = CommandLineInterface()
-        retcode = cli.execute(['S1', 'start', '-d', '-n', 'localhost'])
+        retcode = cli.execute(['S1', 'start', '-d', '-n', HOSTNAME])
         manager = service_manager_self()
         self.assertEqual(retcode, RC_ERROR)
         self.assertEqual(manager.entities['S1'].status, ERROR)
@@ -176,13 +179,13 @@ class CommandLineInterfaceTests(TestCase):
         self.assertEqual(manager.entities['S4'].status, DONE)
         self.assertEqual(manager.entities['G1'].status, DONE)
         self.assertTrue(manager.entities['S1']._actions['start'].target  ==\
-            NodeSet('localhost'))
+            NodeSet(HOSTNAME))
         self.assertTrue(manager.entities['S2']._actions['start'].target  ==\
-            NodeSet('localhost'))
+            NodeSet(HOSTNAME))
         self.assertTrue(manager.entities['S3']._actions['start'].target  ==\
-            NodeSet('localhost'))
+            NodeSet(HOSTNAME))
         self.assertTrue(manager.entities['S4']._actions['start'].target  ==\
-            NodeSet('localhost'))
+            NodeSet(HOSTNAME))
 
     def test_execute_multiple_services(self):
         '''Test execution of S2 and G1 at the same time'''

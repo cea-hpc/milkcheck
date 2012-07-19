@@ -5,6 +5,7 @@
 This modules defines the tests cases targeting the Action and Service objects.
 """
 from unittest import TestCase
+import socket
 
 # Classes
 from MilkCheck.Engine.Service import Service
@@ -21,6 +22,8 @@ from MilkCheck.Engine.BaseEntity import TOO_MANY_ERRORS, WAITING_STATUS
 from MilkCheck.Engine.BaseEntity import WARNING, LOCKED 
 from MilkCheck.Engine.Dependency import CHECK, REQUIRE, REQUIRE_WEAK
         
+HOSTNAME = socket.gethostname().split('.')[0]
+
 class ServiceTest(TestCase):
     """Define the unit tests for the object service."""
     def test_service_instanciation(self):
@@ -35,11 +38,11 @@ class ServiceTest(TestCase):
         ser1.target = '127.0.0.1'
         ser2 = Service('inherited')
         ser2.add_action(Action('start'))
-        ser2.add_action(Action('stop', 'localhost'))
+        ser2.add_action(Action('stop', HOSTNAME))
         ser2.inherits_from(ser1)
         self.assertEqual(ser2.target, NodeSet('127.0.0.1'))
         self.assertEqual(ser2._actions['start'].target, NodeSet('127.0.0.1'))
-        self.assertEqual(ser2._actions['stop'].target, NodeSet('localhost'))
+        self.assertEqual(ser2._actions['stop'].target, NodeSet(HOSTNAME))
 
     def test_local_variables(self):
         '''Test Service local variables'''
@@ -79,9 +82,9 @@ class ServiceTest(TestCase):
     def test_add_actions(self):
         """Test the possibility to add multiple actions at the same time"""
         service = Service('SERV')
-        act_a = Action('start', 'localhost', '/bin/true')
-        act_b = Action('stop', 'localhost', '/bin/true')
-        act_c = Action('status', 'localhost', '/bin/true')
+        act_a = Action('start', HOSTNAME, '/bin/true')
+        act_b = Action('stop', HOSTNAME, '/bin/true')
+        act_c = Action('status', HOSTNAME, '/bin/true')
         service.add_actions(act_a, act_b, act_c)
         self.assertTrue(service.has_action('start'))
         self.assertTrue(service.has_action('stop'))
@@ -101,7 +104,7 @@ class ServiceTest(TestCase):
         service = Service('Test')
         self.assertRaises(ActionNotFoundError, service.last_action)
 
-        start = Action('start', 'localhost', '/bin/true')
+        start = Action('start', HOSTNAME, '/bin/true')
         service.add_action(start)
         self.assertRaises(ActionNotFoundError, service.last_action)
         service.prepare('start')
@@ -135,7 +138,7 @@ class ServiceTest(TestCase):
     def test_prepare_single_service(self):
         """Test prepare without dependencies between services."""
         serv_test = Service('test_service')
-        ac_start = Action(name='start', target='localhost', command='/bin/true')
+        ac_start = Action(name='start', target=HOSTNAME, command='/bin/true')
         serv_test.add_action(ac_start)
         serv_test.run('start')
         self.assertEqual(serv_test.status, DONE)
@@ -144,8 +147,8 @@ class ServiceTest(TestCase):
         """Test prepare with one dependency."""
         # Define the main service
         serv_test = Service('test_service')
-        start = Action(name='start', target='localhost', command='/bin/true')
-        start2 = Action(name='start', target='localhost', command='/bin/true')
+        start = Action(name='start', target=HOSTNAME, command='/bin/true')
+        start2 = Action(name='start', target=HOSTNAME, command='/bin/true')
         serv_test.add_action(start)
 
         # Define the single dependency of the main service
@@ -162,9 +165,9 @@ class ServiceTest(TestCase):
         """Test prepare with several dependencies at the same level."""
         # Define the main service
         serv_test = Service('test_service')
-        start = Action(name='start', target='localhost', command='/bin/true')
-        start2 = Action(name='start', target='localhost', command='/bin/true')
-        start3 = Action(name='start', target='localhost', command='/bin/true')
+        start = Action(name='start', target=HOSTNAME, command='/bin/true')
+        start2 = Action(name='start', target=HOSTNAME, command='/bin/true')
+        start3 = Action(name='start', target=HOSTNAME, command='/bin/true')
         serv_test.add_action(start)
 
         # Define the dependency DEP_A
@@ -188,10 +191,10 @@ class ServiceTest(TestCase):
         #Service Arthemis is delcared here
         arth = Service('arthemis')
         arth.desc = 'Sleep five seconds'
-        start = Action(name='start', target='localhost', command='/bin/true')
-        start2 = Action(name='start', target='localhost', command='/bin/true')
-        start3 = Action(name='start', target='localhost', command='/bin/true')
-        start4 = Action(name='start', target='localhost', command='/bin/true')
+        start = Action(name='start', target=HOSTNAME, command='/bin/true')
+        start2 = Action(name='start', target=HOSTNAME, command='/bin/true')
+        start3 = Action(name='start', target=HOSTNAME, command='/bin/true')
+        start4 = Action(name='start', target=HOSTNAME, command='/bin/true')
         arth.add_action(start)
 
         # Service Chiva is declared here
@@ -226,9 +229,9 @@ class ServiceTest(TestCase):
         serv_a = Service('DEP_A')
         serv_b = Service('DEP_B')
 
-        suc = Action(name='start', target='localhost', command='/bin/true')
-        suc2 = Action(name='start', target='localhost', command='/bin/true')
-        ac_err = Action(name='start', target='localhost', command='/bin/false')
+        suc = Action(name='start', target=HOSTNAME, command='/bin/true')
+        suc2 = Action(name='start', target=HOSTNAME, command='/bin/true')
+        ac_err = Action(name='start', target=HOSTNAME, command='/bin/false')
 
         serv.add_action(suc)
         serv_a.add_action(ac_err)
@@ -249,9 +252,9 @@ class ServiceTest(TestCase):
         serv_a = Service('DEP_A')
         serv_b = Service('DEP_B')
 
-        ac_suc = Action(name='start', target='localhost', command='/bin/true')
-        ac_suc2 = Action(name='start', target='localhost', command='/bin/true')
-        ac_err = Action(name='start', target='localhost', command='/bin/false')
+        ac_suc = Action(name='start', target=HOSTNAME, command='/bin/true')
+        ac_suc2 = Action(name='start', target=HOSTNAME, command='/bin/true')
+        ac_err = Action(name='start', target=HOSTNAME, command='/bin/false')
 
         serv.add_action(ac_suc)
         serv_a.add_action(ac_err)
@@ -273,10 +276,10 @@ class ServiceTest(TestCase):
         serv_b = Service('DEP_B')
         serv_c = Service('DEP_C')
 
-        ac_suc = Action(name='start', target='localhost', command='/bin/true')
-        ac_suc2 = Action(name='start', target='localhost', command='/bin/true')
-        ac_err = Action(name='start', target='localhost', command='/bin/false')
-        ac_err2 = Action(name='start', target='localhost', command='dlvlfvlf')
+        ac_suc = Action(name='start', target=HOSTNAME, command='/bin/true')
+        ac_suc2 = Action(name='start', target=HOSTNAME, command='/bin/true')
+        ac_err = Action(name='start', target=HOSTNAME, command='/bin/false')
+        ac_err2 = Action(name='start', target=HOSTNAME, command='dlvlfvlf')
 
         serv.add_action(ac_suc)
         serv_a.add_action(ac_suc2)
@@ -301,10 +304,10 @@ class ServiceTest(TestCase):
         serv_error = Service('C')
         serv_timed_out = Service('D')
 
-        ac_suc = Action(name='start', target='localhost', command='/bin/true')
-        ac_suc2 = Action(name='start', target='localhost', command='/bin/true')
-        ac_suc3 = Action(name='start', target='localhost', command='/bin/true')
-        ac_tim = Action(name='start', target='localhost',
+        ac_suc = Action(name='start', target=HOSTNAME, command='/bin/true')
+        ac_suc2 = Action(name='start', target=HOSTNAME, command='/bin/true')
+        ac_suc3 = Action(name='start', target=HOSTNAME, command='/bin/true')
+        ac_tim = Action(name='start', target=HOSTNAME,
                      command='sleep 3', timeout=2)
 
         serv_base_error.add_action(ac_suc)
@@ -333,14 +336,14 @@ class ServiceTest(TestCase):
         serv_x = Service('DEP_VX')
         serv_k = Service('DEP_K')
 
-        act_suc = Action(name='start', target='localhost', command='/bin/true')
-        act_suc2 = Action(name='start', target='localhost', command='/bin/true')
-        act_suc3 = Action(name='start', target='localhost', command='/bin/true')
-        act_suc4 = Action(name='start', target='localhost', command='/bin/true')
-        act_suc5 = Action(name='start', target='localhost', command='/bin/true')
-        act_status_failed = Action(name='status', target='localhost',
+        act_suc = Action(name='start', target=HOSTNAME, command='/bin/true')
+        act_suc2 = Action(name='start', target=HOSTNAME, command='/bin/true')
+        act_suc3 = Action(name='start', target=HOSTNAME, command='/bin/true')
+        act_suc4 = Action(name='start', target=HOSTNAME, command='/bin/true')
+        act_suc5 = Action(name='start', target=HOSTNAME, command='/bin/true')
+        act_status_failed = Action(name='status', target=HOSTNAME,
             command='/bin/false')
-        act_status = Action(name='status', target='localhost',
+        act_status = Action(name='status', target=HOSTNAME,
                             command='/bin/true')
 
         serv_a.add_action(act_suc)
@@ -373,7 +376,7 @@ class ServiceTest(TestCase):
         """Test prepare Service with a delayed action"""
         serv = Service('DELAYED_SERVICE')
         act_suc = ac_suc = Action(name='start',
-                    target='localhost', command='/bin/true', delay=5)
+                    target=HOSTNAME, command='/bin/true', delay=5)
         serv.add_action(act_suc)
         serv.run('start')
         self.assertEqual(serv.status, DONE)
@@ -387,13 +390,13 @@ class ServiceTest(TestCase):
         serv_b = Service('B_DELAYED')
         serv_c = Service('C_DELAYED')
         act_a = Action(name='start',
-                    target='localhost', command='/bin/true')
+                    target=HOSTNAME, command='/bin/true')
         act_serv = Action(name='start',
-                    target='localhost', command='/bin/true', delay=1)
+                    target=HOSTNAME, command='/bin/true', delay=1)
         act_b = Action(name='start',
-                    target='localhost', command='/bin/true', delay=1)
+                    target=HOSTNAME, command='/bin/true', delay=1)
         act_c = Action(name='start',
-                    target='localhost', command='/bin/true', delay=2)
+                    target=HOSTNAME, command='/bin/true', delay=2)
         serv.add_action(act_serv)
         serv_a.add_action(act_a)
         serv_b.add_action(act_b)
@@ -422,9 +425,9 @@ class ServiceTest(TestCase):
         serv_a = Service('CALLING_POINT')
         serv_b = Service('SERV_1')
         serv_c = Service('SERV_2')
-        act_suc = Action('start', 'localhost', '/bin/true')
-        act_suc2 = Action('start', 'localhost', '/bin/true')
-        act_suc3 = Action('start', 'localhost', '/bin/true')
+        act_suc = Action('start', HOSTNAME, '/bin/true')
+        act_suc2 = Action('start', HOSTNAME, '/bin/true')
+        act_suc3 = Action('start', HOSTNAME, '/bin/true')
         serv_a.add_action(act_suc)
         serv_b.add_action(act_suc2)
         serv_c.add_action(act_suc3)
@@ -440,8 +443,8 @@ class ServiceTest(TestCase):
     def test_run_action_with_subaction(self):
         """Test action running a successful sub action (start->status)"""
         serv = Service('BASE')
-        act_start = Action('start', 'localhost', '/bin/true')
-        act_status = Action('status', 'localhost', '/bin/true')
+        act_start = Action('start', HOSTNAME, '/bin/true')
+        act_status = Action('status', HOSTNAME, '/bin/true')
         act_start.add_dep(target=act_status)
         serv.add_actions(act_start, act_status)
         serv.run('start')
@@ -452,8 +455,8 @@ class ServiceTest(TestCase):
     def test_run_action_with_failed_subaction(self):
         """Test action running a failed sub action (start->status)"""
         serv = Service('BASE')
-        act_start = Action('start', 'localhost', '/bin/true')
-        act_status_fail = Action('status', 'localhost', '/bin/false')
+        act_start = Action('start', HOSTNAME, '/bin/true')
+        act_status_fail = Action('status', HOSTNAME, '/bin/false')
         act_start.add_dep(target=act_status_fail)
         serv.add_actions(act_start, act_status_fail)
         serv.run('start')
@@ -468,12 +471,12 @@ class ServiceTest(TestCase):
         zombie_two = Service("ZOMBIE_TWO")
         hive = Service("THE_HIVE")
 
-        act_start1 = Action("start", "localhost", "/bin/true")
-        act_start2 = Action("start", "localhost", "/bin/false")
-        act_start3 = Action("start", "localhost", "/bin/true")
-        act_start4 = Action("start", "localhost", "/bin/true")
-        act_sta = Action("status", "localhost", "/bin/true")
-        act_sta_fai = Action("status", "localhost", "/bin/false")
+        act_start1 = Action("start", HOSTNAME, "/bin/true")
+        act_start2 = Action("start", HOSTNAME, "/bin/false")
+        act_start3 = Action("start", HOSTNAME, "/bin/true")
+        act_start4 = Action("start", HOSTNAME, "/bin/true")
+        act_sta = Action("status", HOSTNAME, "/bin/true")
+        act_sta_fai = Action("status", HOSTNAME, "/bin/false")
 
         act_start2.add_dep(act_sta_fai)
         act_start4.add_dep(act_sta)
@@ -504,7 +507,7 @@ class ServiceTest(TestCase):
         """Test run action stop on service (reverse algorithm)"""
         ser = Service('REVERSE')
         ser.algo_reversed = True
-        stop = Action('stop', 'localhost', '/bin/true')
+        stop = Action('stop', HOSTNAME, '/bin/true')
         ser.add_action(stop)
         ser.run('stop')
         self.assertEqual(ser.status, DONE)
@@ -515,8 +518,8 @@ class ServiceTest(TestCase):
         ser_dep = Service('REVERSE_DEP')
         ser.algo_reversed = True
         ser_dep.algo_reversed = True
-        stop1 = Action('stop', 'localhost', '/bin/true')
-        stop2 = Action('stop', 'localhost', '/bin/true')
+        stop1 = Action('stop', HOSTNAME, '/bin/true')
+        stop2 = Action('stop', HOSTNAME, '/bin/true')
         ser.add_action(stop1)
         ser_dep.add_action(stop2)
         ser.add_dep(ser_dep)
@@ -532,10 +535,10 @@ class ServiceTest(TestCase):
         #Service Arthemis is delcared here
         arth = Service('arthemis')
         arth.algo_reversed = True
-        stop = Action(name='stop', target='localhost', command='/bin/true')
-        stop2 = Action(name='stop', target='localhost', command='/bin/true')
-        stop3 = Action(name='stop', target='localhost', command='/bin/true')
-        stop4 = Action(name='stop', target='localhost', command='/bin/true')
+        stop = Action(name='stop', target=HOSTNAME, command='/bin/true')
+        stop2 = Action(name='stop', target=HOSTNAME, command='/bin/true')
+        stop3 = Action(name='stop', target=HOSTNAME, command='/bin/true')
+        stop4 = Action(name='stop', target=HOSTNAME, command='/bin/true')
         arth.add_action(stop)
 
         # Service Chiva is declared here
@@ -577,24 +580,24 @@ class ServiceTest(TestCase):
         s5 = Service('S5')
 
         # Actions S1
-        start_s1 = Action('start', 'localhost', '/bin/true')
-        stop_s1 = Action('stop', 'localhost', '/bin/true')
+        start_s1 = Action('start', HOSTNAME, '/bin/true')
+        stop_s1 = Action('stop', HOSTNAME, '/bin/true')
         s1.add_actions(start_s1, stop_s1)
         # Actions S2
-        start_s2 = Action('start', 'localhost', '/bin/true')
-        stop_s2 = Action('stop', 'localhost', '/bin/true')
+        start_s2 = Action('start', HOSTNAME, '/bin/true')
+        stop_s2 = Action('stop', HOSTNAME, '/bin/true')
         s2.add_actions(start_s2, stop_s2)
         # Actions S3
-        start_s3 = Action('start', 'localhost', '/bin/false')
-        stop_s3 = Action('stop', 'localhost', '/bin/false')
+        start_s3 = Action('start', HOSTNAME, '/bin/false')
+        stop_s3 = Action('stop', HOSTNAME, '/bin/false')
         s3.add_actions(start_s3, stop_s3)
         # Actions S4
-        start_s4 = Action('start', 'localhost', '/bin/true')
-        stop_s4 = Action('stop', 'localhost', '/bin/true')
+        start_s4 = Action('start', HOSTNAME, '/bin/true')
+        stop_s4 = Action('stop', HOSTNAME, '/bin/true')
         s4.add_actions(start_s4, stop_s4)
         # Actions I1
-        start_s5 = Action('start', 'localhost', '/bin/true')
-        stop_s5 = Action('stop', 'localhost', '/bin/true')
+        start_s5 = Action('start', HOSTNAME, '/bin/true')
+        stop_s5 = Action('stop', HOSTNAME, '/bin/true')
         s5.add_actions(start_s5, stop_s5)
 
         # Locked services

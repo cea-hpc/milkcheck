@@ -5,6 +5,7 @@
 This modules defines the tests cases targeting the ServiceGroup object
 '''
 
+import socket
 from unittest import TestCase
 
 # Classes
@@ -18,6 +19,8 @@ from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, TIMED_OUT
 from MilkCheck.Engine.BaseEntity import WAITING_STATUS, ERROR
 from MilkCheck.Engine.BaseEntity import WARNING, TOO_MANY_ERRORS
 from MilkCheck.Engine.Dependency import CHECK, REQUIRE_WEAK
+
+HOSTNAME = socket.gethostname().split('.')[0]
 
 class ServiceGroupTest(TestCase):
     '''Define the test cases of a ServiceGroup.'''
@@ -36,7 +39,7 @@ class ServiceGroupTest(TestCase):
         ser.timeout = 15
         group = ServiceGroup('group')
         subser1 = Service('subser1')
-        subser1.target = 'localhost'
+        subser1.target = HOSTNAME
         subser2 = Service('subser2')
         subser2.timeout = None
         group.add_inter_dep(target=subser1)
@@ -44,7 +47,7 @@ class ServiceGroupTest(TestCase):
         group.inherits_from(ser)
         self.assertEqual(group.target, NodeSet('127.0.0.1'))
         self.assertEqual(group.timeout, 15)
-        self.assertEqual(subser1.target, NodeSet('localhost'))
+        self.assertEqual(subser1.target, NodeSet(HOSTNAME))
         self.assertEqual(subser1.timeout, 15)
         self.assertEqual(subser2.target, NodeSet('127.0.0.1'))
         self.assertEqual(subser2.timeout, None)
@@ -101,9 +104,9 @@ class ServiceGroupTest(TestCase):
         '''Test ability to add dependencies to a ServiceGroup'''
         ser_group = ServiceGroup('GROUP')
         s1 = Service('alpha')
-        s1.add_action(Action('start', 'localhost', '/bin/true'))
+        s1.add_action(Action('start', HOSTNAME, '/bin/true'))
         s2 = Service('beta')
-        s2.add_action(Action('action', 'localhost', '/bin/true'))
+        s2.add_action(Action('action', HOSTNAME, '/bin/true'))
         s3 = Service('lambda')
         ser_group.add_inter_dep(target=s1)
         ser_group.add_inter_dep(target=s2)
@@ -117,7 +120,7 @@ class ServiceGroupTest(TestCase):
         self.assertFalse(s3.name in ser_group.children)
         self.assertTrue(s3.name in ser_group.parents)
         s4 = Service('theta')
-        s4.add_action(Action('fire', 'localhost','/bin/true'))
+        s4.add_action(Action('fire', HOSTNAME,'/bin/true'))
         ser_group.add_dep(target=s4, parent=False)
         self.assertTrue(s4.name in ser_group.children)
         self.assertTrue(s4.has_parent_dep(ser_group.name))
@@ -302,7 +305,7 @@ class ServiceGroupTest(TestCase):
         '''Test prepare group with an internal dependency.'''
         group = ServiceGroup('GROUP')
         subserv = Service('SUB1')
-        subserv.add_action(Action('start', 'localhost', '/bin/true'))
+        subserv.add_action(Action('start', HOSTNAME, '/bin/true'))
         group.add_inter_dep(target=subserv)
         group.run('start')
         self.assertEqual(group.status, DONE)
@@ -314,7 +317,7 @@ class ServiceGroupTest(TestCase):
         group.algo_reversed = True
         subserv = Service('SUB1')
         subserv.algo_reversed = True
-        subserv.add_action(Action('start', 'localhost', '/bin/true'))
+        subserv.add_action(Action('start', HOSTNAME, '/bin/true'))
         group.add_inter_dep(target=subserv)
         group.run('start')
         self.assertEqual(group.status, DONE)
@@ -323,9 +326,9 @@ class ServiceGroupTest(TestCase):
     def test_prepare_group_subservices(self):
         '''Test prepare group with multiple internal dependencies.'''
         group = ServiceGroup('GROUP')
-        ac_suc1 = Action('start', 'localhost', '/bin/true')
-        ac_suc2 = Action('start', 'localhost', '/bin/true')
-        ac_suc3 = Action('start', 'localhost', '/bin/true')
+        ac_suc1 = Action('start', HOSTNAME, '/bin/true')
+        ac_suc2 = Action('start', HOSTNAME, '/bin/true')
+        ac_suc3 = Action('start', HOSTNAME, '/bin/true')
         
         subserv_a = Service('SUB1')
         subserv_b = Service('SUB2')
@@ -350,7 +353,7 @@ class ServiceGroupTest(TestCase):
         '''Test prepare an empty group with a single external dependency.'''
         group = ServiceGroup('GROUP')
         ext_serv = Service('EXT_SERV')
-        ac_suc = Action('start', 'localhost', '/bin/true')
+        ac_suc = Action('start', HOSTNAME, '/bin/true')
         ext_serv.add_action(ac_suc)
         group.add_dep(ext_serv)
         group.run('start')
@@ -368,11 +371,11 @@ class ServiceGroupTest(TestCase):
         # External
         ext_serv1 =  Service('EXT_SERV1')
         ext_serv2 = Service('EXT_SERV2')
-        ac_suc1 = Action('start', 'localhost', '/bin/true')
-        ac_suc2 = Action('start', 'localhost', '/bin/true')
-        ac_suc3 = Action('start', 'localhost', '/bin/true')
-        ac_suc4 = Action('start', 'localhost', '/bin/true')
-        ac_suc5 = Action('start', 'localhost', '/bin/true')
+        ac_suc1 = Action('start', HOSTNAME, '/bin/true')
+        ac_suc2 = Action('start', HOSTNAME, '/bin/true')
+        ac_suc3 = Action('start', HOSTNAME, '/bin/true')
+        ac_suc4 = Action('start', HOSTNAME, '/bin/true')
+        ac_suc5 = Action('start', HOSTNAME, '/bin/true')
         # Add actions
         inter_serv1.add_action(ac_suc1)
         inter_serv2.add_action(ac_suc2)
@@ -405,11 +408,11 @@ class ServiceGroupTest(TestCase):
         # External
         ext_serv1 =  Service('EXT_SERV1')
         ext_serv2 = Service('EXT_SERV2')
-        ac_suc1 = Action('start', 'localhost', '/bin/true')
-        ac_suc2 = Action('start', 'localhost', '/bin/true')
-        ac_suc3 = Action('start', 'localhost', '/bin/true')
-        ac_err1 = Action('start', 'localhost', '/bin/false')
-        ac_err2 = Action('start', 'localhost', '/bin/false')
+        ac_suc1 = Action('start', HOSTNAME, '/bin/true')
+        ac_suc2 = Action('start', HOSTNAME, '/bin/true')
+        ac_suc3 = Action('start', HOSTNAME, '/bin/true')
+        ac_err1 = Action('start', HOSTNAME, '/bin/false')
+        ac_err2 = Action('start', HOSTNAME, '/bin/false')
         # Add actions
         inter_serv1.add_action(ac_suc1)
         inter_serv2.add_action(ac_suc2)
@@ -443,11 +446,11 @@ class ServiceGroupTest(TestCase):
         # External
         ext_serv1 =  Service('EXT_SERV1')
         ext_serv2 = Service('EXT_SERV2')
-        ac_suc1 = Action('start', 'localhost', '/bin/true')
-        ac_suc2 = Action('start', 'localhost', '/bin/true')
-        ac_suc3 = Action('start', 'localhost', '/bin/true')
-        ac_err = Action('start', 'localhost', '/bin/false')
-        ac_err_chk = Action('status', 'localhost', '/bin/false')
+        ac_suc1 = Action('start', HOSTNAME, '/bin/true')
+        ac_suc2 = Action('start', HOSTNAME, '/bin/true')
+        ac_suc3 = Action('start', HOSTNAME, '/bin/true')
+        ac_err = Action('start', HOSTNAME, '/bin/false')
+        ac_err_chk = Action('status', HOSTNAME, '/bin/false')
         # Add actions
         inter_serv1.add_action(ac_suc1)
         inter_serv2.add_action(ac_suc2)
@@ -475,8 +478,8 @@ class ServiceGroupTest(TestCase):
         serv_a = ServiceGroup('CALLING_GROUP')
         serv_b = Service('SERV_1')
         serv_c = Service('SERV_2')
-        act_suc1 = Action('start', 'localhost', '/bin/true')
-        act_suc2 = Action('start', 'localhost', '/bin/true')
+        act_suc1 = Action('start', HOSTNAME, '/bin/true')
+        act_suc2 = Action('start', HOSTNAME, '/bin/true')
         serv_b.add_action(act_suc1)
         serv_c.add_action(act_suc2)
         serv.add_dep(serv_a)
@@ -492,10 +495,10 @@ class ServiceGroupTest(TestCase):
         '''Test stop algorithm on a group'''
         group = ServiceGroup('G1')
         i1 = Service('I1')
-        i1.add_action(Action('stop', 'localhost', '/bin/true'))
+        i1.add_action(Action('stop', HOSTNAME, '/bin/true'))
         group.add_inter_dep(target=i1)
         s1 = Service('S1')
-        s1.add_action(Action('stop', 'localhost', '/bin/true'))
+        s1.add_action(Action('stop', HOSTNAME, '/bin/true'))
         s1.add_dep(target=group)
         s1.algo_reversed = True
         group.algo_reversed = True
