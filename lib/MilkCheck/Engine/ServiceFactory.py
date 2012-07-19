@@ -41,6 +41,8 @@ class ServiceFactory(object):
             if item == 'target':
                 ser.target = service[item]
                 ser.target_backup = service[item]
+            elif item == 'mode':
+                ser.mode = service[item]
             elif item == 'fanout':
                 ser.fanout = service[item]
             elif item == 'timeout':

@@ -40,12 +40,17 @@ class ActionManager(EntityManager):
         """Perform an immediate action"""
         assert action, 'You cannot perform a NoneType object'
         assert isinstance(action, Action), 'Object should be an action'
+
         if not action.parent.simulate:
             self.add_task(action)
         call_back_self().notify(action.parent, EV_STARTED)
+
+        nodes = None
+        if action.mode != 'delegate':
+            nodes = action.resolve_property('target')
         self._master_task.shell(action.resolve_property('command'),
-        nodes=action.resolve_property('target'),
-        handler=ActionEventHandler(action), timeout=action.timeout)
+                                nodes=nodes, timeout=action.timeout,
+                                handler=ActionEventHandler(action))
 
     def perform_delayed_action(self, action):
         """Perform a delayed action and add it to the running tasks"""

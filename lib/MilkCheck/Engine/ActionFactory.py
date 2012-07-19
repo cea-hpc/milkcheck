@@ -29,6 +29,8 @@ class ActionFactory(object):
             if item == 'target':
                 action.target = serialized_act[name][item]
                 action.target_backup = action.target
+            elif item == 'mode':
+                action.mode = serialized_act[name][item]
             elif item == 'cmd':
                 action.command = serialized_act[name][item]
             elif item == 'timeout':

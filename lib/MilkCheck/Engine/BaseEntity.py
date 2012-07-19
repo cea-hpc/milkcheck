@@ -119,6 +119,10 @@ class BaseEntity(object):
         self.target = target
         self._target_backup = self.target
 
+        # Special mode which change entity behaviour
+        # 'delegate' means manage targets but run localy.
+        self.mode = None
+
         # Maximum error authorized for the entity. -1 means that
         # we do not want any error
         self.errors = -1
@@ -463,3 +467,4 @@ class BaseEntity(object):
             self.timeout = entity.timeout
         if not self.target:
             self.target = entity.target
+        self.mode = self.mode or entity.mode
