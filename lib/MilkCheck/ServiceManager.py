@@ -115,39 +115,39 @@ class ServiceManager(EntityManager):
         for service in args:
             self.forget_service(service)
 
-    def _variable_options(self, options):
-        '''Automatic variables based on command line options.'''
-        if options:
+    def _variable_config(self, conf):
+        '''Automatic variables based on MilckCheck configuration.'''
+        if conf:
             # -n NODES
-            self.add_var('SELECTED_NODES', str(options.only_nodes or ''))
+            self.add_var('SELECTED_NODES', str(conf.get('only_nodes', '')))
             # -x NODES
-            self.add_var('EXCLUDED_NODES', str(options.excluded_nodes or ''))
+            self.add_var('EXCLUDED_NODES', str(conf.get('excluded_nodes', '')))
         else:
             for varname in ('selected_node', 'excluded_nodes'):
                 self.add_var(varname.upper(), '')
 
-    def _apply_options(self, options):
+    def _apply_config(self, conf):
         '''
         This apply a sequence of modifications on the graph. A modification
         can be an update of the nodes usable by the services or whatever that
-        is referenced within options.  
+        is referenced within configuration.
         '''
 
         # Load the configuration located within the directory
-        if options.config_dir:
+        if conf.get('config_dir'):
             self.entities.clear()
-            self.load_config(options.config_dir)
+            self.load_config(conf['config_dir'])
 
         # Avoid some of the services referenced in the graph
-        if options.excluded_svc:
-            self.__lock_services(options.excluded_svc)
+        if conf.get('excluded_svc'):
+            self.__lock_services(conf['excluded_svc'])
 
         # Use just those nodes 
-        if options.only_nodes:
-            self.__update_usable_nodes(options.only_nodes, 'INT')
+        if conf.get('only_nodes'):
+            self.__update_usable_nodes(conf['only_nodes'], 'INT')
         # Avoid those nodes
-        elif options.excluded_nodes:
-            self.__update_usable_nodes(options.excluded_nodes, 'DIF')
+        elif conf.get('excluded_nodes'):
+            self.__update_usable_nodes(conf['excluded_nodes'], 'DIF')
 
     def __lock_services(self, services):
         '''
@@ -183,7 +183,7 @@ class ServiceManager(EntityManager):
         else:
             return RC_OK
 
-    def call_services(self, services, action, opts=None):
+    def call_services(self, services, action, conf=None):
         '''Allow the user to call one or multiple services.'''
         assert action, 'action name cannot be None'
         # Retcode
@@ -191,15 +191,15 @@ class ServiceManager(EntityManager):
 
         self.variables.clear()
 
-        # Create global variable from command line options
-        self._variable_options(opts)
+        # Create global variable from configuration
+        self._variable_config(conf)
 
         # Make sure that the graph is usable
         if self._graph_changed:
             self.__refresh_graph()
-        # Apply options over the graph
-        if opts:
-            self._apply_options(opts)
+        # Apply configuration over the graph
+        if conf:
+            self._apply_config(conf)
         # Service are going to use reversed algorithms
         reverse = False
         if action == 'stop':

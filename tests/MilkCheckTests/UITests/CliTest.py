@@ -15,6 +15,7 @@ from MilkCheck.Engine.Service import Service
 from MilkCheck.Engine.Action import Action
 from MilkCheck.Engine.ServiceGroup import ServiceGroup
 from MilkCheck.Callback import CallbackHandler
+from MilkCheck.Config.ConfigParser import ConfigParser
 from ClusterShell.NodeSet import NodeSet
 
 # Symbols
@@ -41,6 +42,10 @@ class CommandLineInterfaceTests(TestCase):
 
         Each node has an action start and an action stop
         '''
+
+        ConfigParser.DEFAULT_FIELDS['config_dir']['value'] = ''
+        ConfigParser.CONFIG_PATH = '/dev/null'
+
         ServiceManager._instance = None 
         manager = service_manager_self()
         s1 = Service('S1')

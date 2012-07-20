@@ -1,13 +1,12 @@
-# Copyright CEA (2011)
+# Copyright CEA (2011-2012)
 # Contributor: TATIBOUET Jeremie <tatibouetj@ocre.cea.fr>
+# Contributor: Aurelien Cedeyn <aurelien.cedeyn@cea.fr>
 
 '''
 This module contains the UserView class definition.
 '''
 
 # classes
-import logging
-import logging.config
 import fcntl, termios, struct, os
 from signal import SIGINT
 from sys import stdout, stderr
@@ -220,12 +219,14 @@ class CommandLineInterface(UserView):
         self._mop = None
         # Store the options parsed
         self._options = None
+        # Store the configuration parsed
+        self._conf = None
         # Store the arguments parsed
         self._args = None
         # Displayer
         self._console = ConsoleDisplay()
 
-        self._logger = self.__install_logger()
+        self._logger = ConfigParser.install_logger()
 
         # Profiling mode (help in unit tests)
         self.profiling = False
@@ -248,13 +249,7 @@ class CommandLineInterface(UserView):
         try:
             (self._options, self._args) = self._mop.parse_args(command_line)
 
-            conf = ConfigParser(self._options)
-
-            # XXX: Quick hack to have a config operational
-            self._options.config_dir = conf['config_dir']
-
-            if self._options.debug:
-                self._logger.setLevel(logging.DEBUG)
+            self._conf = ConfigParser(self._options)
 
             manager = service_manager_self()
             # Case 1 : call services referenced in the manager with
@@ -264,10 +259,10 @@ class CommandLineInterface(UserView):
                 services = self._args[:-1]
                 action = self._args[-1]
                 retcode = manager.call_services(services, action,
-                                                opts=self._options)
+                                                conf=self._conf)
             # Case 3 : Just load another configuration
-            elif self._options.config_dir:
-                manager.load_config(self._options.config_dir)
+            elif self._conf['config_dir']:
+                manager.load_config(self._conf['config_dir'])
             # Case 5: Nothing to do so just print MilkCheck help
             else:
                 self._mop.print_help()
@@ -294,7 +289,7 @@ class CommandLineInterface(UserView):
             return RC_EXCEPTION
         except Exception, exc:
             # In debug mode, propagate the error
-            if getattr(self._options, 'debug', True):
+            if (not self._conf or self._conf.get('debug')):
                 raise
             else:
                 self._logger.error('Unexpected Exception : %s' % exc)
@@ -306,12 +301,12 @@ class CommandLineInterface(UserView):
         Something has started on the object given as parameter. This migh be
         the beginning of a command one a node, an action or a service.
         '''
-        if isinstance(obj, Action) and self._options.verbosity >= 2:
+        if isinstance(obj, Action) and self._conf['verbosity'] >= 2:
             self._console.print_action_command(obj)
             self._console.print_running_tasks()
             if self.profiling:
                 self.count_average_verbmsg += 1
-        elif isinstance(obj, Service) and self._options.verbosity >= 1:
+        elif isinstance(obj, Service) and self._conf['verbosity'] >= 1:
             self._console.print_running_tasks()
             if self.profiling:
                 self.count_low_verbmsg += 1
@@ -321,7 +316,7 @@ class CommandLineInterface(UserView):
         Something is complete on the object given as parameter. This migh be
         the end of a command on a node,  an action or a service.
         '''
-        if isinstance(obj, Action) and self._options.verbosity >= 3 and \
+        if isinstance(obj, Action) and self._conf['verbosity'] >= 3 and \
             obj.status != SKIPPED:
             self._console.print_action_results(obj)
             self._console.print_running_tasks()
@@ -329,13 +324,13 @@ class CommandLineInterface(UserView):
                 self.count_high_verbmsg += 1
         elif isinstance(obj, Action) and \
             obj.status in (TIMED_OUT, TOO_MANY_ERRORS, ERROR) and \
-                 self._options.verbosity >= 1:
+                 self._conf['verbosity'] >= 1:
             self._console.print_action_results(obj, 
-                                               self._options.verbosity == 1)
+                                               self._conf['verbosity'] == 1)
             self._console.print_running_tasks()
             if self.profiling:
                 self.count_average_verbmsg += 1
-        elif isinstance(obj, Service) and self._options.verbosity >= 1:
+        elif isinstance(obj, Service) and self._conf['verbosity'] >= 1:
             self._console.print_running_tasks()
             if self.profiling:
                 self.count_low_verbmsg += 1
@@ -345,7 +340,7 @@ class CommandLineInterface(UserView):
         Status of the object given as parameter. Actions or Service's status
         might have changed.
         '''
-        if isinstance(obj, Service) and self._options.verbosity >= 1 and \
+        if isinstance(obj, Service) and self._conf['verbosity'] >= 1 and \
             not (obj.status == SKIPPED and self._options.verbosity < 3) and \
             obj.status in (TIMED_OUT, TOO_MANY_ERRORS, ERROR, DONE,
                            WARNING, SKIPPED) and not obj.simulate:
@@ -360,7 +355,7 @@ class CommandLineInterface(UserView):
         Object given as parameter has been delayed. This event is only raised
         when an action was delayed
         '''
-        if isinstance(obj, Action) and self._options.verbosity >= 3:
+        if isinstance(obj, Action) and self._conf['verbosity'] >= 3:
             self._console.print_delayed_action(obj)
             self._console.print_running_tasks()
             if self.profiling:
@@ -374,31 +369,6 @@ class CommandLineInterface(UserView):
         Service A triggers Service B
         '''
         pass
-
-    @classmethod
-    def __install_logger(cls):
-        '''Install the various logging methods.'''
-
-        # create logger
-        logger = logging.getLogger('milkcheck')
-        logger.setLevel(logging.WARNING)
-
-        # create console handler and set level to debug
-        console = logging.StreamHandler()
-        console.setLevel(logging.DEBUG)
-
-        # create formatter
-        formatter = logging.Formatter(
-                         '[%(asctime)s] %(levelname)-8s - %(message)s',
-                         datefmt="%H:%M:%S")
-
-        # add formatter to console
-        console.setFormatter(formatter)
-
-        # add console to logger
-        logger.addHandler(console)
-
-        return logger
 
     def get_totalmsg_count(self):
         '''Sum all counter to know how many message the CLI got'''
