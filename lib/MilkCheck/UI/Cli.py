@@ -260,10 +260,12 @@ class CommandLineInterface(UserView):
                 action = self._args[-1]
                 retcode = manager.call_services(services, action,
                                                 conf=self._conf)
-            # Case 3 : Just load another configuration
+            # Case 2 : Check configuration
             elif self._conf['config_dir']:
+                print "No actions specified, checking configuration..."
                 manager.load_config(self._conf['config_dir'])
-            # Case 5: Nothing to do so just print MilkCheck help
+                print "%s seems good" % self._conf['config_dir']
+            # Case 3: Nothing to do so just print MilkCheck help
             else:
                 self._mop.print_help()
         except (ServiceNotFoundError, 
