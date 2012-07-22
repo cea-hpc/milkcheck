@@ -121,23 +121,29 @@ class ConsoleDisplay(object):
         '''Remove current line and print the status of an entity onSTDOUT'''
         msg_width = self._term_width - (self._LARGEST_STATUS + 4)
         line = '%%-%ds%%%ds' % (msg_width, (self._LARGEST_STATUS + 4))
+
+        # Label w/o description
+        label = entity.fullname()
+        if entity.desc:
+            label += " - %s" % entity.desc
+
         if entity.status in (TIMED_OUT, TOO_MANY_ERRORS, ERROR):
-            line = line % (entity.fullname(),
+            line = line % (label,
                 '[%s]' % \
                     self.string_color(
                     entity.status.center(self._LARGEST_STATUS), 'RED'))
         elif entity.status in (WARNING, SKIPPED):
-            line = line % (entity.fullname(),
+            line = line % (label,
                 '[%s]' % \
                 self.string_color(entity.status.center(self._LARGEST_STATUS),
                                   'YELLOW'))
         elif entity.status is DONE:
-            line = line % (entity.fullname(),
+            line = line % (label,
                 '[%s]' % \
                 self.string_color('OK'.center(self._LARGEST_STATUS),
                                   'GREEN'))
         else:
-            line = line % (entity.name, '[%s]' % entity.status)
+            line = line % (label, '[%s]' % entity.status)
         self.__rprint(line)
 
     def print_action_command(self, action):
