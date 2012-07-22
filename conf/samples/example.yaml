@@ -1,4 +1,31 @@
 #
+# Local service
+#
+# This service will run "service crond status" command on local host when
+# 'status' action is called.
+#
+service:
+    name: local
+    desc: Simplest service declaration
+    actions:
+        status:
+            cmd: service crond status
+---
+#
+# Distant service
+#
+# This service will run, in parallel, "service sshd status" command on host
+# listed by 'target' (foo, bar and baz) when 'status' action is called.
+#
+service:
+    name: remote
+    desc: simple distant service
+    target: foo,bar,baz
+    actions:
+        status:
+           cmd: service sshd status
+---
+#
 # Delegated mode
 # Apply.   service, actions
 # Default. standard
