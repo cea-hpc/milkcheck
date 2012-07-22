@@ -251,6 +251,9 @@ class CommandLineInterface(UserView):
 
             self._conf = ConfigParser(self._options)
 
+            # Configure ActionManager
+            action_manager_self().default_fanout = self._conf['fanout']
+
             manager = service_manager_self()
             # Case 1 : call services referenced in the manager with
             # the required action
