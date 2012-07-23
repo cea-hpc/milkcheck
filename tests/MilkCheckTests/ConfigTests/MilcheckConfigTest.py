@@ -26,14 +26,14 @@ class MilkCheckConfigTest(TestCase):
             target: "@client_lustre"
             actions:
                 start:
-                    check: status
+                    check: [ status ]
                     cmd:   shine mount -q -L -f $LUSTRE_FS_LIST
                 stop:
                     cmd:   shine umount -q -L -f $LUSTRE_FS_LIST
                 status:
                     cmd :  shine status -q -L -f $LUSTRE_FS_LIST
                 check:
-                    check: status''')
+                    check: [ status ]''')
         self.assertTrue(config._flow)
         self.assertTrue(len(config._flow) == 1)
 
@@ -103,14 +103,14 @@ service:
             target: "@client_lustre"
             actions:
                 start:
-                    check: status
+                    check: [ status ]
                     cmd:   shine mount -q -L -f $LUSTRE_FS_LIST
                 stop:
                     cmd:   shine umount -q -L -f $LUSTRE_FS_LIST
                 status:
                     cmd :  shine status -q -L -f $LUSTRE_FS_LIST
                 check:
-                    check: status''')
+                    check: [ status ]''')
         config.build_graph()
         self.assertTrue(config._flow)
         self.assertTrue(len(config._flow) == 1)
