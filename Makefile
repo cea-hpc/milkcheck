@@ -4,6 +4,7 @@ VERSION=*
 TARBALL=$(NAME)-$(VERSION).tar.gz
 SPECFILE=$(NAME).spec
 RPMTOPDIR=$$PWD/RPMBUILD
+TESTDIR=$$PWD/tests
 
 all: rpm
 
@@ -28,3 +29,6 @@ $(TARBALL): version
 clean:
 	rm -f $(TARBALL)
 	rm -rf $(RPMTOPDIR)
+
+test:
+	cd $(TESTDIR) ; nosetests --exe --all-modules
