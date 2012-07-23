@@ -31,7 +31,7 @@ from MilkCheck.Engine.BaseEntity import IllegalDependencyTypeError
 from MilkCheck.Engine.Service import ActionNotFoundError
 
 # Symbols
-from MilkCheck.Engine.BaseEntity import WARNING, SKIPPED
+from MilkCheck.Engine.BaseEntity import WARNING, SKIPPED, LOCKED
 from MilkCheck.Engine.BaseEntity import TIMED_OUT, TOO_MANY_ERRORS, ERROR, DONE
 from MilkCheck.UI.UserView import RC_OK, RC_EXCEPTION, RC_UNKNOWN_EXCEPTION
 
@@ -107,14 +107,15 @@ class ConsoleDisplay(object):
         if rtasks:
             tasks_disp = '[%s]' % ','.join(rtasks)
             width = min(self._pl_width, self._term_width)
-            stdout.write('\r%s\r%s\r' % (width * ' ', tasks_disp))
-            stdout.flush()
+            stderr.write('\r%s\r%s\r' % (width * ' ', tasks_disp))
+            stderr.flush()
             self._pl_width = len(tasks_disp)
 
-    def __rprint(self, line):
+    def output(self, line):
         '''Rewrite the current line and display line and jump to the next one'''
         width = min(self._pl_width, self._term_width)
-        stderr.write('\r%s\r%s\n' % (width * ' ', line))
+        stdout.write('\r%s\r%s\n' % (width * ' ', line))
+        stdout.flush()
         self._pl_width = len(line)
 
     def print_status(self, entity):
@@ -142,7 +143,30 @@ class ConsoleDisplay(object):
                                   'GREEN'))
         else:
             line = line % (label, '[%s]' % entity.status)
-        self.__rprint(line)
+        self.output(line)
+
+    def print_summary(self):
+        '''Print the errors summary of the array entity'''
+        lines = []
+        services = service_manager_self()
+
+        errors = 0
+        others = 0
+        for ent in services.entities.values() :
+            if ent.status in (TIMED_OUT, TOO_MANY_ERRORS, ERROR):
+                lines.append(" + %s" % self.string_color(ent.longname(), 'RED'))
+                errors += 1
+            elif ent.status not in (SKIPPED, LOCKED):
+                others += 1
+
+        header = "%s\n %s - %s actions (%s failed)" % (
+                       " " * 8,
+                       self.string_color('Summary'.upper(), 'MAGENTA'),
+                       self.string_color('%d' % (others + errors), 'CYAN'),
+                       self.string_color(str(errors),
+                                                 (errors and 'RED' or 'GREEN')))
+        lines.insert(0, header)
+        self.output("\n".join(lines))
 
     def print_action_command(self, action):
         '''Remove the current line and write informations about the command'''
@@ -153,7 +177,7 @@ class ConsoleDisplay(object):
              self.string_color('on', 'MAGENTA'), target,
              self.string_color(
                 action.resolve_property('command'), 'CYAN'))
-        self.__rprint(line)
+        self.output(line)
 
     def __gen_action_output(self, iterbuf, iterrc, error_only):
         '''Display command result from output and retcodes.'''
@@ -199,7 +223,7 @@ class ConsoleDisplay(object):
             line += self.__gen_action_output(action.worker.iter_buffers(),
                                              action.worker.iter_retcodes(),
                                              error_only)
-        self.__rprint("\n".join(line))
+        self.output("\n".join(line))
 
     def print_delayed_action(self, action):
         '''Display a message specifying that this action has been delayed'''
@@ -208,7 +232,7 @@ class ConsoleDisplay(object):
              action.parent.fullname(),
              self.string_color('will fire in', 'MAGENTA'),
              action.delay)
-        self.__rprint(line)
+        self.output(line)
 
 class CommandLineInterface(UserView):
     '''
@@ -267,11 +291,13 @@ class CommandLineInterface(UserView):
                 action = self._args[-1]
                 retcode = manager.call_services(services, action,
                                                 conf=self._conf)
+                if self._conf.get('summary', False):
+                    self._console.print_summary()
             # Case 2 : Check configuration
             elif self._conf['config_dir']:
-                print "No actions specified, checking configuration..."
+                self._console.output("No actions specified, checking configuration...")
                 manager.load_config(self._conf['config_dir'])
-                print "%s seems good" % self._conf['config_dir']
+                self._console.output("%s seems good" % self._conf['config_dir'])
             # Case 3: Nothing to do so just print MilkCheck help
             else:
                 self._mop.print_help()

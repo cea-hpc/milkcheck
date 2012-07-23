@@ -24,6 +24,7 @@ class ConfigParser(object):
     DEFAULT_FIELDS = {
          'config_dir':  { 'value': '/etc/milkcheck/conf', 'type': str },
          'fanout':      { 'value': '64', 'type': int },
+         'summary':     { 'value': False, 'type': bool },
          }
 
     def __init__(self, options):
