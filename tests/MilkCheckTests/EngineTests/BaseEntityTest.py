@@ -301,6 +301,23 @@ class BaseEntityTest(unittest.TestCase):
         ent1.parent = ent2
         self.assertEqual(ent1.fullname(), 'gamma.beta.alpha')
 
+    def test_longname(self):
+        """ """
+        # No dep, no desc
+        ent1 = BaseEntity('alpha')
+        self.assertEqual(ent1.longname(), "alpha")
+
+        # Desc, no dep
+        ent1.desc = "small description"
+        self.assertEqual(ent1.longname(), "alpha - small description")
+
+        # Desc and dep
+        ent2 = BaseEntity('beta')
+        ent2.desc = "another description"
+        ent2.parent = ent1
+        self.assertEqual(ent2.longname(), "alpha.beta - another description")
+
+
 class VariableBaseEntityTest(unittest.TestCase):
     """Tests cases for the class variable management methods for BaseEntity."""
 

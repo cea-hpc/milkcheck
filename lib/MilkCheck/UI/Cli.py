@@ -123,9 +123,7 @@ class ConsoleDisplay(object):
         line = '%%-%ds%%%ds' % (msg_width, (self._LARGEST_STATUS + 4))
 
         # Label w/o description
-        label = entity.fullname()
-        if entity.desc:
-            label += " - %s" % entity.desc
+        label = entity.longname()
 
         if entity.status in (TIMED_OUT, TOO_MANY_ERRORS, ERROR):
             line = line % (label,

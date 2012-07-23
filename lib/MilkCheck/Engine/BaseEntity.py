@@ -359,6 +359,13 @@ class BaseEntity(object):
 
     algo_reversed = property(fset=set_algo_reversed)
 
+    def longname(self):
+        '''Return entity fullname and descrition if available '''
+        label = self.fullname()
+        if self.desc:
+            label += " - %s" % self.desc
+        return label
+
     def fullname(self):
         '''Return the fullname of the current entity'''
         names = []
