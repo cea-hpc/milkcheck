@@ -5,6 +5,9 @@ from unittest import TestCase
 from MilkCheck.Config.Configuration import MilkCheckConfig
 from MilkCheck.ServiceManager import service_manager_self
 
+import socket
+HOSTNAME = socket.gethostname().split('.')[0]
+
 class MilkCheckConfigTest(TestCase):
     '''Define the test cases of the class MilkCheckConfig'''
 
@@ -23,7 +26,7 @@ class MilkCheckConfigTest(TestCase):
             desc: "I'm the service S1"
             variables:
                 LUSTRE_FS_LIST: store0,work0
-            target: "@client_lustre"
+            target: "%s"
             actions:
                 start:
                     check: [ status ]
@@ -33,7 +36,7 @@ class MilkCheckConfigTest(TestCase):
                 status:
                     cmd :  shine status -q -L -f $LUSTRE_FS_LIST
                 check:
-                    check: [ status ]''')
+                    check: [ status ]''' % HOSTNAME)
         self.assertTrue(config._flow)
         self.assertTrue(len(config._flow) == 1)
 
@@ -100,7 +103,7 @@ service:
             desc: "I'm the service S1"
             variables:
                 LUSTRE_FS_LIST: store0,work0
-            target: "@client_lustre"
+            target: "%s"
             actions:
                 start:
                     check: [ status ]
@@ -110,7 +113,7 @@ service:
                 status:
                     cmd :  shine status -q -L -f $LUSTRE_FS_LIST
                 check:
-                    check: [ status ]''')
+                    check: [ status ]''' % HOSTNAME)
         config.build_graph()
         self.assertTrue(config._flow)
         self.assertTrue(len(config._flow) == 1)

@@ -25,6 +25,9 @@ from MilkCheck.Engine.BaseEntity import DependencyAlreadyReferenced
 from MilkCheck.Engine.BaseEntity import UndefinedVariableError
 from MilkCheck.Engine.BaseEntity import InvalidVariableError
 
+import socket
+HOSTNAME = socket.gethostname().split('.')[0]
+
 class BaseEntityTest(unittest.TestCase):
     """Tests cases for the class BaseEntity."""
 
@@ -437,10 +440,10 @@ class VariableBaseEntityTest(unittest.TestCase):
     def test_resolve_property5(self):
         '''Test resolution with a property containing special characters'''
         service = BaseEntity('test_service')
-        service.add_var('NODES', '@testgrp!@agrp,epsilon')
+        service.add_var('NODES', HOSTNAME)
         service.target = '%NODES'
         self.assertEqual(service.resolve_property('target'),
-            NodeSet('@testgrp!@agrp,epsilon'))
+            NodeSet(HOSTNAME))
 
     def test_resolve_2_variables(self):
         '''Test resolution with two adjacent variables'''
