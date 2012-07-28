@@ -145,26 +145,30 @@ class ConsoleDisplay(object):
             line = line % (label, '[%s]' % entity.status)
         self.output(line)
 
-    def print_summary(self):
-        '''Print the errors summary of the array entity'''
+    def print_summary(self, actions):
+        '''Print the errors summary of the array actions'''
         lines = []
-        services = service_manager_self()
 
         errors = 0
         others = 0
-        for ent in services.entities.values() :
+        to_spell = 'action'
+
+        for ent in actions:
             if ent.status in (TIMED_OUT, TOO_MANY_ERRORS, ERROR):
                 lines.append(" + %s" % self.string_color(ent.longname(), 'RED'))
                 errors += 1
             elif ent.status not in (SKIPPED, LOCKED):
                 others += 1
 
-        header = "%s\n %s - %s actions (%s failed)" % (
-                       " " * 8,
+        # manage 'action(s)' spelling
+        if (errors + others) > 1:
+            to_spell += 's'
+
+        header = "\n %s - %s %s (%s failed)" % (
                        self.string_color('Summary'.upper(), 'MAGENTA'),
-                       self.string_color('%d' % (others + errors), 'CYAN'),
-                       self.string_color(str(errors),
-                                                 (errors and 'RED' or 'GREEN')))
+                       self.string_color('%d' % (errors + others), 'CYAN'),
+                       to_spell,
+                       self.string_color(errors, (errors and 'RED' or 'GREEN')))
         lines.insert(0, header)
         self.output("\n".join(lines))
 
@@ -251,6 +255,8 @@ class CommandLineInterface(UserView):
         self._conf = None
         # Store the arguments parsed
         self._args = None
+        # Store executed actions
+        self.actions = []
         # Displayer
         self._console = ConsoleDisplay()
 
@@ -292,7 +298,7 @@ class CommandLineInterface(UserView):
                 retcode = manager.call_services(services, action,
                                                 conf=self._conf)
                 if self._conf.get('summary', False):
-                    self._console.print_summary()
+                    self._console.print_summary(self.actions)
             # Case 2 : Check configuration
             elif self._conf['config_dir']:
                 self._console.output("No actions specified, checking configuration...")
@@ -351,20 +357,20 @@ class CommandLineInterface(UserView):
         Something is complete on the object given as parameter. This migh be
         the end of a command on a node,  an action or a service.
         '''
-        if isinstance(obj, Action) and self._conf['verbosity'] >= 3 and \
-            obj.status != SKIPPED:
-            self._console.print_action_results(obj)
-            self._console.print_running_tasks()
-            if self.profiling:
-                self.count_high_verbmsg += 1
-        elif isinstance(obj, Action) and \
-            obj.status in (TIMED_OUT, TOO_MANY_ERRORS, ERROR) and \
-                 self._conf['verbosity'] >= 1:
-            self._console.print_action_results(obj, 
-                                               self._conf['verbosity'] == 1)
-            self._console.print_running_tasks()
-            if self.profiling:
-                self.count_average_verbmsg += 1
+        if isinstance(obj, Action):
+            self.actions.append(obj)
+            if self._conf['verbosity'] >= 3 and obj.status != SKIPPED:
+                self._console.print_action_results(obj)
+                self._console.print_running_tasks()
+                if self.profiling:
+                    self.count_high_verbmsg += 1
+            elif obj.status in (TIMED_OUT, TOO_MANY_ERRORS, ERROR) and \
+                      self._conf['verbosity'] >= 1:
+                self._console.print_action_results(obj,
+                                           self._conf['verbosity'] == 1)
+                self._console.print_running_tasks()
+                if self.profiling:
+                    self.count_average_verbmsg += 1
         elif isinstance(obj, Service) and self._conf['verbosity'] >= 1:
             self._console.print_running_tasks()
             if self.profiling:
