@@ -7,9 +7,8 @@ This module contains the UserView class definition.
 '''
 
 # classes
-import fcntl, termios, struct, os
+import fcntl, termios, struct, os, sys
 from signal import SIGINT
-from sys import stdout, stderr
 from ClusterShell.NodeSet import NodeSet
 from MilkCheck.UI.UserView import UserView
 from MilkCheck.UI.OptionParser import McOptionParser
@@ -69,7 +68,7 @@ class Terminal(object):
     @classmethod
     def isatty(cls):
         '''Determine if the current terminal is teletypewriter'''
-        return stdout.isatty() and stderr.isatty()
+        return sys.stdout.isatty() and sys.stderr.isatty()
 
 class ConsoleDisplay(object):
     '''
@@ -93,6 +92,8 @@ class ConsoleDisplay(object):
         self._term_width = min(width, MAXTERMWIDTH)
         self._pl_width = 0
         self._color = Terminal.isatty()
+        # Cleanup line before printing a message (see output)
+        self.cleanup = True
 
     def string_color(self, strg, color):
         '''Return a string formatted with a special color'''
@@ -107,15 +108,18 @@ class ConsoleDisplay(object):
         if rtasks:
             tasks_disp = '[%s]' % ','.join(rtasks)
             width = min(self._pl_width, self._term_width)
-            stderr.write('\r%s\r%s\r' % (width * ' ', tasks_disp))
-            stderr.flush()
+            sys.stderr.write('\r%s\r%s\r' % (width * ' ', tasks_disp))
+            sys.stderr.flush()
             self._pl_width = len(tasks_disp)
 
     def output(self, line):
         '''Rewrite the current line and display line and jump to the next one'''
         width = min(self._pl_width, self._term_width)
-        stdout.write('\r%s\r%s\n' % (width * ' ', line))
-        stdout.flush()
+        emptyline = '\r%s\r' % (width * ' ')
+        if not self.cleanup:
+            emptyline = ''
+        sys.stdout.write('%s%s\n' % (emptyline, line))
+        sys.stdout.flush()
         self._pl_width = len(line)
 
     def print_status(self, entity):
