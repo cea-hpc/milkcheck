@@ -323,7 +323,7 @@ class CommandLineInterface(UserView):
             self._logger.error(str(exc))
             return RC_EXCEPTION
         except InvalidOptionError, exc:
-            self._logger.error(str(exc))
+            self._logger.critical('Invalid options: %s\n' % exc)
             self._mop.print_help()
             return RC_EXCEPTION
         except KeyboardInterrupt, exc:
