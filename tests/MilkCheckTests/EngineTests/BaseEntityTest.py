@@ -16,7 +16,7 @@ from MilkCheck.ServiceManager import service_manager_self
 # Symbols
 from MilkCheck.Engine.Dependency import CHECK, REQUIRE, REQUIRE_WEAK
 from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, WAITING_STATUS
-from MilkCheck.Engine.BaseEntity import TIMED_OUT, ERROR, TOO_MANY_ERRORS
+from MilkCheck.Engine.BaseEntity import TIMED_OUT, DEP_ERROR, ERROR
 from MilkCheck.Engine.BaseEntity import WARNING
 
 # Exceptions
@@ -228,7 +228,7 @@ class BaseEntityTest(unittest.TestCase):
         self.assertEqual(service.eval_deps_status(), WAITING_STATUS)
 
     def test_eval_deps_error(self):
-        """Test that eval_deps_status return ERROR"""
+        """Test that eval_deps_status return DEP_ERROR"""
         service = BaseEntity("test_service")
         serv_a = BaseEntity("A")
         serv_b = BaseEntity("B")
@@ -236,7 +236,7 @@ class BaseEntityTest(unittest.TestCase):
         service.add_dep(serv_b, CHECK)
         serv_b.status = DONE
         serv_a.status = TIMED_OUT
-        self.assertEqual(service.eval_deps_status(), ERROR)
+        self.assertEqual(service.eval_deps_status(), DEP_ERROR)
 
     def test_eval_deps_warnings(self):
         """Test that eval_deps_status return WARNING"""
@@ -245,7 +245,7 @@ class BaseEntityTest(unittest.TestCase):
         serv_b = BaseEntity("B")
         service.add_dep(serv_a, REQUIRE_WEAK)
         service.add_dep(serv_b, REQUIRE_WEAK)
-        serv_b.status = TOO_MANY_ERRORS
+        serv_b.status = ERROR
         serv_a.status = TIMED_OUT
         self.assertEqual(service.eval_deps_status(), WARNING)
         serv_a.status = DONE

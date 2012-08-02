@@ -35,10 +35,10 @@ WARNING = 'WARNING'
 TIMED_OUT = 'TIMED_OUT'
 
 # Error limit is overrun for the task performed by the entity 
-TOO_MANY_ERRORS = 'TOO MANY ERRORS'
+ERROR = 'ERROR'
 
 # Specify that the entity has an error
-ERROR = 'ERROR'
+DEP_ERROR = 'DEP_ERROR'
 
 # Specify that the entities is locked. An entity which is clocked
 # cannot be processed by the engine.
@@ -339,9 +339,9 @@ class BaseEntity(object):
 
         temp_dep_status = DONE
         for dep in deps.values():
-            if dep.target.status in (TOO_MANY_ERRORS, TIMED_OUT, ERROR):
+            if dep.target.status in (ERROR, TIMED_OUT, DEP_ERROR):
                 if dep.is_strong():
-                    return ERROR
+                    return DEP_ERROR
                 elif temp_dep_status is not NO_STATUS:
                     temp_dep_status = WARNING
             elif dep.target.status is WAITING_STATUS:

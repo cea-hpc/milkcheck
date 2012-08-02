@@ -15,8 +15,7 @@ from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
 from MilkCheck.Engine.BaseEntity import VariableAlreadyReferencedError
 
 # Symbols
-from MilkCheck.Engine.BaseEntity import LOCKED, WARNING, ERROR
-from MilkCheck.Engine.BaseEntity import TOO_MANY_ERRORS
+from MilkCheck.Engine.BaseEntity import LOCKED, WARNING, DEP_ERROR, ERROR
 from MilkCheck.UI.UserView import RC_OK, RC_WARNING, RC_ERROR
 
 class ServiceNotFoundError(MilkCheckEngineError):
@@ -174,11 +173,11 @@ class ServiceManager(EntityManager):
         Determine a retcode from a the last point of the graph
         RETCODE: 0 verything went as we expected
         RETCODE: 3 means that the status is DONE_WITH_WARNING
-        RETCODE: 6 means that the status is ERROR
+        RETCODE: 6 means that the status is DEP_ERROR
         '''
         if source.status is WARNING:
             return RC_WARNING
-        elif source.status in (ERROR, TOO_MANY_ERRORS):
+        elif source.status in (DEP_ERROR, ERROR):
             return RC_ERROR
         else:
             return RC_OK

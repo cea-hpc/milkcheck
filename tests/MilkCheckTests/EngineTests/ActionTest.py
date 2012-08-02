@@ -14,8 +14,8 @@ from MilkCheck.Engine.Service import Service
 from ClusterShell.NodeSet import NodeSet
 
 # Symbols
-from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, TIMED_OUT, ERROR
-from MilkCheck.Engine.BaseEntity import TOO_MANY_ERRORS, WAITING_STATUS
+from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, TIMED_OUT, DEP_ERROR
+from MilkCheck.Engine.BaseEntity import ERROR, WAITING_STATUS
 from MilkCheck.Engine.BaseEntity import WARNING 
 
 HOSTNAME = socket.gethostname().split('.')[0]
@@ -170,7 +170,7 @@ class ActionTest(TestCase):
         a1.run()
         self.assertEqual(a1.status, DONE)
         self.assertTrue(a1.duration)
-        self.assertEqual(a2.status, TOO_MANY_ERRORS)
+        self.assertEqual(a2.status, ERROR)
         self.assertTrue(a2.duration)
 
     def test_prepare_actions_graph(self):
@@ -212,9 +212,9 @@ class ActionTest(TestCase):
         self.assertTrue(a1.duration)
         self.assertEqual(a2.status, DONE)
         self.assertTrue(a2.duration)
-        self.assertEqual(a3.status, TOO_MANY_ERRORS)
+        self.assertEqual(a3.status, ERROR)
         self.assertTrue(a3.duration)
-        self.assertEqual(a4.status, TOO_MANY_ERRORS)
+        self.assertEqual(a4.status, ERROR)
         self.assertTrue(a4.duration)
 
     def test_action_with_variables(self):

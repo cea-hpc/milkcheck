@@ -23,8 +23,7 @@ from MilkCheck.Config.ConfigParser import ConfigParser
 from ClusterShell.NodeSet import NodeSet
 
 # Symbols
-from MilkCheck.Engine.BaseEntity import DONE, NO_STATUS, TOO_MANY_ERRORS
-from MilkCheck.Engine.BaseEntity import ERROR
+from MilkCheck.Engine.BaseEntity import DONE, NO_STATUS, ERROR, DEP_ERROR
 from MilkCheck.UI.UserView import RC_OK, RC_WARNING, RC_ERROR, RC_EXCEPTION
 from MilkCheck.UI.UserView import RC_UNKNOWN_EXCEPTION
 
@@ -126,8 +125,8 @@ class CommandLineInterfaceTests(TestCase):
         retcode = cli.execute(['G1', 'stop', '-vvv', '-x', 'fortoy8'])
         manager = service_manager_self()
         self.assertEqual(manager.entities['S1'].status, DONE)
-        self.assertEqual(manager.entities['S3'].status, TOO_MANY_ERRORS)
-        self.assertEqual(manager.entities['G1'].status, ERROR)
+        self.assertEqual(manager.entities['S3'].status, ERROR)
+        self.assertEqual(manager.entities['G1'].status, DEP_ERROR)
         self.assertEqual(retcode, RC_ERROR)
 
     def test_execute_services_verbosity(self):
@@ -179,7 +178,7 @@ class CommandLineInterfaceTests(TestCase):
         self.assertEqual(manager.entities['S4'].status, NO_STATUS)
         self.assertEqual(manager.entities['G1'].status, NO_STATUS)
         self.assertEqual(manager.entities['S1'].status, DONE)
-        self.assertEqual(manager.entities['S3'].status, TOO_MANY_ERRORS)
+        self.assertEqual(manager.entities['S3'].status, ERROR)
         self.assertTrue(manager.entities['S1']._actions['stop'].target  ==\
             NodeSet(HOSTNAME))
         self.assertTrue(manager.entities['S3']._actions['stop'].target  ==\
@@ -191,9 +190,9 @@ class CommandLineInterfaceTests(TestCase):
         retcode = cli.execute(['S1', 'start', '-d', '-n', HOSTNAME])
         manager = service_manager_self()
         self.assertEqual(retcode, RC_ERROR)
-        self.assertEqual(manager.entities['S1'].status, ERROR)
+        self.assertEqual(manager.entities['S1'].status, DEP_ERROR)
         self.assertEqual(manager.entities['S2'].status, DONE)
-        self.assertEqual(manager.entities['S3'].status, TOO_MANY_ERRORS)
+        self.assertEqual(manager.entities['S3'].status, ERROR)
         self.assertEqual(manager.entities['S4'].status, DONE)
         self.assertEqual(manager.entities['G1'].status, DONE)
         self.assertTrue(manager.entities['S1']._actions['start'].target  ==\
@@ -221,9 +220,9 @@ class CommandLineInterfaceTests(TestCase):
         manager = service_manager_self()
         self.assertEqual(retcode, RC_ERROR)
         self.assertEqual(manager.entities['S1'].status, DONE)
-        self.assertEqual(manager.entities['S3'].status, TOO_MANY_ERRORS)
+        self.assertEqual(manager.entities['S3'].status, ERROR)
         self.assertEqual(manager.entities['S2'].status, DONE)
-        self.assertEqual(manager.entities['G1'].status, ERROR)
+        self.assertEqual(manager.entities['G1'].status, DEP_ERROR)
 
     def test_execute_overall_graph(self):
         '''Test no services required so make all'''
@@ -231,9 +230,9 @@ class CommandLineInterfaceTests(TestCase):
         retcode = cli.execute(['start', '-d', '-x', 'fortoy8'])
         manager = service_manager_self()
         self.assertEqual(retcode, RC_ERROR)
-        self.assertEqual(manager.entities['S1'].status, ERROR)
+        self.assertEqual(manager.entities['S1'].status, DEP_ERROR)
         self.assertEqual(manager.entities['S2'].status, DONE)
-        self.assertEqual(manager.entities['S3'].status, TOO_MANY_ERRORS)
+        self.assertEqual(manager.entities['S3'].status, ERROR)
         self.assertEqual(manager.entities['S4'].status, DONE)
         self.assertEqual(manager.entities['G1'].status, DONE)
 
@@ -245,9 +244,9 @@ class CommandLineInterfaceTests(TestCase):
         self.assertEqual(retcode, RC_ERROR)
         self.assertEqual(manager.entities['S1'].status, DONE)
         self.assertEqual(manager.entities['S2'].status, DONE)
-        self.assertEqual(manager.entities['S3'].status, TOO_MANY_ERRORS)
-        self.assertEqual(manager.entities['S4'].status, ERROR)
-        self.assertEqual(manager.entities['G1'].status, ERROR)
+        self.assertEqual(manager.entities['S3'].status, ERROR)
+        self.assertEqual(manager.entities['S4'].status, DEP_ERROR)
+        self.assertEqual(manager.entities['G1'].status, DEP_ERROR)
 
     def test_execute_retcode_exception(self):
        '''
@@ -404,15 +403,15 @@ Options:
     def test_command_output_ok(self):
         '''Test command line output with all actions OK'''
         self._output_check(['ServiceGroup', 'start'],
-"""ServiceGroup.service - I am the service                     [       OK      ]
-ServiceGroup                                                [       OK      ]
+"""ServiceGroup.service - I am the service                           [    OK   ]
+ServiceGroup                                                      [    OK   ]
 """)
 
     def test_command_output_summary_ok(self):
         '''Test command line output with summary and all actions OK'''
         self._output_check(['ServiceGroup', 'start', '-s'],
-"""ServiceGroup.service - I am the service                     [       OK      ]
-ServiceGroup                                                [       OK      ]
+"""ServiceGroup.service - I am the service                           [    OK   ]
+ServiceGroup                                                      [    OK   ]
 
  SUMMARY - 1 action (0 failed)
 """)
@@ -422,8 +421,8 @@ ServiceGroup                                                [       OK      ]
         self._output_check(['ServiceGroup', 'stop'],
 """stop ServiceGroup.service ran in 0.00 s
  > localhost exited with 1
-ServiceGroup.service - I am the service                     [TOO MANY ERRORS]
-ServiceGroup                                                [     ERROR     ]
+ServiceGroup.service - I am the service                           [  ERROR  ]
+ServiceGroup                                                      [DEP_ERROR]
 """)
 
     def test_command_output_summary_error(self):
@@ -431,8 +430,8 @@ ServiceGroup                                                [     ERROR     ]
         self._output_check(['ServiceGroup', 'stop', '-s'],
 """stop ServiceGroup.service ran in 0.00 s
  > localhost exited with 1
-ServiceGroup.service - I am the service                     [TOO MANY ERRORS]
-ServiceGroup                                                [     ERROR     ]
+ServiceGroup.service - I am the service                           [  ERROR  ]
+ServiceGroup                                                      [DEP_ERROR]
 
  SUMMARY - 1 action (1 failed)
  + ServiceGroup.service.stop - I am the service

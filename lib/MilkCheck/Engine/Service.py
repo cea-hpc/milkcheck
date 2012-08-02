@@ -15,8 +15,8 @@ from MilkCheck.Callback import call_back_self
 from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
 
 # Symbols
-from MilkCheck.Engine.BaseEntity import NO_STATUS, TOO_MANY_ERRORS
-from MilkCheck.Engine.BaseEntity import WAITING_STATUS, ERROR, DONE
+from MilkCheck.Engine.BaseEntity import NO_STATUS, ERROR
+from MilkCheck.Engine.BaseEntity import WAITING_STATUS, DEP_ERROR, DONE
 from MilkCheck.Engine.BaseEntity import WARNING, TIMED_OUT
 from MilkCheck.Callback import EV_STATUS_CHANGED, EV_TRIGGER_DEP
 
@@ -134,7 +134,7 @@ class Service(BaseService):
         if not self.simulate:
             call_back_self().notify(self, EV_STATUS_CHANGED)
 
-        # I got a status so I'm DONE or ERROR and I'm not the calling point
+        # I got a status so I'm DONE or DEP_ERROR and I'm not the calling point
         if self.status not in (NO_STATUS, WAITING_STATUS) and \
             not self.origin:
 
@@ -192,8 +192,8 @@ class Service(BaseService):
         if self.status is NO_STATUS and deps_status is not WAITING_STATUS:
 
             # If dependencies failed the current service will fail
-            if deps_status == ERROR:
-                self.update_status(ERROR)
+            if deps_status == DEP_ERROR:
+                self.update_status(DEP_ERROR)
             else:
                 # Just flag if dependencies encountered problem
                 if deps_status == WARNING:

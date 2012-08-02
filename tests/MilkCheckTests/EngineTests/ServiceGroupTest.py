@@ -16,8 +16,8 @@ from ClusterShell.NodeSet import NodeSet
 
 # Symbols
 from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, TIMED_OUT
-from MilkCheck.Engine.BaseEntity import WAITING_STATUS, ERROR
-from MilkCheck.Engine.BaseEntity import WARNING, TOO_MANY_ERRORS
+from MilkCheck.Engine.BaseEntity import WAITING_STATUS, DEP_ERROR
+from MilkCheck.Engine.BaseEntity import WARNING, ERROR
 from MilkCheck.Engine.Dependency import CHECK, REQUIRE_WEAK
 
 HOSTNAME = socket.gethostname().split('.')[0]
@@ -73,7 +73,7 @@ class ServiceGroupTest(TestCase):
         ser1.warnings = True
         ser1.status = WARNING
         group.add_inter_dep(target=ser1)
-        group.status = ERROR
+        group.status = DEP_ERROR
         group.reset()
         self.assertEqual(group.status, NO_STATUS)
         self.assertEqual(ser1.status, NO_STATUS)
@@ -253,16 +253,16 @@ class ServiceGroupTest(TestCase):
         self.assertEqual(group.eval_deps_status(), NO_STATUS)
 
     def test_eval_deps_status_error(self):
-        '''Test the method eval_deps_status ERROR'''
+        '''Test the method eval_deps_status DEP_ERROR'''
         group = ServiceGroup('group')
         e1 = Service('E1')
         e2 = Service('E2')
-        e1.status = ERROR
+        e1.status = DEP_ERROR
         group.add_dep(target=e1)
         group.add_dep(target=e2)
         group.add_inter_dep(target=Service('I1'))
-        self.assertEqual(group.eval_deps_status(), ERROR)
-        self.assertEqual(group.eval_deps_status(), ERROR)
+        self.assertEqual(group.eval_deps_status(), DEP_ERROR)
+        self.assertEqual(group.eval_deps_status(), DEP_ERROR)
 
     def test_eval_deps_status_ws(self):
         '''Test the method eval_deps_status WAITING_STATUS'''
@@ -430,13 +430,13 @@ class ServiceGroupTest(TestCase):
         group.run('start')
         self.assertEqual(group.status, WARNING)
         self.assertEqual(ext_serv1.status, DONE)
-        self.assertEqual(ext_serv2.status, TOO_MANY_ERRORS)
+        self.assertEqual(ext_serv2.status, ERROR)
         self.assertEqual(inter_serv1.status, DONE)
         self.assertEqual(inter_serv2.status, WARNING)
-        self.assertEqual(inter_serv3.status, TOO_MANY_ERRORS)
+        self.assertEqual(inter_serv3.status, ERROR)
 
     def test_prepare_group_with_errors_two(self):
-        '''Test prepare a group terminated by ERROR'''
+        '''Test prepare a group terminated by DEP_ERROR'''
         # Group
         group = ServiceGroup('GROUP')
         # Internal
@@ -465,12 +465,12 @@ class ServiceGroupTest(TestCase):
         group.add_dep(target=ext_serv2, sgth=REQUIRE_WEAK)
         # Prepare group
         group.run('start')
-        self.assertEqual(group.status, ERROR)
+        self.assertEqual(group.status, DEP_ERROR)
         self.assertEqual(ext_serv1.status, DONE)
-        self.assertEqual(ext_serv2.status, TOO_MANY_ERRORS)
+        self.assertEqual(ext_serv2.status, ERROR)
         self.assertEqual(inter_serv1.status, DONE)
-        self.assertEqual(inter_serv2.status, ERROR)
-        self.assertEqual(inter_serv3.status, TOO_MANY_ERRORS)
+        self.assertEqual(inter_serv2.status, DEP_ERROR)
+        self.assertEqual(inter_serv3.status, ERROR)
         
     def test_run_partial_deps(self):
         '''Test start algorithm as soon as the calling point is done.'''

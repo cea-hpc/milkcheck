@@ -173,7 +173,7 @@ class ServiceManagerTest(TestCase):
         self.assertEqual(manager.call_services([], 'start'), RC_WARNING)
 
     def test_call_services_retcode6(self):
-        '''Test call_services return 6 whether source is ERROR'''
+        '''Test call_services return 6 whether source is DEP_ERROR'''
         manager = service_manager_self()
         s1 = Service('S1')
         s2 = Service('S2')

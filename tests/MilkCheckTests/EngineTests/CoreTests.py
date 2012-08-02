@@ -16,8 +16,8 @@ from MilkCheck.Engine.Action import Action
 
 # Symbols
 from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, TIMED_OUT
-from MilkCheck.Engine.BaseEntity import WAITING_STATUS, ERROR
-from MilkCheck.Engine.BaseEntity import WARNING, TOO_MANY_ERRORS
+from MilkCheck.Engine.BaseEntity import WAITING_STATUS, DEP_ERROR
+from MilkCheck.Engine.BaseEntity import WARNING, ERROR
 from MilkCheck.Engine.Dependency import CHECK, REQUIRE_WEAK
 
 HOSTNAME = socket.gethostname().split('.')[0]
@@ -76,9 +76,9 @@ class CoreTest(TestCase):
         group_init.run('start')
 
         # Assertions
-        self.assertEqual(grp2.status, ERROR)
-        self.assertEqual(s3.status, ERROR)
-        self.assertEqual(s2.status, ERROR)
+        self.assertEqual(grp2.status, DEP_ERROR)
+        self.assertEqual(s3.status, DEP_ERROR)
+        self.assertEqual(s2.status, DEP_ERROR)
         self.assertEqual(grp1.status, WARNING)
         self.assertEqual(s1.status, WARNING)
         self.assertEqual(group_init.status, WARNING)

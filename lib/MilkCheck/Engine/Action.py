@@ -14,9 +14,9 @@ from MilkCheck.Engine.BaseEntity import BaseEntity
 from MilkCheck.Callback import call_back_self
 
 # Symbols
-from MilkCheck.Engine.BaseEntity import DONE, TIMED_OUT, TOO_MANY_ERRORS
+from MilkCheck.Engine.BaseEntity import DONE, TIMED_OUT, ERROR
 from MilkCheck.Engine.BaseEntity import WAITING_STATUS
-from MilkCheck.Engine.BaseEntity import NO_STATUS, ERROR, SKIPPED
+from MilkCheck.Engine.BaseEntity import NO_STATUS, DEP_ERROR, SKIPPED
 from MilkCheck.Callback import EV_COMPLETE, EV_STARTED
 from MilkCheck.Callback import EV_TRIGGER_DEP, EV_STATUS_CHANGED
 
@@ -85,7 +85,7 @@ class ActionEventHandler(MilkCheckEventHandler):
 
         # failed on too_many_errors
         elif error:
-            self._action.update_status(TOO_MANY_ERRORS)
+            self._action.update_status(ERROR)
         elif timed_out:
             self._action.update_status(TIMED_OUT)
         else:
@@ -151,7 +151,7 @@ class Action(BaseEntity):
         if self.status is NO_STATUS and deps_status is not WAITING_STATUS:
             if self.target is not None and len(self.target) == 0:
                 self.update_status(SKIPPED)
-            elif deps_status is ERROR or not self.parents:
+            elif deps_status is DEP_ERROR or not self.parents:
                 self.update_status(WAITING_STATUS)
                 self.schedule()
             elif deps_status is DONE:
@@ -171,7 +171,7 @@ class Action(BaseEntity):
         action triggers her direct dependencies.
         '''
         assert status in (NO_STATUS, WAITING_STATUS, DONE, SKIPPED,
-                               TOO_MANY_ERRORS, TIMED_OUT), 'Bad action status'
+                               ERROR, TIMED_OUT), 'Bad action status'
         self.status = status
         call_back_self().notify(self, EV_STATUS_CHANGED)
         if status not in (NO_STATUS, WAITING_STATUS):

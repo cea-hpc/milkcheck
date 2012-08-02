@@ -17,8 +17,8 @@ from MilkCheck.Engine.Service import ActionAlreadyReferencedError
 from MilkCheck.Engine.Service import ActionNotFoundError
 
 # Symbols
-from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, TIMED_OUT, ERROR
-from MilkCheck.Engine.BaseEntity import TOO_MANY_ERRORS, WAITING_STATUS
+from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, TIMED_OUT, DEP_ERROR
+from MilkCheck.Engine.BaseEntity import ERROR, WAITING_STATUS
 from MilkCheck.Engine.BaseEntity import WARNING, LOCKED 
 from MilkCheck.Engine.Dependency import CHECK, REQUIRE, REQUIRE_WEAK
         
@@ -243,7 +243,7 @@ class ServiceTest(TestCase):
         serv.run('start')
 
         self.assertEqual(serv.status, WARNING)
-        self.assertEqual(serv_a.status, TOO_MANY_ERRORS)
+        self.assertEqual(serv_a.status, ERROR)
         self.assertEqual(serv_b.status, DONE)
 
     def test_prepare_require_strong(self):
@@ -265,8 +265,8 @@ class ServiceTest(TestCase):
 
         serv.run('start')
 
-        self.assertEqual(serv.status, ERROR)
-        self.assertEqual(serv_a.status, TOO_MANY_ERRORS)
+        self.assertEqual(serv.status, DEP_ERROR)
+        self.assertEqual(serv_a.status, ERROR)
         self.assertEqual(serv_b.status, DONE)
 
     def test_prepare_errors_same_level(self):
@@ -292,10 +292,10 @@ class ServiceTest(TestCase):
 
         serv.run('start')
 
-        self.assertEqual(serv.status, ERROR)
-        self.assertEqual(serv_a.status, ERROR)
-        self.assertEqual(serv_b.status, TOO_MANY_ERRORS)
-        self.assertEqual(serv_c.status, TOO_MANY_ERRORS)
+        self.assertEqual(serv.status, DEP_ERROR)
+        self.assertEqual(serv_a.status, DEP_ERROR)
+        self.assertEqual(serv_b.status, ERROR)
+        self.assertEqual(serv_c.status, ERROR)
         
     def test_prepare_with_multiple_require_errors(self):
         """Test multiple require dependencies errors at different levels."""
@@ -322,9 +322,9 @@ class ServiceTest(TestCase):
 
         serv_base_error.run('start')
 
-        self.assertEqual(serv_base_error.status, ERROR)
+        self.assertEqual(serv_base_error.status, DEP_ERROR)
         self.assertEqual(serv_ok_warnings.status, WARNING)
-        self.assertEqual(serv_error.status, ERROR)
+        self.assertEqual(serv_error.status, DEP_ERROR)
         self.assertEqual(serv_timed_out.status, TIMED_OUT)
 
     def test_prepare_multiple_errors(self):
@@ -366,8 +366,8 @@ class ServiceTest(TestCase):
         serv_a.run('start')
 
         self.assertEqual(serv_d.status, DONE)
-        self.assertEqual(serv_k.status, TOO_MANY_ERRORS)
-        self.assertEqual(serv_c.status, ERROR)
+        self.assertEqual(serv_k.status, ERROR)
+        self.assertEqual(serv_c.status, DEP_ERROR)
         self.assertEqual(serv_b.status, DONE)
         self.assertEqual(serv_x.status, DONE)
         self.assertEqual(serv_a.status, WARNING)
@@ -493,9 +493,9 @@ class ServiceTest(TestCase):
 
         nemesis.run("start")
         self.assertEqual(hive.status, DONE)
-        self.assertEqual(zombie_one.status, TOO_MANY_ERRORS)
+        self.assertEqual(zombie_one.status, ERROR)
         self.assertEqual(zombie_two.status, DONE)
-        self.assertEqual(nemesis.status, ERROR)
+        self.assertEqual(nemesis.status, DEP_ERROR)
         self.assertFalse(act_start1.duration)
         self.assertTrue(act_start2.duration)
         self.assertTrue(act_start3.duration)
