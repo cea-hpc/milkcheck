@@ -29,7 +29,8 @@ class ActionFactoryTest(TestCase):
                     'retry': 5,
                     'delay': 2,
                     'timeout': 4,
-                    'cmd': '/bin/True'
+                    'cmd': '/bin/True',
+                    'desc': 'my desc',
                 }
             }
         )
@@ -41,6 +42,7 @@ class ActionFactoryTest(TestCase):
         self.assertEqual(act.delay, 2)
         self.assertEqual(act.timeout, 4)
         self.assertEqual(act.command, '/bin/True')
+        self.assertEqual(act.desc, 'my desc')
 
     def test_create_action_from_dict2(self):
         '''Test instanciation of an action with variables'''

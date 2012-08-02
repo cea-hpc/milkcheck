@@ -23,6 +23,22 @@ HOSTNAME = socket.gethostname().split('.')[0]
 class ActionTest(TestCase):
     """Define the unit tests for the object action."""
 
+    def test_desc(self):
+        """Test action inherits 'desc'"""
+        # No service description, no action description
+        action1 = Action('status', HOSTNAME, '/bin/true')
+        service = Service('TEST')
+        service.add_actions(action1)
+        self.assertEqual(action1.desc, "")
+
+        # Service description, actions inherits the description
+        action2 = Action('status', HOSTNAME, '/bin/true')
+        service2 = Service('TEST2')
+        service2.desc = "Service TEST"
+        service2.add_actions(action2)
+        action2.inherits_from(service2)
+        self.assertEqual(action2.desc, "Service TEST")
+
     def test_action_instanciation(self):
         """Test instanciation of an action."""
         action = Action('start')

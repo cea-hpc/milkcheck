@@ -41,6 +41,8 @@ class ActionFactory(object):
                 action.fanout = serialized_act[name][item]
             elif item == 'retry':
                 action.retry = serialized_act[name][item]
+            elif item == 'desc':
+                action.desc = serialized_act[name][item]
             elif item == 'variables':
                 for (varname, value) in serialized_act[name][item].items():
                     action.add_var(varname, value)

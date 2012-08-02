@@ -475,3 +475,4 @@ class BaseEntity(object):
         if not self.target:
             self.target = entity.target
         self.mode = self.mode or entity.mode
+        self.desc = self.desc or entity.desc
