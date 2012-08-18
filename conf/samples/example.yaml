@@ -50,6 +50,20 @@ service:
             cmd: ipmipower -h %TARGET --stat
 ---
 #
+# Action aliases
+#
+# You can declare multiple actions, separating action name with comma.
+# This is useful to declare action name aliases, or if you combine it with
+# automatic variables (see below).
+# You can use a NodeSet-like syntax for action aliases (ie: change[01-10])
+service:
+    name: multiple
+    desc: Multiple action in a single declaration
+    actions:
+        start,run:
+            cmd: service foo start
+---
+#
 # Automatic variables.
 #
 # Milkcheck generates a list of automatic variables depending
@@ -67,12 +81,6 @@ service:
     desc: Command scheduler daemon crond
     target: @webservers
     actions:
-        start:
-            # Equivalent to: 'service crond start'
-            cmd: service %SERVICE %ACTION
-        status:
-            # Equivalent to: 'service crond status'
-            cmd: service %SERVICE %ACTION
-        stop:
-            # Equivalent to: 'service crond stop'
+        start,status,stop:
+            # Equivalent to: 'service crond <ACTION_NAME>'
             cmd: service %SERVICE %ACTION

@@ -92,6 +92,58 @@ class ServiceFactoryTest(TestCase):
         self.assertTrue('status' in ser._actions)
         self.assertTrue(ser._actions['start'].has_parent_dep('status'))
 
+    def test_service_with_actions_with_one_decl(self):
+        """create a service with two actions with comma declaration"""
+
+        svc = ServiceFactory.create_service_from_dict(
+            {'service':
+                {
+                    'name': 'foo',
+                    'actions':
+                    {
+                        'start,stop':
+                        {
+                            'cmd': 'service foo %ACTION'
+                        },
+                    }
+                }
+            }
+        )
+        self.assertTrue(svc)
+        self.assertEqual(len(svc._actions), 2)
+        self.assertTrue('start' in svc._actions)
+        self.assertTrue('stop' in svc._actions)
+        self.assertEqual(svc._actions['start'].command,
+                         'service foo %ACTION')
+        self.assertEqual(svc._actions['stop'].command,
+                         'service foo %ACTION')
+
+    def test_service_with_nodeset_like_actions_with_one_decl(self):
+        """create a service with two actions with nodeset-like declaration"""
+
+        svc = ServiceFactory.create_service_from_dict(
+            {'service':
+                {
+                    'name': 'foo',
+                    'actions':
+                    {
+                        'foo[1-2]':
+                        {
+                            'cmd': 'service foo %ACTION'
+                        },
+                    }
+                }
+            }
+        )
+        self.assertTrue(svc)
+        self.assertEqual(len(svc._actions), 2)
+        self.assertTrue('foo1' in svc._actions)
+        self.assertTrue('foo2' in svc._actions)
+        self.assertEqual(svc._actions['foo1'].command,
+                         'service foo %ACTION')
+        self.assertEqual(svc._actions['foo2'].command,
+                         'service foo %ACTION')
+
 class ServiceGroupFactoryTest(TestCase):
     '''Test cases of the class ServiceGroup'''
 

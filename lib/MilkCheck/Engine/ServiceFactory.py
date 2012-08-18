@@ -4,6 +4,9 @@
 """
 This module contains the ServiceFactory class definition
 """
+
+from ClusterShell.NodeSet import NodeSet
+
 from MilkCheck.Engine.Service import Service
 from MilkCheck.Engine.ServiceGroup import ServiceGroup
 from MilkCheck.Engine.Action import Action
@@ -57,19 +60,22 @@ class ServiceFactory(object):
             elif item == 'actions':
                 dependencies = {}
                 actions = {}
-                for action in service[item]:
-                    actions[action] = \
-                            ActionFactory.create_action_from_dict(
-                                {action:service[item][action]})
-                    dependencies[action] = service[item][action].get('check', [])
+                for names, props in service[item].items():
+                    for action in NodeSet(names):
+                        actions[action] = \
+                                ActionFactory.create_action_from_dict(
+                                    {action: props})
+                        dependencies[action] = props.get('check', [])
 
-                for action in actions:
-                    for dep in dependencies[action]:
-                        actions[action].add_dep(actions[dep])
-                    ser.add_action(actions[action])
+                for action in actions.values():
+                    for dep in dependencies[action.name]:
+                        action.add_dep(actions[dep])
+                    ser.add_action(action)
+
         # Inherits properies between service and actions
         for action in ser.iter_actions():
             action.inherits_from(ser)
+
         return ser
 
 
