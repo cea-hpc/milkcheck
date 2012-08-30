@@ -232,11 +232,6 @@ class ServiceGroup(Service):
             else:
                 self.update_status(DONE)
 
-    def _action_checkpoint(self, action_name):
-        '''Save the action_name wether specified'''
-        if action_name:
-            self._last_action = action_name
-
     def inherits_from(self, entity):
         '''Inherit properties from entity'''
         BaseEntity.inherits_from(self, entity)

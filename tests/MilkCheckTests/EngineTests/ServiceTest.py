@@ -19,7 +19,7 @@ from MilkCheck.Engine.Service import ActionNotFoundError
 # Symbols
 from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, TIMED_OUT, DEP_ERROR
 from MilkCheck.Engine.BaseEntity import ERROR, WAITING_STATUS
-from MilkCheck.Engine.BaseEntity import WARNING, LOCKED 
+from MilkCheck.Engine.BaseEntity import WARNING, LOCKED, MISSING
 from MilkCheck.Engine.Dependency import CHECK, REQUIRE, REQUIRE_WEAK
         
 HOSTNAME = socket.gethostname().split('.')[0]
@@ -117,30 +117,6 @@ class ServiceTest(TestCase):
         service.prepare('start')
         self.assertTrue(service.last_action())
         self.assertTrue(service.last_action() is start)
-
-    def test_prepare_error(self):
-        """Test prepare exception if action is not found."""
-        # Single service
-        service = Service("brutus")
-        service.add_action(Action('start'))
-        self.assertRaises(ActionNotFoundError,
-            service.prepare, 'status')
-
-        # Service with dependencies but one level
-        serv_a = Service('A')
-        serv_b = Service('B')
-        serv_a.add_action(Action('start'))
-        service.add_dep(serv_a)
-        service.add_dep(serv_b)
-        self.assertRaises(ActionNotFoundError,
-            service.prepare)
-
-        #Service with dependencies and multiple levels
-        serv_b.add_action(Action('start'))
-        serv_c = Service('C')
-        serv_a.add_dep(serv_c, CHECK)
-        self.assertRaises(ActionNotFoundError,
-            service.prepare)
 
     def test_prepare_single_service(self):
         """Test prepare without dependencies between services."""
@@ -624,3 +600,33 @@ class ServiceTest(TestCase):
         self.assertEqual(s3.status, LOCKED)
         self.assertEqual(s4.status, NO_STATUS)
         self.assertEqual(s5.status, NO_STATUS)
+
+    def test_missing_action(self):
+        """Test prepare with service with missing action is ok"""
+
+        # Graph leaf has no 'status' action
+        s1 = Service("1")
+        s1.add_action(Action('start', HOSTNAME, '/bin/true'))
+        s1.add_action(Action('status', HOSTNAME, '/bin/true'))
+        s2 = Service("2")
+        s2.add_action(Action('start', HOSTNAME, '/bin/true'))
+        s2.add_dep(s1)
+        s2.run('status')
+        self.assertEqual(s1.status, DONE)
+        self.assertEqual(s2.status, MISSING)
+
+        s1.reset()
+        s2.reset()
+        self.assertEqual(s1.status, NO_STATUS)
+        self.assertEqual(s2.status, NO_STATUS)
+
+        # 'status' action is propagated to leaf even if '2' has not the
+        # requested action.
+        s3 = Service("3")
+        s3.add_action(Action('start', HOSTNAME, '/bin/true'))
+        s3.add_action(Action('status', HOSTNAME, '/bin/true'))
+        s3.add_dep(s2)
+        s3.run('status')
+        self.assertEqual(s1.status, DONE)
+        self.assertEqual(s2.status, MISSING)
+        self.assertEqual(s3.status, DONE)

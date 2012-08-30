@@ -17,7 +17,7 @@ from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
 # Symbols
 from MilkCheck.Engine.BaseEntity import NO_STATUS, ERROR
 from MilkCheck.Engine.BaseEntity import WAITING_STATUS, DEP_ERROR, DONE
-from MilkCheck.Engine.BaseEntity import WARNING, TIMED_OUT
+from MilkCheck.Engine.BaseEntity import WARNING, TIMED_OUT, MISSING
 from MilkCheck.Callback import EV_STATUS_CHANGED, EV_TRIGGER_DEP
 
 class ActionNotFoundError(MilkCheckEngineError):
@@ -161,29 +161,24 @@ class Service(BaseService):
                     dep.target.prepare('status')
                 else:
                     dep.target.prepare(self._last_action)
+
+        # Service with missing action is simply skipped
+        elif not self.has_action(self._last_action):
+            self.update_status(MISSING)
+
         else:
             # It's time to be processed
             self.update_status(WAITING_STATUS)
             self.schedule(self._last_action)
-
-    def _action_checkpoint(self, action_name):
-        '''
-        Check that the service will get a call to an existing action.
-        if you reference a none existing action ActionNotFoundError is raised.
-        '''
-        if not action_name and self.has_action(self._last_action):
-            action_name = self._last_action
-        elif action_name and self.has_action(action_name):
-            self._last_action = action_name
-        else:
-            raise ActionNotFoundError(self.name, action_name)
 
     def prepare(self, action_name=None):
         '''
         Prepare the the current service to be launched as soon
         as his dependencies are solved. 
         '''
-        self._action_checkpoint(action_name)
+        if action_name:
+            self._last_action = action_name
+
         deps_status = self.eval_deps_status()
         # Tag the service
         self._tagged = True

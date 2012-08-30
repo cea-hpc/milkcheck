@@ -210,9 +210,3 @@ class ServiceManagerTest(TestCase):
             manager.call_services, ['S8'], 'start')
         self.assertRaises(ServiceNotFoundError,
             manager.call_services, ['S2', 'S8'], 'start')
-        self.assertRaises(ActionNotFoundError,
-            manager.call_services, None, 'stup')
-        self.assertRaises(ActionNotFoundError,
-            manager.call_services, ['S1'], 'stup')
-        self.assertRaises(ActionNotFoundError,
-            manager.call_services, ['S3', 'S4'], 'stup')

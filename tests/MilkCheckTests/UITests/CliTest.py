@@ -253,7 +253,6 @@ class CommandLineInterfaceTests(TestCase):
        Test if the method execute returns 9 if a known exception is raised
        '''
        cli = CommandLineInterface()
-       self.assertEqual(cli.execute(['stup']), RC_EXCEPTION)
        self.assertEqual(cli.execute(['S6', 'start']), RC_EXCEPTION)
 
     def test_execute_retcode_unknow_exception(self):

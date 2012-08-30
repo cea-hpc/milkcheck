@@ -47,6 +47,9 @@ LOCKED = 'LOCKED'
 # Actions for this entity are not done and are skipped
 SKIPPED = 'SKIPPED'
 
+# Action is missing for this service and it was ignored
+MISSING = 'MISSING'
+
 class MilkCheckEngineError(Exception):
     """Base class for Engine exceptions."""
 
