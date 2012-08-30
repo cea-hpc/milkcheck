@@ -12,7 +12,7 @@ from MilkCheck.Engine.Action import Action
 from MilkCheck.Engine.Service import Service
 from MilkCheck.ActionManager import ActionManager, action_manager_self
 
-HOSTNAME = socket.gethostname()
+HOSTNAME = socket.gethostname().split('.')[0]
 
 class ActionManagerTest(TestCase):
     """Test cases for action_manager_self"""
@@ -22,6 +22,12 @@ class ActionManagerTest(TestCase):
 
     def tearDown(self):
         ActionManager._instance = None
+
+    def assertNear(self, target, delta, value):
+        if value > target + delta:
+            self.assertEqual(target, value)
+        if value < target - delta:
+            self.assertEqual(target, value)
 
     def test_instanciation(self):
         """Test singleton handling of action_manager_self"""
@@ -163,11 +169,11 @@ class ActionManagerTest(TestCase):
 
     def test_perform_delayed_action(self):
         """test perform an action with a delay"""
-        action = Action('start', HOSTNAME, 'sleep 3')
+        action = Action('start', HOSTNAME, 'sleep 1')
         ser = Service('TEST')
         ser.add_action(action)
         ser.run('start')
         task_manager = action_manager_self()
         ActionManager._instance = None
         self.assertEqual(task_manager.tasks_done_count, 1)
-        self.assertTrue(2.8 < action.duration and action.duration < 3.5)
+        self.assertNear(1, 0.3, action.duration)

@@ -76,9 +76,9 @@ class CommandLineInterfaceTests(TestCase):
 
         # Actions S1
         start_s1 = Action('start', HOSTNAME + ', fortoy8', '/bin/true')
-        start_s1.delay = 2
+        start_s1.delay = 1
         stop_s1 = Action('stop', HOSTNAME + ',fortoy8', '/bin/true')
-        stop_s1.delay = 2
+        stop_s1.delay = 1
         s1.add_actions(start_s1, stop_s1)
         # Actions S2
         start_s2 = Action('start', HOSTNAME + ',fortoy8', '/bin/true')

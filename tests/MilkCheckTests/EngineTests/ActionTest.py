@@ -119,7 +119,7 @@ class ActionTest(TestCase):
     def test_has_timed_out(self):
         """Test has_timed_out_method."""
         action = Action(name='start', target=HOSTNAME,
-                    command='sleep 3', timeout=2)
+                    command='sleep 3', timeout=0.5)
         service = Service('test_service')
         service.add_action(action)
         service.run('start')
@@ -139,13 +139,13 @@ class ActionTest(TestCase):
         """Test behaviour method schedule"""
         a1 = Action(name='start', target=HOSTNAME, command='/bin/true')
         a2 = Action(name='status', target=HOSTNAME,
-                    command='/bin/true', delay=3)
+                    command='/bin/true', delay=1)
         ser = Service('TEST')
         ser.add_actions(a1, a2)
         a1.run()
         a2.run()
         self.assertTrue(0 < a1.duration and a1.duration < 0.5)
-        self.assertTrue(2.8 < a2.duration and a2.duration < 3.5)
+        self.assertTrue(0.8 < a2.duration and a2.duration < 1.5)
 
     def test_prepare_dep_success(self):
         """Test prepare an action with a single successful dependency"""

@@ -21,7 +21,7 @@ from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE
 from MilkCheck.Engine.Dependency import REQUIRE_WEAK
 from MilkCheck.UI.UserView import RC_OK, RC_WARNING, RC_ERROR
 
-HOSTNAME = socket.gethostname()
+HOSTNAME = socket.gethostname().split('.')[0]
 
 class ServiceManagerTest(TestCase):
     '''Tests cases for the class ServiceManager'''
