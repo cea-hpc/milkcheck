@@ -308,3 +308,23 @@ class ServiceGroupFactoryTest(TestCase):
             subgroup._subservices['svcB'].target, NodeSet('127.0.0.1'))
         self.assertEqual(
             subgroup._subservices['svcC'].target, NodeSet('127.0.0.1'))
+
+    def test_servicegroup_with_nodeset_like_actions_with_one_decl(self):
+        '''Test a service group with several group with nodeset-like names'''
+        sergrp = ServiceGroupFactory.create_servicegroup_from_dict(
+            {'service': {
+                'name': 'group1',
+                'services': {
+                    'da[1-3]': {
+                        'actions': {'start': {'cmd': '/bin/True'}}
+                    },
+                },
+            } })
+
+        self.assertEqual(len(sergrp._subservices), 3)
+        self.assertTrue(sergrp.has_subservice('da1'))
+        self.assertTrue(sergrp.has_subservice('da2'))
+        self.assertTrue(sergrp.has_subservice('da3'))
+        self.assertEqual(len(sergrp._subservices['da1']._actions), 1)
+        self.assertEqual(len(sergrp._subservices['da2']._actions), 1)
+        self.assertEqual(len(sergrp._subservices['da3']._actions), 1)

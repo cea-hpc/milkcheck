@@ -109,42 +109,38 @@ class ServiceGroupFactory(object):
                     sergrp.add_var(varname, value)
             elif item == 'services':
                 dep_mapping = {}
+
                 # Wrap dependencies from YAML and build the service
-                for subservice in ser['services']:
-                    # Parsing dependencies
-                    wrap = DepWrapper()
-                    if 'require' in ser['services'][subservice]:
-                        wrap.deps['require'] = \
-                            ser['services'][subservice]['require']
-                    if 'require_weak' in ser['services'][subservice]:
-                        wrap.deps['require_weak'] = \
-                            ser['services'][subservice]['require_weak']
-                    if 'check' in ser['services'][subservice]:
-                        wrap.deps['check'] = \
-                            ser['services'][subservice]['check']
-                    # Get subservices which migh be Service or ServiceGroup
-                    ser[item][subservice]['name'] = subservice
-                    service = None
-                    if 'services' in ser[item][subservice]:
-                        service = \
-                            ServiceGroupFactory.create_servicegroup_from_dict(
-                            {'service': ser[item][subservice]})
-                    else:
-                        service = ServiceFactory.create_service_from_dict(
-                            {'service': ser[item][subservice]})
-                    sergrp._subservices[subservice] = service
-                    wrap.source = service
-                    dep_mapping[subservice] = wrap
+                for names, props in ser['services'].items():
+                    for subservice in NodeSet(names):
+                        # Parsing dependencies
+                        wrap = DepWrapper()
+                        for prop in ('require', 'require_weak', 'check'):
+                            if prop in props:
+                                wrap.deps[prop] = props[prop]
+
+                        # Get subservices which might be Service or ServiceGroup
+                        props['name'] = subservice
+                        service = None
+                        if 'services' in props:
+                            service = \
+                              ServiceGroupFactory.create_servicegroup_from_dict(
+                                                             {'service': props})
+                        else:
+                            service = ServiceFactory.create_service_from_dict(
+                                                             {'service': props})
+                        sergrp._subservices[subservice] = service
+                        wrap.source = service
+                        dep_mapping[subservice] = wrap
+
                 # Generate dependency links of the service
-                for service in dep_mapping:
-                    wrap = dep_mapping[service]
+                for wrap in dep_mapping.values():
                     # Not any dependencies so just attach 
-                    if not wrap.is_empty():
-                        for dtype in wrap.deps:
-                            for dep in wrap.deps[dtype]:
-                                wrap.source.add_dep(
-                                    sergrp._subservices[dep],
-                                        sgth=dtype.upper())
+                    for dtype in wrap.deps:
+                        for dep in wrap.deps[dtype]:
+                            wrap.source.add_dep(sergrp._subservices[dep],
+                                                             sgth=dtype.upper())
+
                 # Bind subgraph to the service group
                 for service in sergrp._subservices.values():
                     service.parent = sergrp

@@ -50,6 +50,23 @@ service:
             cmd: ipmipower -h %TARGET --stat
 ---
 #
+# Service group
+#
+# Several service could be grouped together and dependencies set
+# to the whole group.
+service:
+    name: group
+    services:
+        'svc1':
+            actions:
+                start:
+                    cmd: service one start
+        'svc2':
+            actions:
+                start:
+                    cmd: service two start
+---
+#
 # Action aliases
 #
 # You can declare multiple actions, separating action name with comma.
@@ -84,3 +101,18 @@ service:
         start,status,stop:
             # Equivalent to: 'service crond <ACTION_NAME>'
             cmd: service %SERVICE %ACTION
+---
+#
+# Multiple sub-services
+#
+# Several subservices could be declared easily, separating their name with
+# comma, like for actions.
+# You can use a NodeSet-like syntax for the name pattern (ie: da[1-15])
+service:
+   name: group
+   services:
+       # This creates 3 sub-services with one 'start' action
+       'foo,bar,baz':
+           actions:
+               start:
+                   cmd: service %SERVICE %ACTION
