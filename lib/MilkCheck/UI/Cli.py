@@ -31,7 +31,7 @@ from MilkCheck.Engine.Service import ActionNotFoundError
 
 # Symbols
 from MilkCheck.Engine.BaseEntity import WARNING, SKIPPED, LOCKED
-from MilkCheck.Engine.BaseEntity import TIMED_OUT, ERROR, DEP_ERROR, DONE
+from MilkCheck.Engine.BaseEntity import TIMEOUT, ERROR, DEP_ERROR, DONE
 from MilkCheck.UI.UserView import RC_OK, RC_EXCEPTION, RC_UNKNOWN_EXCEPTION
 
 MAXTERMWIDTH = 120
@@ -83,7 +83,7 @@ class ConsoleDisplay(object):
                 'CYAN': '\033[0;36m%s\033[0m'
               }
     _LARGEST_STATUS = max([len(status) \
-         for status in (SKIPPED, WARNING, TIMED_OUT, ERROR, DEP_ERROR, DONE)])
+         for status in (SKIPPED, WARNING, TIMEOUT, ERROR, DEP_ERROR, DONE)])
 
     def __init__(self):
         width = Terminal.size()[0]
@@ -129,7 +129,7 @@ class ConsoleDisplay(object):
         # Label w/o description
         label = entity.longname()
 
-        if entity.status in (TIMED_OUT, ERROR, DEP_ERROR):
+        if entity.status in (TIMEOUT, ERROR, DEP_ERROR):
             line = line % (label,
                 '[%s]' % \
                     self.string_color(
@@ -157,7 +157,7 @@ class ConsoleDisplay(object):
         to_spell = 'action'
 
         for ent in actions:
-            if ent.status in (TIMED_OUT, ERROR, DEP_ERROR):
+            if ent.status in (TIMEOUT, ERROR, DEP_ERROR):
                 lines.append(" + %s" % self.string_color(ent.longname(), 'RED'))
                 errors += 1
             elif ent.status not in (SKIPPED, LOCKED):
@@ -367,7 +367,7 @@ class CommandLineInterface(UserView):
                 self._console.print_running_tasks()
                 if self.profiling:
                     self.count_high_verbmsg += 1
-            elif obj.status in (TIMED_OUT, ERROR, DEP_ERROR) and \
+            elif obj.status in (TIMEOUT, ERROR, DEP_ERROR) and \
                       self._conf['verbosity'] >= 1:
                 self._console.print_action_results(obj,
                                            self._conf['verbosity'] == 1)
@@ -386,7 +386,7 @@ class CommandLineInterface(UserView):
         '''
         if isinstance(obj, Service) and self._conf['verbosity'] >= 1 and \
             not (obj.status == SKIPPED and self._options.verbosity < 3) and \
-            obj.status in (TIMED_OUT, ERROR, DEP_ERROR, DONE,
+            obj.status in (TIMEOUT, ERROR, DEP_ERROR, DONE,
                            WARNING, SKIPPED) and not obj.simulate:
 
             self._console.print_status(obj)

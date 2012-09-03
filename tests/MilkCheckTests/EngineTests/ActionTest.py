@@ -113,15 +113,15 @@ class ActionTest(TestCase):
         last_action = service.last_action()
         self.assertTrue(last_action.has_too_many_errors())
 
-    def test_has_timed_out(self):
-        """Test has_timed_out_method."""
+    def test_did_timeout(self):
+        """Test did_timeout_method."""
         action = Action(name='start', target=HOSTNAME,
                     command='sleep 3', timeout=0.5)
         service = Service('test_service')
         service.add_action(action)
         service.run('start')
         last_action = service.last_action()
-        self.assertTrue(last_action.has_timed_out())
+        self.assertTrue(last_action.did_timeout())
 
     def test_set_retry(self):
         """Test retry assignement"""

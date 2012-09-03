@@ -17,7 +17,7 @@ from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
 # Symbols
 from MilkCheck.Engine.BaseEntity import NO_STATUS, ERROR
 from MilkCheck.Engine.BaseEntity import WAITING_STATUS, DEP_ERROR, DONE
-from MilkCheck.Engine.BaseEntity import WARNING, TIMED_OUT, MISSING
+from MilkCheck.Engine.BaseEntity import WARNING, TIMEOUT, MISSING
 from MilkCheck.Callback import EV_STATUS_CHANGED, EV_TRIGGER_DEP
 
 class ActionNotFoundError(MilkCheckEngineError):

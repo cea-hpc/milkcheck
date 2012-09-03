@@ -32,7 +32,7 @@ WARNING = 'WARNING'
 
 # Time allowed for the entity to perform a task is over whereas the task
 # itself is not done
-TIMED_OUT = 'TIMED_OUT'
+TIMEOUT = 'TIMEOUT'
 
 # Error limit is overrun for the task performed by the entity 
 ERROR = 'ERROR'
@@ -342,7 +342,7 @@ class BaseEntity(object):
 
         temp_dep_status = DONE
         for dep in deps.values():
-            if dep.target.status in (ERROR, TIMED_OUT, DEP_ERROR):
+            if dep.target.status in (ERROR, TIMEOUT, DEP_ERROR):
                 if dep.is_strong():
                     return DEP_ERROR
                 elif temp_dep_status is not NO_STATUS:

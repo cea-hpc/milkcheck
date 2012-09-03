@@ -285,7 +285,7 @@ class ServiceTest(TestCase):
         serv_base_error = Service('A')
         serv_ok_warnings = Service('B')
         serv_error = Service('C')
-        serv_timed_out = Service('D')
+        serv_timeout = Service('D')
 
         ac_suc = Action(name='start', target=HOSTNAME, command='/bin/true')
         ac_suc2 = Action(name='start', target=HOSTNAME, command='/bin/true')
@@ -296,19 +296,19 @@ class ServiceTest(TestCase):
         serv_base_error.add_action(ac_suc)
         serv_ok_warnings.add_action(ac_suc2)
         serv_error.add_action(ac_suc3)
-        serv_timed_out.add_action(ac_tim)
+        serv_timeout.add_action(ac_tim)
 
         serv_base_error.add_dep(serv_ok_warnings)
         serv_base_error.add_dep(serv_error)
-        serv_ok_warnings.add_dep(serv_timed_out, REQUIRE_WEAK)
-        serv_error.add_dep(serv_timed_out)
+        serv_ok_warnings.add_dep(serv_timeout, REQUIRE_WEAK)
+        serv_error.add_dep(serv_timeout)
 
         serv_base_error.run('start')
 
         self.assertEqual(serv_base_error.status, DEP_ERROR)
         self.assertEqual(serv_ok_warnings.status, WARNING)
         self.assertEqual(serv_error.status, DEP_ERROR)
-        self.assertEqual(serv_timed_out.status, TIMEOUT)
+        self.assertEqual(serv_timeout.status, TIMEOUT)
 
     def test_prepare_multiple_errors(self):
         """Test prepare with check and require deps with errors."""

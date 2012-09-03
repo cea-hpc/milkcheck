@@ -12,7 +12,7 @@ from MilkCheck.Engine.Dependency import Dependency
 
 # Symbols
 from MilkCheck.Engine.Dependency import REQUIRE
-from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, TIMED_OUT
+from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, TIMEOUT
 from MilkCheck.Engine.BaseEntity import WAITING_STATUS, DEP_ERROR
 from MilkCheck.Engine.BaseEntity import WARNING, ERROR
 
@@ -197,8 +197,8 @@ class ServiceGroup(Service):
         final_status = DONE
         if extd_status is WAITING_STATUS or intd_status is WAITING_STATUS:
             final_status = WAITING_STATUS
-        elif extd_status in (DEP_ERROR, ERROR, TIMED_OUT) or \
-            intd_status in (DEP_ERROR, ERROR, TIMED_OUT):
+        elif extd_status in (DEP_ERROR, ERROR, TIMEOUT) or \
+            intd_status in (DEP_ERROR, ERROR, TIMEOUT):
             final_status = DEP_ERROR
         elif extd_status is NO_STATUS or intd_status is NO_STATUS:
             final_status = NO_STATUS
