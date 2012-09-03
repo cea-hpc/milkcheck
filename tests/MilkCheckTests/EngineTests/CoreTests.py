@@ -15,9 +15,7 @@ from MilkCheck.Engine.Service import Service
 from MilkCheck.Engine.Action import Action
 
 # Symbols
-from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, TIMED_OUT
-from MilkCheck.Engine.BaseEntity import WAITING_STATUS, DEP_ERROR
-from MilkCheck.Engine.BaseEntity import WARNING, ERROR
+from MilkCheck.Engine.BaseEntity import DEP_ERROR, DONE, WARNING
 from MilkCheck.Engine.Dependency import CHECK, REQUIRE_WEAK
 
 HOSTNAME = socket.gethostname().split('.')[0]

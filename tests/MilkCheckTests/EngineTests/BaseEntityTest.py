@@ -16,7 +16,7 @@ from MilkCheck.ServiceManager import service_manager_self
 # Symbols
 from MilkCheck.Engine.Dependency import CHECK, REQUIRE, REQUIRE_WEAK
 from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, WAITING_STATUS
-from MilkCheck.Engine.BaseEntity import TIMED_OUT, DEP_ERROR, ERROR
+from MilkCheck.Engine.BaseEntity import TIMEOUT, DEP_ERROR, ERROR
 from MilkCheck.Engine.BaseEntity import WARNING
 
 # Exceptions
@@ -235,7 +235,7 @@ class BaseEntityTest(unittest.TestCase):
         service.add_dep(serv_a)
         service.add_dep(serv_b, CHECK)
         serv_b.status = DONE
-        serv_a.status = TIMED_OUT
+        serv_a.status = TIMEOUT
         self.assertEqual(service.eval_deps_status(), DEP_ERROR)
 
     def test_eval_deps_warnings(self):
@@ -246,7 +246,7 @@ class BaseEntityTest(unittest.TestCase):
         service.add_dep(serv_a, REQUIRE_WEAK)
         service.add_dep(serv_b, REQUIRE_WEAK)
         serv_b.status = ERROR
-        serv_a.status = TIMED_OUT
+        serv_a.status = TIMEOUT
         self.assertEqual(service.eval_deps_status(), WARNING)
         serv_a.status = DONE
         serv_b.status = WARNING

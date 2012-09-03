@@ -17,7 +17,7 @@ from MilkCheck.Engine.Service import ActionAlreadyReferencedError
 from MilkCheck.Engine.Service import ActionNotFoundError
 
 # Symbols
-from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, TIMED_OUT, DEP_ERROR
+from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, TIMEOUT, DEP_ERROR
 from MilkCheck.Engine.BaseEntity import ERROR, WAITING_STATUS
 from MilkCheck.Engine.BaseEntity import WARNING, LOCKED, MISSING
 from MilkCheck.Engine.Dependency import CHECK, REQUIRE, REQUIRE_WEAK
@@ -308,7 +308,7 @@ class ServiceTest(TestCase):
         self.assertEqual(serv_base_error.status, DEP_ERROR)
         self.assertEqual(serv_ok_warnings.status, WARNING)
         self.assertEqual(serv_error.status, DEP_ERROR)
-        self.assertEqual(serv_timed_out.status, TIMED_OUT)
+        self.assertEqual(serv_timed_out.status, TIMEOUT)
 
     def test_prepare_multiple_errors(self):
         """Test prepare with check and require deps with errors."""

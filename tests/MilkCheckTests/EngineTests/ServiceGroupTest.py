@@ -15,7 +15,7 @@ from MilkCheck.Engine.Action import Action
 from ClusterShell.NodeSet import NodeSet
 
 # Symbols
-from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, TIMED_OUT
+from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE
 from MilkCheck.Engine.BaseEntity import WAITING_STATUS, DEP_ERROR
 from MilkCheck.Engine.BaseEntity import WARNING, ERROR
 from MilkCheck.Engine.Dependency import CHECK, REQUIRE_WEAK
@@ -132,7 +132,7 @@ class ServiceGroupTest(TestCase):
         s2 = Service('beta')
         s3 = Service('lambda')
         group.add_inter_dep(target=s1)
-        group.add_inter_dep(base=s1 ,target=s2)
+        group.add_inter_dep(base=s1, target=s2)
         group.add_inter_dep(target=s3)
         self.assertTrue(group.has_subservice('alpha'))
         self.assertTrue(group.has_subservice('beta'))
@@ -151,7 +151,7 @@ class ServiceGroupTest(TestCase):
         s2 = Service('beta')
         s3 = Service('lambda')
         group.add_inter_dep(target=s1)
-        group.add_inter_dep(base=s1 ,target=s2)
+        group.add_inter_dep(base=s1, target=s2)
         group.add_inter_dep(target=s3)
         group.add_inter_dep(base=s1, target=s3)
         self.assertTrue(s1.has_parent_dep('beta'))

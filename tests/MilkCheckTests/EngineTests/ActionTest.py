@@ -7,16 +7,13 @@ This modules defines the tests cases targeting the BaseService
 
 # Classes
 import socket
-from re import findall, search
 from unittest import TestCase
 from MilkCheck.Engine.Action import Action
 from MilkCheck.Engine.Service import Service
 from ClusterShell.NodeSet import NodeSet
 
 # Symbols
-from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, TIMED_OUT, DEP_ERROR
-from MilkCheck.Engine.BaseEntity import ERROR, WAITING_STATUS
-from MilkCheck.Engine.BaseEntity import WARNING 
+from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, ERROR
 
 HOSTNAME = socket.gethostname().split('.')[0]
 
