@@ -18,7 +18,7 @@ from MilkCheck.Engine.Service import ActionNotFoundError
 
 # Symbols
 from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, TIMEOUT, DEP_ERROR
-from MilkCheck.Engine.BaseEntity import ERROR, WAITING_STATUS
+from MilkCheck.Engine.BaseEntity import ERROR, WAITING_STATUS, SKIPPED
 from MilkCheck.Engine.BaseEntity import WARNING, LOCKED, MISSING
 from MilkCheck.Engine.Dependency import CHECK, REQUIRE, REQUIRE_WEAK
         
@@ -168,6 +168,29 @@ class ServiceTest(TestCase):
         self.assertEqual(serv_test.status, DONE)
         self.assertEqual(serv_depa.status, DONE)
         self.assertEqual(serv_depb.status, DONE)
+
+    def test_run_with_skipped_deps(self):
+        """Test run with only SKIPPED dependencies"""
+
+        # Define the main service
+        serv_test = Service('test_service')
+        start = Action(name='start', target=HOSTNAME, command='/bin/true')
+        serv_test.add_action(start)
+
+        serv_depa = Service('DEP_A')
+        serv_depa.status = SKIPPED
+        serv_depb = Service('DEP_B')
+        serv_depb.status = SKIPPED
+
+        serv_test.add_dep(serv_depa)
+        serv_test.add_dep(serv_depb)
+
+        self.assertEqual(serv_test.eval_deps_status(), SKIPPED)
+
+        serv_test.run('start')
+        self.assertEqual(serv_test.status, DONE)
+        self.assertEqual(serv_depa.status, SKIPPED)
+        self.assertEqual(serv_depb.status, SKIPPED)
 
     def test_prepare_multilevel_dependencies(self):
         """Test prepare with multiple dependencies at different levels."""

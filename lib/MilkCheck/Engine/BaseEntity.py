@@ -339,7 +339,7 @@ class BaseEntity(object):
         if self._algo_reversed:
             deps = self.children
 
-        temp_dep_status = DONE
+        temp_dep_status = SKIPPED
         for dep in deps.values():
             if dep.target.status in (ERROR, TIMEOUT, DEP_ERROR):
                 if dep.is_strong():
@@ -353,6 +353,9 @@ class BaseEntity(object):
                 temp_dep_status = WARNING
             elif dep.target.status is NO_STATUS:
                 temp_dep_status = NO_STATUS
+            elif dep.target.status is DONE and temp_dep_status is not WARNING:
+                temp_dep_status = DONE
+
         return temp_dep_status
 
     def set_algo_reversed(self, flag):

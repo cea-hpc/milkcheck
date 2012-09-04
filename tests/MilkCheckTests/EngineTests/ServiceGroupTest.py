@@ -15,7 +15,7 @@ from MilkCheck.Engine.Action import Action
 from ClusterShell.NodeSet import NodeSet
 
 # Symbols
-from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE
+from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, SKIPPED
 from MilkCheck.Engine.BaseEntity import WAITING_STATUS, DEP_ERROR
 from MilkCheck.Engine.BaseEntity import WARNING, ERROR
 from MilkCheck.Engine.Dependency import CHECK, REQUIRE_WEAK
@@ -506,3 +506,36 @@ class ServiceGroupTest(TestCase):
         self.assertEqual(s1.status, DONE)
         self.assertEqual(i1.status, DONE)
         self.assertEqual(group.status, DONE)
+
+    def test_skipped_group(self):
+        """A group with only SKIPPED services should be SKIPPED"""
+        grp = ServiceGroup('group')
+        svc1 = Service('svc1')
+        svc1.add_action(Action('stop', HOSTNAME, '/bin/true'))
+        svc1.status = SKIPPED
+        svc2 = Service('svc2')
+        svc2.add_action(Action('stop', HOSTNAME, '/bin/true'))
+        svc2.status = SKIPPED
+        grp.add_inter_dep(target=svc1)
+        grp.add_inter_dep(target=svc2)
+        grp.run('stop')
+        self.assertEqual(grp.status, SKIPPED)
+
+    def test_skipped_group_dep_error(self):
+        """A full SKIPPED service group with DEP_ERROR should be SKIPPED"""
+        svc = Service('error')
+        svc.add_action(Action('stop', HOSTNAME, '/bin/false'))
+        grp = ServiceGroup('group')
+        svc1 = Service('svc1')
+        svc1.add_action(Action('stop', HOSTNAME, '/bin/true'))
+        svc1.status = SKIPPED
+        svc2 = Service('svc2')
+        svc2.add_action(Action('stop', HOSTNAME, '/bin/true'))
+        svc2.status = SKIPPED
+        grp.add_inter_dep(target=svc1)
+        grp.add_inter_dep(target=svc2)
+        grp.add_dep(svc, sgth=REQUIRE_WEAK)
+
+        grp.run('stop')
+        self.assertEqual(svc.status, ERROR)
+        self.assertEqual(grp.status, SKIPPED)

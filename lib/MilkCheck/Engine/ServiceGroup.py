@@ -14,7 +14,7 @@ from MilkCheck.Engine.Dependency import Dependency
 from MilkCheck.Engine.Dependency import REQUIRE
 from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, TIMEOUT
 from MilkCheck.Engine.BaseEntity import WAITING_STATUS, DEP_ERROR
-from MilkCheck.Engine.BaseEntity import WARNING, ERROR
+from MilkCheck.Engine.BaseEntity import WARNING, ERROR, SKIPPED
 
 # Exceptions
 from MilkCheck.ServiceManager import ServiceNotFoundError
@@ -205,6 +205,8 @@ class ServiceGroup(Service):
         elif extd_status is WARNING or \
             intd_status is WARNING:
             final_status = WARNING
+        elif intd_status is SKIPPED:
+            final_status = SKIPPED
         return final_status
 
     def _process_dependencies(self, deps):
@@ -226,8 +228,15 @@ class ServiceGroup(Service):
                     else:
                         internal.target.prepare(self._last_action)
         else:
+            if self._algo_reversed:
+                intd_status = self._sink.status
+            else:
+                intd_status = self._source.status
+
             # The group node is a fake we just change his status
-            if self.warnings:
+            if intd_status == SKIPPED:
+                self.update_status(SKIPPED)
+            elif self.warnings:
                 self.update_status(WARNING)
             else:
                 self.update_status(DONE)
