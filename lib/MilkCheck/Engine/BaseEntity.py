@@ -180,6 +180,7 @@ class BaseEntity(object):
         self.fanout = -1
 
         # Nodes on which the entity is launched
+        self._target = None
         self.target = target
         self._target_backup = self.target
 
@@ -283,10 +284,7 @@ class BaseEntity(object):
         This algorithm go through the overall graph.
         '''
         if self.children:
-            deps = self.parents
-            if self._algo_reversed:
-                deps = self.children
-            for dep in deps.values():
+            for dep in self.deps().values():
                 dep.target.search_leafs(leafs, reverse)
         else:
             leafs.add(self)
@@ -361,16 +359,23 @@ class BaseEntity(object):
         self.parents.clear()
         self.children.clear()
 
+    def deps(self):
+        """
+        Return parent dependency list.
+
+        Return children deps as parent if algo is reversed.
+        """
+        if self._algo_reversed:
+            return self.children
+        else:
+            return self.parents
+
     def is_ready(self):
         '''
         Determine if the current services has to wait before to
         start due to unterminated dependencies.
         '''
-        deps = self.parents
-        if self._algo_reversed:
-            deps = self.children
-
-        for dep in deps.values():
+        for dep in self.deps().values():
             if dep.target.status in (NO_STATUS, WAITING_STATUS):
                 return False
         return True 
@@ -380,28 +385,23 @@ class BaseEntity(object):
         Look for parent/child dependencies matching to the symbols. The
         search direction depends on the direction specified for the entiy.
         '''
-        matching = []
-        deps = self.parents
-        if self._algo_reversed:
-            deps = self.children  
-        for dep_name in deps:
-            if symbols and deps[dep_name].target.status in symbols:
-                matching.append(deps[dep_name])
-            elif not symbols:
-                matching.append(deps[dep_name])
-        return matching
+        # No selection criteria, return everything
+        if not symbols:
+            return self.deps().values()
+
+        # Else, only keep matching deps
+        else:
+            dep_list = self.deps().values()
+            return [dep for dep in dep_list if dep.target.status in symbols]
 
     def eval_deps_status(self):
         '''
         Evaluate the result of the dependencies in order to check to establish
         a status.
         '''
-        deps = self.parents
-        if self._algo_reversed:
-            deps = self.children
-
-        if len(deps):
-            sorted_deps = sorted(deps.values(), key=lambda dep: DEP_ORDER[dep.status()])
+        if len(self.deps()):
+            order = lambda dep: DEP_ORDER[dep.status()]
+            sorted_deps = sorted(self.deps().values(), key=order)
             return sorted_deps[-1].status()
         else:
             return MISSING
