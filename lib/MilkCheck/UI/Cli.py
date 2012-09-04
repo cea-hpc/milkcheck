@@ -105,7 +105,7 @@ class ConsoleDisplay(object):
         '''Rewrite the current line and print the current running tasks'''
         rtasks = [t.parent.name for t in action_manager_self().running_tasks]
         if rtasks:
-            tasks_disp = '[%s]' % ','.join(rtasks)
+            tasks_disp = '[%s]' % NodeSet.fromlist(rtasks)
             width = min(self._pl_width, self._term_width)
             sys.stderr.write('\r%s\r%s\r' % (width * ' ', tasks_disp))
             sys.stderr.flush()
