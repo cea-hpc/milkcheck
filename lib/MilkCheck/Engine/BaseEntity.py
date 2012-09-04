@@ -46,8 +46,6 @@ SKIPPED = 'SKIPPED'
 # Action is missing for this service and it was ignored
 MISSING = 'MISSING'
 
-from MilkCheck.Engine.Dependency import Dependency, CHECK, REQUIRE, REQUIRE_WEAK
-
 DEP_ORDER = {
      DEP_ERROR      : 10,
      WAITING_STATUS : 9,
@@ -58,6 +56,12 @@ DEP_ORDER = {
      MISSING        : 4,
      LOCKED         : 3
 }
+
+# Strength of a dependency
+CHECK = "CHECK"
+REQUIRE = "REQUIRE"
+REQUIRE_WEAK = "REQUIRE_WEAK"
+
 
 class MilkCheckEngineError(Exception):
     """Base class for Engine exceptions."""
@@ -96,6 +100,54 @@ class InvalidVariableError(MilkCheckEngineError):
     def __init__(self, varname):
         msg = "Cannot evaluate expression '%s'" % varname
         MilkCheckEngineError.__init__(self, msg)
+
+class Dependency(object):
+    '''
+    This class define the structure of a dependency. A dependency can
+    point both on parent and children. It models an edge between the
+    two objects whithout considering their types.
+    '''
+
+    def __init__(self, target, dtype=REQUIRE, intr=False):
+
+        # Object pointed by the dependency
+        assert target, "Dependency target shall not be None"
+        self.target = target
+
+        # Define the type of the dependency
+        assert dtype in (CHECK, REQUIRE, REQUIRE_WEAK), \
+            "Invalid dependency identifier"
+        self.dep_type = dtype
+
+        # Allow us to consider the dependency as an internal
+        # environment (e.g ServiceGroup)
+        self._internal = intr
+
+    def is_weak(self):
+        '''Return True if the dependency is weak.'''
+        return (self.dep_type == REQUIRE_WEAK)
+
+    def is_strong(self):
+        '''Return True if the dependency is strong'''
+        return self.dep_type in (REQUIRE, CHECK)
+
+    def is_check(self):
+        '''Return True if the dependency is check'''
+        return (self.dep_type == CHECK)
+
+    def is_internal(self):
+        '''Return the value of the internal attribute'''
+        return self._internal
+
+    def status(self):
+        """Give entity status from a dependency point of view."""
+        if self.target.status in (ERROR, TIMEOUT, DEP_ERROR):
+            if self.is_strong():
+                return DEP_ERROR
+            else:
+                return WARNING
+        else:
+            return self.target.status
 
 class BaseEntity(object):
     '''
@@ -349,8 +401,8 @@ class BaseEntity(object):
             deps = self.children
 
         if len(deps):
-            sorted_deps = sorted(deps.values(), key=lambda dep: DEP_ORDER[dep._status()])
-            return sorted_deps[-1]._status()
+            sorted_deps = sorted(deps.values(), key=lambda dep: DEP_ORDER[dep.status()])
+            return sorted_deps[-1].status()
         else:
             return MISSING
 

@@ -9,12 +9,11 @@ import unittest
 
 # Classes
 from ClusterShell.NodeSet import NodeSet, NodeSetException
-from MilkCheck.Engine.BaseEntity import BaseEntity
-from MilkCheck.Engine.Dependency import Dependency
+from MilkCheck.Engine.BaseEntity import BaseEntity, Dependency
 from MilkCheck.ServiceManager import service_manager_self
 
 # Symbols
-from MilkCheck.Engine.Dependency import CHECK, REQUIRE, REQUIRE_WEAK
+from MilkCheck.Engine.BaseEntity import CHECK, REQUIRE_WEAK, REQUIRE
 from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, WAITING_STATUS
 from MilkCheck.Engine.BaseEntity import TIMEOUT, DEP_ERROR, ERROR
 from MilkCheck.Engine.BaseEntity import WARNING
@@ -23,7 +22,6 @@ from MilkCheck.Engine.BaseEntity import WARNING
 from MilkCheck.Engine.BaseEntity import IllegalDependencyTypeError
 from MilkCheck.Engine.BaseEntity import DependencyAlreadyReferenced
 from MilkCheck.Engine.BaseEntity import UndefinedVariableError
-from MilkCheck.Engine.BaseEntity import InvalidVariableError
 
 import socket
 HOSTNAME = socket.gethostname().split('.')[0]
@@ -484,3 +482,43 @@ class VariableBaseEntityTest(unittest.TestCase):
                  '$([ -n "%SELECTED_NODES" ] && echo "-n %SELECTED_NODES")'
                  + ' $([ -n "%EXCLUDED_NODES" ] && echo "-x %EXCLUDED_NODES")'),
             '-n bar -x foo')
+
+
+class DependencyTest(unittest.TestCase):
+    """Dependency test cases."""
+
+    def test_dependency_instanciation(self):
+        """Test instanciation of a dependency."""
+        service = BaseEntity("PARENT")
+        service = BaseEntity("CHILD")
+        self.assertRaises(AssertionError, Dependency, None)
+        self.assertRaises(AssertionError, Dependency, service, "TEST")
+        self.assertTrue(Dependency(service))
+        self.assertTrue(Dependency(service, CHECK))
+        self.assertTrue(Dependency(service, CHECK, True))
+
+    def test_is_weak_dependency(self):
+        """Test the behaviour of the method is_weak."""
+        dep_a = Dependency(BaseEntity("Base"), CHECK)
+        dep_b = Dependency(BaseEntity("Base"), REQUIRE)
+        dep_c = Dependency(BaseEntity("Base"), REQUIRE_WEAK)
+        self.assertFalse(dep_a.is_weak())
+        self.assertFalse(dep_b.is_weak())
+        self.assertTrue(dep_c.is_weak())
+
+    def test_is_strong_dependency(self):
+        """Test the behaviour of is_strong method."""
+        dep_a = Dependency(BaseEntity("Base"), CHECK)
+        dep_b = Dependency(BaseEntity("Base"), REQUIRE)
+        dep_c = Dependency(BaseEntity("Base"), REQUIRE_WEAK)
+        self.assertTrue(dep_a.is_strong())
+        self.assertTrue(dep_b.is_strong())
+        self.assertFalse(dep_c.is_strong())
+
+    def test_is_internal(self):
+        """Test the behaviour of the method is internal"""
+        dep = Dependency(target=BaseEntity('Group'), intr=True)
+        self.assertTrue(dep.is_internal())
+        dep = Dependency(target=BaseEntity('Group'), intr=False)
+        self.assertFalse(dep.is_internal())
+

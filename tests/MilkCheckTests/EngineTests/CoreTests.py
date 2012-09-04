@@ -16,7 +16,7 @@ from MilkCheck.Engine.Action import Action
 
 # Symbols
 from MilkCheck.Engine.BaseEntity import DEP_ERROR, DONE, WARNING
-from MilkCheck.Engine.Dependency import CHECK, REQUIRE_WEAK
+from MilkCheck.Engine.BaseEntity import CHECK, REQUIRE_WEAK
 
 HOSTNAME = socket.gethostname().split('.')[0]
 

@@ -17,8 +17,7 @@ from MilkCheck.ServiceManager import ServiceAlreadyReferencedError
 from MilkCheck.ServiceManager import ServiceNotFoundError
 
 # Symbols
-from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE
-from MilkCheck.Engine.Dependency import REQUIRE_WEAK
+from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, REQUIRE_WEAK
 from MilkCheck.UI.UserView import RC_OK, RC_WARNING, RC_ERROR
 
 HOSTNAME = socket.gethostname().split('.')[0]

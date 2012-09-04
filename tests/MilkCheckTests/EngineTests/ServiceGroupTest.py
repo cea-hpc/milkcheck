@@ -18,7 +18,7 @@ from ClusterShell.NodeSet import NodeSet
 from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, SKIPPED
 from MilkCheck.Engine.BaseEntity import WAITING_STATUS, DEP_ERROR
 from MilkCheck.Engine.BaseEntity import WARNING, ERROR
-from MilkCheck.Engine.Dependency import CHECK, REQUIRE_WEAK
+from MilkCheck.Engine.BaseEntity import CHECK, REQUIRE_WEAK
 
 HOSTNAME = socket.gethostname().split('.')[0]
 

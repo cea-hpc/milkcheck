@@ -7,12 +7,10 @@ This module contains the ServiceGroup class definition
 
 # Classes
 from MilkCheck.Engine.Service import Service, Action
-from MilkCheck.Engine.BaseEntity import BaseEntity, DEP_ORDER
-from MilkCheck.Engine.Dependency import Dependency
+from MilkCheck.Engine.BaseEntity import BaseEntity, DEP_ORDER, Dependency
 
 # Symbols
-from MilkCheck.Engine.Dependency import REQUIRE
-from MilkCheck.Engine.BaseEntity import DONE, WARNING, SKIPPED
+from MilkCheck.Engine.BaseEntity import DONE, WARNING, SKIPPED, REQUIRE
 
 # Exceptions
 from MilkCheck.ServiceManager import ServiceNotFoundError

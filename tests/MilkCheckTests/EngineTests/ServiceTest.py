@@ -19,8 +19,7 @@ from MilkCheck.Engine.Service import ActionNotFoundError
 # Symbols
 from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, TIMEOUT, DEP_ERROR
 from MilkCheck.Engine.BaseEntity import ERROR, WAITING_STATUS, SKIPPED
-from MilkCheck.Engine.BaseEntity import WARNING, LOCKED, MISSING
-from MilkCheck.Engine.Dependency import CHECK, REQUIRE, REQUIRE_WEAK
+from MilkCheck.Engine.BaseEntity import WARNING, LOCKED, MISSING, CHECK, REQUIRE_WEAK
         
 HOSTNAME = socket.gethostname().split('.')[0]
 
