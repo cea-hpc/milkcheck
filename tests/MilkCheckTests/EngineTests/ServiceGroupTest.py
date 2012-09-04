@@ -267,13 +267,15 @@ class ServiceGroupTest(TestCase):
     def test_eval_deps_status_ws(self):
         '''Test the method eval_deps_status WAITING_STATUS'''
         group = ServiceGroup('group')
-        e1 = Service('E1')
-        e2 = Service('E2')
-        e1.status = DONE
-        e2.status = WARNING
-        group.add_dep(target=e1)
-        group.add_dep(target=e2)
-        group._source.status = WAITING_STATUS
+        ext1 = Service('E1')
+        ext2 = Service('E2')
+        ext1.status = DONE
+        ext2.status = WARNING
+        group.add_dep(target=ext1)
+        group.add_dep(target=ext2)
+        int1 = Service('E1')
+        group.add_inter_dep(target=int1)
+        int1.status = WAITING_STATUS
         self.assertEqual(group.eval_deps_status(), WAITING_STATUS)
 
     def test_set_algo_reversed(self):

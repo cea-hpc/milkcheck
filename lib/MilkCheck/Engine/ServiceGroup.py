@@ -7,14 +7,12 @@ This module contains the ServiceGroup class definition
 
 # Classes
 from MilkCheck.Engine.Service import Service, Action
-from MilkCheck.Engine.BaseEntity import BaseEntity
+from MilkCheck.Engine.BaseEntity import BaseEntity, DEP_ORDER
 from MilkCheck.Engine.Dependency import Dependency
 
 # Symbols
 from MilkCheck.Engine.Dependency import REQUIRE
-from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, TIMEOUT
-from MilkCheck.Engine.BaseEntity import WAITING_STATUS, DEP_ERROR
-from MilkCheck.Engine.BaseEntity import WARNING, ERROR, SKIPPED
+from MilkCheck.Engine.BaseEntity import DONE, WARNING, SKIPPED
 
 # Exceptions
 from MilkCheck.ServiceManager import ServiceNotFoundError
@@ -191,23 +189,14 @@ class ServiceGroup(Service):
         extd_status = Service.eval_deps_status(self)
         intd_status = DONE
         if self._algo_reversed:
-            intd_status = self._sink.status
+            intd_status = self._sink.eval_deps_status()
         else:
-            intd_status = self._source.status
-        final_status = DONE
-        if extd_status is WAITING_STATUS or intd_status is WAITING_STATUS:
-            final_status = WAITING_STATUS
-        elif extd_status in (DEP_ERROR, ERROR, TIMEOUT) or \
-            intd_status in (DEP_ERROR, ERROR, TIMEOUT):
-            final_status = DEP_ERROR
-        elif extd_status is NO_STATUS or intd_status is NO_STATUS:
-            final_status = NO_STATUS
-        elif extd_status is WARNING or \
-            intd_status is WARNING:
-            final_status = WARNING
-        elif intd_status is SKIPPED:
-            final_status = SKIPPED
-        return final_status
+            intd_status = self._source.eval_deps_status()
+
+        if DEP_ORDER[extd_status] > DEP_ORDER[intd_status]:
+            return extd_status
+        else:
+            return intd_status
 
     def _process_dependencies(self, deps):
         '''perform a prepare on each dependencies in deps'''

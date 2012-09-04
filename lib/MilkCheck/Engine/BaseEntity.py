@@ -11,10 +11,6 @@ import string
 from subprocess import Popen, PIPE
 from re import sub, search
 from ClusterShell.NodeSet import NodeSet
-from MilkCheck.Engine.Dependency import Dependency
-
-# Symbols
-from MilkCheck.Engine.Dependency import CHECK, REQUIRE, REQUIRE_WEAK
 
 # Status available for an entity
 
@@ -49,6 +45,19 @@ SKIPPED = 'SKIPPED'
 
 # Action is missing for this service and it was ignored
 MISSING = 'MISSING'
+
+from MilkCheck.Engine.Dependency import Dependency, CHECK, REQUIRE, REQUIRE_WEAK
+
+DEP_ORDER = {
+     DEP_ERROR      : 10,
+     WAITING_STATUS : 9,
+     NO_STATUS      : 8,
+     WARNING        : 7,
+     DONE           : 6,
+     SKIPPED        : 5,
+     MISSING        : 4,
+     LOCKED         : 3
+}
 
 class MilkCheckEngineError(Exception):
     """Base class for Engine exceptions."""
@@ -339,24 +348,11 @@ class BaseEntity(object):
         if self._algo_reversed:
             deps = self.children
 
-        temp_dep_status = SKIPPED
-        for dep in deps.values():
-            if dep.target.status in (ERROR, TIMEOUT, DEP_ERROR):
-                if dep.is_strong():
-                    return DEP_ERROR
-                elif temp_dep_status is not NO_STATUS:
-                    temp_dep_status = WARNING
-            elif dep.target.status is WAITING_STATUS:
-                return WAITING_STATUS
-            elif dep.target.status is WARNING and \
-                temp_dep_status is not NO_STATUS:
-                temp_dep_status = WARNING
-            elif dep.target.status is NO_STATUS:
-                temp_dep_status = NO_STATUS
-            elif dep.target.status is DONE and temp_dep_status is not WARNING:
-                temp_dep_status = DONE
-
-        return temp_dep_status
+        if len(deps):
+            sorted_deps = sorted(deps.values(), key=lambda dep: DEP_ORDER[dep._status()])
+            return sorted_deps[-1]._status()
+        else:
+            return MISSING
 
     def set_algo_reversed(self, flag):
         '''Assign the right values for the property algo_reversed'''

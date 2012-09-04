@@ -6,6 +6,8 @@ This module contains the definition of the Dependency object and the
 symbols linked.
 """
 
+from MilkCheck.Engine.BaseEntity import WARNING, ERROR, TIMEOUT, DEP_ERROR
+
 # Symbols - strength of a dependency
 CHECK = "CHECK"
 REQUIRE = "REQUIRE"
@@ -55,4 +57,14 @@ class Dependency(object):
         "Invalid dependency type"
         self._dep_type = dtype
         
-    dep_type = property(fset=set_dep_type) 
+    dep_type = property(fset=set_dep_type)
+
+    def _status(self):
+        """Give entity status from a dependency point of view."""
+        if self.target.status in (ERROR, TIMEOUT, DEP_ERROR):
+            if self.is_strong():
+                return DEP_ERROR
+            else:
+                return WARNING
+        else:
+           return self.target.status
