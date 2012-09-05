@@ -106,16 +106,6 @@ class Service(BaseService):
         '''Figure out whether the service has the specified action.'''
         return action_name in self._actions
 
-    def last_action(self):
-        '''
-        Return the last action hooked/applied to the service. This action
-        contain the worker of the last task performed.
-        '''
-        if self._last_action and self.has_action(self._last_action):
-            return self._actions[self._last_action]
-        else:
-            raise ActionNotFoundError(self.name, self._last_action)
-
     def schedule(self, action_name):
         '''Schedule an action available for this service'''
         # Retrieve targeted action
@@ -126,7 +116,7 @@ class Service(BaseService):
         Update the current service's status and whether all of his parents
         dependencies are solved start children dependencies.
         '''
-        if self.warnings and self.last_action().status is DONE:
+        if self.warnings and status is DONE:
             self.status = WARNING
         else:
             self.status = status

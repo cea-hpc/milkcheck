@@ -75,95 +75,87 @@ class ActionTest(TestCase):
         self.assertEqual(action.status, NO_STATUS)
 
     def test_nb_errors_remote(self):
-        """Test the method nb_errors remote."""
+        """Test the method nb_errors() (remote)."""
         action = Action(name='start', target='aury[12,13,21]',
-                    command='/bin/false')
+                        command='/bin/false')
         action.errors = 2
         service = Service('test_service')
         service.add_action(action)
         service.run('start')
-        last_action = service.last_action()
-        self.assertEqual(last_action.nb_errors(), 3)
-        self.assertEqual(last_action.status, ERROR)
+        self.assertEqual(action.nb_errors(), 3)
+        self.assertEqual(action.status, ERROR)
 
     def test_nb_errors_remote2(self):
         """Test the method nb_errors() with no error (remote)."""
-        act_test = Action(name='test', target=HOSTNAME, command='/bin/true')
+        action = Action(name='test', target=HOSTNAME, command='/bin/true')
         service = Service('test_service')
-        service.add_action(act_test)
+        service.add_action(action)
         service.run('test')
-        last_action = service.last_action()
-        self.assertEqual(last_action.nb_errors(), 0)
-        self.assertEqual(last_action.status, DONE)
+        self.assertEqual(action.nb_errors(), 0)
+        self.assertEqual(action.status, DONE)
 
     def test_nb_errors_local(self):
-        """Test the method nb_errors local."""
+        """Test the method nb_errors() (local)"""
         service = Service('test_service')
         act_test = Action(name='test', command='/bin/true')
         service.add_action(act_test)
         service.run('test')
-        last_action = service.last_action()
-        self.assertEqual(last_action.nb_errors(), 0)
-        self.assertEqual(last_action.status, DONE)
+        self.assertEqual(act_test.nb_errors(), 0)
+        self.assertEqual(act_test.status, DONE)
 
         service.reset()
         act_test.errors = 1
         act_test.command = '/bin/false'
         service.run('test')
-        last_action = service.last_action()
-        self.assertEqual(last_action.nb_errors(), 1)
-        self.assertEqual(last_action.status, DONE)
+        self.assertEqual(act_test.nb_errors(), 1)
+        self.assertEqual(act_test.status, DONE)
 
         service.reset()
         act_test.errors = 0
         service.run('test')
-        last_action = service.last_action()
-        self.assertEqual(last_action.nb_errors(), 1)
-        self.assertEqual(last_action.status, ERROR)
+        self.assertEqual(act_test.nb_errors(), 1)
+        self.assertEqual(act_test.status, ERROR)
 
     def test_nb_timeout_remote(self):
-        """Test nb_timeout_method remote mode."""
+        """Test nb_timeout() method (remote mode)"""
         action = Action(name='start', target=HOSTNAME,
-                    command='sleep 3', timeout=0.5)
+                        command='sleep 3', timeout=0.5)
         service = Service('test_service')
         service.add_action(action)
         service.run('start')
-        last_action = service.last_action()
-        self.assertNotEqual(last_action.nb_timeout(), 0)
-        self.assertEqual(last_action.status, TIMEOUT)
+        self.assertNotEqual(action.nb_timeout(), 0)
+        self.assertEqual(action.status, TIMEOUT)
 
     def test_nb_timeout_local(self):
-        """Test nb_timeout_method local."""
+        """Test nb_timeout() method (local)"""
         action = Action(name='start',
-                    command='sleep 3', timeout=0.5)
+                        command='sleep 3', timeout=0.5)
         service = Service('test_service')
         service.add_action(action)
         service.run('start')
-        last_action = service.last_action()
-        self.assertEqual(last_action.nb_errors(), 0)
-        self.assertEqual(last_action.nb_timeout(), 1)
-        self.assertEqual(last_action.status, TIMEOUT)
+        self.assertEqual(action.nb_errors(), 0)
+        self.assertEqual(action.nb_timeout(), 1)
+        self.assertEqual(action.status, TIMEOUT)
 
     def test_mix_errors_timeout(self):
         """Test the result of mixed timeout and error actions."""
         action = Action(name='start', target='badname,%s,localhost' % HOSTNAME,
-                    command='/bin/sleep `echo $SSH_CLIENT | wc -c | cut -c1`', timeout=1.5)
+                        command='/bin/sleep `echo $SSH_CLIENT | wc -c | cut -c1`',
+                        timeout=1.5)
         action.errors = 1
         service = Service('test_service')
         service.add_action(action)
         service.run('start')
-        last_action = service.last_action()
-        self.assertEqual(last_action.nb_errors(), 1)
-        self.assertEqual(last_action.nb_timeout(), 1)
-        self.assertEqual(last_action.status, ERROR)
+        self.assertEqual(action.nb_errors(), 1)
+        self.assertEqual(action.nb_timeout(), 1)
+        self.assertEqual(action.status, ERROR)
 
         service.reset()
         action.errors = 2
         service.run('start')
-        last_action = service.last_action()
-        self.assertEqual(last_action.nb_errors(), 1)
-        self.assertEqual(last_action.nb_timeout(), 1)
-        self.assertEqual(last_action.status, DONE)
+        self.assertEqual(action.nb_errors(), 1)
+        self.assertEqual(action.nb_timeout(), 1)
+        self.assertEqual(action.status, DONE)
 
     def test_set_retry(self):
         """Test retry assignement"""

@@ -8,6 +8,9 @@ ServiceGroupFactory.
 
 from unittest import TestCase
 from ClusterShell.NodeSet import NodeSet
+
+from MilkCheck.Engine.Service import Service, Action, WARNING
+from MilkCheck.Engine.Dependency import REQUIRE_WEAK
 from MilkCheck.Engine.ServiceGroup import ServiceGroup
 from MilkCheck.Engine.ServiceFactory import ServiceFactory
 from MilkCheck.Engine.ServiceFactory import ServiceGroupFactory
@@ -368,3 +371,22 @@ class ServiceGroupFactoryTest(TestCase):
         self.assertEqual(len(sergrp._subservices['svc1']._actions), 3)
         self.assertEqual(len(sergrp._subservices['svc2']._actions), 3)
         self.assertEqual(len(sergrp._subservices['svc3']._actions), 3)
+
+    def test_group_with_weak_dep_error(self):
+        """A group with a weak dep error runs fine."""
+
+        dep1 = Service('dep1')
+        dep1.add_action(Action('stop', command='/bin/false'))
+
+        grp = ServiceGroupFactory.create_servicegroup_from_dict(
+        {'service': {
+            'name': 'group',
+            'services': {
+                'svc1': { 'action': { 'cmd': "/bin/true" } }
+            }
+        }})
+
+        grp.add_dep(dep1, sgth=REQUIRE_WEAK)
+        grp.run('stop')
+
+        self.assertEqual(grp.status, WARNING)

@@ -152,16 +152,6 @@ class ServiceGroup(Service):
             del self._subservices[dep_name]
             self.__update_edges(True)
             
-    def last_action(self):
-        """
-        Return the last action hooked/applied to the service. This action
-        contain the worker of the last task performed.
-        """
-        if self._algo_reversed:
-            return self._sink.last_action()
-        else:
-            return self._source.last_action()
-            
     def search_deps(self, symbols=None):
         '''
         Return a dictionnary of dependencies both external and internal.

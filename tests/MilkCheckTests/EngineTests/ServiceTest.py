@@ -105,18 +105,6 @@ class ServiceTest(TestCase):
         self.assertRaises(ActionNotFoundError,
             service.remove_action, 'start')
 
-    def test_last_action(self):
-        """Test last_action method behaviour."""
-        service = Service('Test')
-        self.assertRaises(ActionNotFoundError, service.last_action)
-
-        start = Action('start', HOSTNAME, '/bin/true')
-        service.add_action(start)
-        self.assertRaises(ActionNotFoundError, service.last_action)
-        service.prepare('start')
-        self.assertTrue(service.last_action())
-        self.assertTrue(service.last_action() is start)
-
     def test_prepare_single_service(self):
         """Test prepare without dependencies between services."""
         serv_test = Service('test_service')
@@ -380,28 +368,22 @@ class ServiceTest(TestCase):
     def test_prepare_delayed_action(self):
         """Test prepare Service with a delayed action"""
         serv = Service('DELAYED_SERVICE')
-        act_suc = ac_suc = Action(name='start',
-                    target=HOSTNAME, command='/bin/true', delay=1)
-        serv.add_action(act_suc)
+        act = Action(name='start', command='/bin/true', delay=1)
+        serv.add_action(act)
         serv.run('start')
         self.assertEqual(serv.status, DONE)
-        action_done = serv.last_action()
-        self.assertNear(1.0, 0.3, action_done.duration)
+        self.assertNear(1.0, 0.3, act.duration)
 
     def test_prepare_multiple_delay(self):
-        '''Test prepare with dependencies and multiple delay'''
+        '''Test prepare with dependencies and multiple delays'''
         serv = Service('BASE_DELAYED')
         serv_a = Service('A_NOT_DELAYED')
         serv_b = Service('B_DELAYED')
         serv_c = Service('C_DELAYED')
-        act_a = Action(name='start',
-                    target=HOSTNAME, command='/bin/true')
-        act_serv = Action(name='start',
-                    target=HOSTNAME, command='/bin/true', delay=0.5)
-        act_b = Action(name='start',
-                    target=HOSTNAME, command='/bin/true', delay=0.5)
-        act_c = Action(name='start',
-                    target=HOSTNAME, command='/bin/true', delay=1)
+        act_a = Action(name='start', command='/bin/true')
+        act_serv = Action(name='start', command='/bin/true', delay=0.5)
+        act_b = Action(name='start', command='/bin/true', delay=0.5)
+        act_c = Action(name='start', command='/bin/true', delay=1)
         serv.add_action(act_serv)
         serv_a.add_action(act_a)
         serv_b.add_action(act_b)
@@ -412,17 +394,13 @@ class ServiceTest(TestCase):
         serv_b.add_dep(serv_c)
         serv.run('start')
         self.assertEqual(serv.status, DONE)
-        action = serv.last_action()
-        self.assertNear(0.5, 0.3, action.duration)
+        self.assertNear(0.5, 0.3, act_serv.duration)
         self.assertEqual(serv_a.status, DONE)
-        action = serv_a.last_action()
-        self.assertNear(0.0, 0.3, action.duration)
+        self.assertNear(0.0, 0.3, act_a.duration)
         self.assertEqual(serv_b.status, DONE)
-        action = serv_b.last_action()
-        self.assertNear(0.5, 0.3, action.duration)
+        self.assertNear(0.5, 0.3, act_b.duration)
         self.assertEqual(serv_c.status, DONE)
-        action = serv_c.last_action()
-        self.assertNear(1.0, 0.3, action.duration)
+        self.assertNear(1.0, 0.3, act_c.duration)
 
     def test_run_partial_deps(self):
         """Test stop algorithm as soon as the calling point is done."""
