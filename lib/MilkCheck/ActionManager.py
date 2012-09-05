@@ -48,6 +48,14 @@ class ActionManager(EntityManager):
         nodes = None
         if action.mode != 'delegate':
             nodes = action.resolve_property('target')
+            # XXX: If this never happens, we could remove the previous
+            # resolve property. Resolution alreay happened.
+            # XXX: Also True if action has a specific target?
+            assert (str(nodes) == str(action.target))
+
+        # Action should have been set SKIPPED already.
+        assert (action.target is None or len(action.target) > 0)
+
         self._master_task.shell(action.resolve_property('command'),
                                 nodes=nodes, timeout=action.timeout,
                                 handler=ActionEventHandler(action))
