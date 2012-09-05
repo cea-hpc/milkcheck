@@ -254,3 +254,55 @@ class ActionTest(TestCase):
         service.add_actions(action)
         service.add_var('VAR1', 'foo')
         action.run()
+        self.assertEqual(action.worker.command, 'echo \-x foo')
+
+class ActionFromDictTest(TestCase):
+    '''Test cases for Action.fromdict()'''
+
+    def test_create_action1(self):
+        '''Test instanciation of an Action through a dictionnary'''
+        act = Action('start')
+        act.fromdict(
+            {
+                'target': 'localhost',
+                'fanout': 4,
+                'retry': 5,
+                'delay': 2,
+                'timeout': 4,
+                'cmd': '/bin/True',
+                'desc': 'my desc',
+                'mode': 'delegate',
+            }
+        )
+        self.assertTrue(act)
+        self.assertEqual(act.name, 'start')
+        self.assertEqual(act.target, NodeSet('localhost'))
+        self.assertEqual(act.fanout, 4)
+        self.assertEqual(act.retry, 5)
+        self.assertEqual(act.delay, 2)
+        self.assertEqual(act.timeout, 4)
+        self.assertEqual(act.command, '/bin/True')
+        self.assertEqual(act.desc, 'my desc')
+        self.assertEqual(act.mode, 'delegate')
+
+    def test_create_action2(self):
+        '''Test instanciation of an action with variables'''
+        act = Action('start')
+        act.fromdict(
+            {
+                'target': 'localhost',
+                'variables': {
+                    'var1': 'toto',
+                    'var2': 'titi'
+                 },
+                'fanout': 4,
+                'retry': 5,
+                'delay': 2,
+                'timeout': 4,
+                'cmd': '/bin/True'
+            }
+        )
+        self.assertTrue(act)
+        self.assertTrue(len(act.variables) == 2)
+        self.assertTrue('var1' in act.variables)
+        self.assertTrue('var2' in act.variables)

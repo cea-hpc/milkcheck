@@ -261,4 +261,17 @@ class Action(BaseEntity):
             # Fire this action
             action_manager_self().perform_action(self)
 
+    def fromdict(self, actdict):
+        """Populate action attributes from dict."""
+        BaseEntity.fromdict(self, actdict)
+
+        # 'delay' should be set before setting 'retry' (if any)
+        if 'delay' in actdict:
+            self.delay = actdict['delay']
+
+        if 'cmd' in actdict:
+            self.command = actdict['cmd']
+        if 'retry' in actdict:
+            self.retry = actdict['retry']
+
 from MilkCheck.ActionManager import action_manager_self

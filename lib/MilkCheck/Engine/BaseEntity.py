@@ -528,3 +528,24 @@ class BaseEntity(object):
             self.target = entity.target
         self.mode = self.mode or entity.mode
         self.desc = self.desc or entity.desc
+
+    def fromdict(self, entdict):
+        """Populate entity attributes from dict."""
+
+        for item, prop in entdict.items():
+            if item == 'target':
+                self.target = prop
+                self._target_backup = prop
+            elif item == 'mode':
+                self.mode = prop
+            elif item == 'fanout':
+                self.fanout = prop
+            elif item == 'timeout':
+                self.timeout = prop
+            elif item == 'errors':
+                self.errors = prop
+            elif item == 'desc':
+                self.desc = prop
+            elif item == 'variables':
+                for varname, value in prop.items():
+                    self.add_var(varname, value)

@@ -6,6 +6,7 @@ This module contains the Service class definition
 """
 
 # Classes
+from ClusterShell.NodeSet import NodeSet
 from MilkCheck.Engine.BaseService import BaseService
 from MilkCheck.Engine.Action import Action
 from MilkCheck.Engine.BaseEntity import BaseEntity
@@ -15,9 +16,8 @@ from MilkCheck.Callback import call_back_self
 from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
 
 # Symbols
-from MilkCheck.Engine.BaseEntity import NO_STATUS, ERROR
+from MilkCheck.Engine.BaseEntity import NO_STATUS, WARNING, MISSING
 from MilkCheck.Engine.BaseEntity import WAITING_STATUS, DEP_ERROR, DONE
-from MilkCheck.Engine.BaseEntity import WARNING, TIMEOUT, MISSING
 from MilkCheck.Callback import EV_STATUS_CHANGED, EV_TRIGGER_DEP
 
 class ActionNotFoundError(MilkCheckEngineError):
@@ -193,5 +193,29 @@ class Service(BaseService):
     def inherits_from(self, entity):
         '''Inherit properties from entity'''
         BaseEntity.inherits_from(self, entity)
+        for action in self.iter_actions():
+            action.inherits_from(self)
+
+    def fromdict(self, svcdict):
+        """Populate service attributes from dict."""
+        BaseEntity.fromdict(self, svcdict)
+
+        if 'actions' in svcdict:
+            dependencies = {}
+            actions = {}
+            for names, props in svcdict['actions'].items():
+                for name in NodeSet(names):
+                    action = Action(name)
+                    action.fromdict(props)
+
+                    actions[name] = action
+                    dependencies[name] = props.get('check', [])
+
+            for action in actions.values():
+                for dep in dependencies[action.name]:
+                    action.add_dep(actions[dep])
+                self.add_action(action)
+
+        # Inherits properies between service and actions
         for action in self.iter_actions():
             action.inherits_from(self)

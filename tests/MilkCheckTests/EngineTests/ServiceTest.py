@@ -630,3 +630,109 @@ class ServiceTest(TestCase):
         self.assertEqual(s1.status, DONE)
         self.assertEqual(s2.status, MISSING)
         self.assertEqual(s3.status, DONE)
+
+class ServiceFromDictTest(TestCase):
+    '''This class tests Service.fromdict()'''
+
+    def test_fromdict1(self):
+        '''Test instanciate a service from a dictionnary'''
+        ser = Service('S1')
+        ser.fromdict(
+            {
+                'desc': 'I am the service S1',
+                'target': 'localhost',
+                'variables':{
+                    'var1': 'toto',
+                    'var2': 'titi'
+                },
+                'actions':
+                {
+                    'start': {'cmd': '/bin/True'},
+                    'stop': {'cmd': '/bin/True'}
+                }
+            }
+        )
+        self.assertTrue(ser)
+        self.assertEqual(ser.name, 'S1')
+        self.assertEqual(ser.desc, 'I am the service S1')
+        self.assertEqual(ser.target, NodeSet('localhost'))
+        self.assertEqual(len(ser.variables), 2)
+        self.assertTrue('var1' in ser.variables)
+        self.assertTrue('var2' in ser.variables)
+
+    def test_fromdict2(self):
+        '''
+        Test instanciate a service from a dictionnary with dependant actions
+        '''
+        ser = Service('S1')
+        ser.fromdict(
+            {
+                'desc': 'I am the service S1',
+                'target': 'localhost',
+                'actions':
+                {
+                    'start':
+                    {
+                        'check': ['status'],
+                        'cmd': '/bin/True'
+                    },
+                    'stop': {'cmd': '/bin/True'},
+                    'status': {'cmd': '/bin/True'}
+                }
+            }
+        )
+        self.assertTrue(ser)
+        self.assertEqual(len(ser._actions), 3)
+        self.assertTrue('start' in ser._actions)
+        self.assertTrue('stop' in ser._actions)
+        self.assertTrue('status' in ser._actions)
+        self.assertTrue(ser._actions['start'].has_parent_dep('status'))
+
+    def test_service_with_actions_with_one_decl(self):
+        """create a service with two actions with comma declaration"""
+
+        svc = Service('foo')
+        svc.fromdict(
+            {
+                'actions':
+                {
+                    'start,stop':
+                    {
+                        'cmd': 'service foo %ACTION'
+                    },
+                }
+            }
+        )
+        self.assertTrue(svc)
+        self.assertEqual(len(svc._actions), 2)
+        self.assertTrue('start' in svc._actions)
+        self.assertTrue('stop' in svc._actions)
+        self.assertEqual(svc._actions['start'].command,
+                         'service foo %ACTION')
+        self.assertEqual(svc._actions['stop'].command,
+                         'service foo %ACTION')
+
+    def test_service_with_nodeset_like_actions_with_one_decl(self):
+        """create a service with two actions with nodeset-like declaration"""
+
+        svc = Service('foo')
+        svc.fromdict(
+            {
+                'name': 'foo',
+                'actions':
+                {
+                    'foo[1-2]':
+                    {
+                        'cmd': 'service foo %ACTION'
+                    },
+                }
+            }
+        )
+        self.assertTrue(svc)
+        self.assertEqual(len(svc._actions), 2)
+        self.assertTrue('foo1' in svc._actions)
+        self.assertTrue('foo2' in svc._actions)
+        self.assertEqual(svc._actions['foo1'].command,
+                         'service foo %ACTION')
+        self.assertEqual(svc._actions['foo2'].command,
+                         'service foo %ACTION')

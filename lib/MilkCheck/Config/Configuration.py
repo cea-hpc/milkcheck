@@ -4,6 +4,7 @@
 '''
 This module contains the
 '''
+
 import sys
 import yaml
 import logging
@@ -12,9 +13,10 @@ from os import environ, listdir
 from os.path import walk, isdir
 from os.path import isfile
 from re import match, compile, error
+
 from MilkCheck.ServiceManager import service_manager_self
-from MilkCheck.Engine.ServiceFactory import ServiceFactory, DepWrapper
-from MilkCheck.Engine.ServiceFactory import ServiceGroupFactory
+from MilkCheck.Engine.Service import Service
+from MilkCheck.Engine.ServiceGroup import ServiceGroup, DepWrapper
 
 class MilkCheckConfig(object):
     '''
@@ -89,13 +91,15 @@ class MilkCheckConfig(object):
                         manager.add_var(varname, value)
                 # Parse service
                 elif elem == 'service' and 'actions' in subelems:
-                    ser = ServiceFactory.create_service_from_dict(data)
+                    ser = Service(subelems['name'])
+                    ser.fromdict(subelems)
                     wrap = self._parse_deps(subelems)
                     wrap.source = ser
                     dependencies[ser.name] = wrap
                 # Parse service group
                 elif elem == 'service' and 'services' in subelems:
-                    ser = ServiceGroupFactory.create_servicegroup_from_dict(data)
+                    ser = ServiceGroup(subelems['name'])
+                    ser.fromdict(subelems)
                     wrap = self._parse_deps(subelems)
                     wrap.source = ser
                     dependencies[ser.name] = wrap

@@ -6,6 +6,7 @@ This module contains the ServiceGroup class definition
 """
 
 # Classes
+from ClusterShell.NodeSet import NodeSet
 from MilkCheck.Engine.Service import Service, Action
 from MilkCheck.Engine.BaseEntity import BaseEntity, DEP_ORDER, Dependency
 
@@ -241,3 +242,75 @@ class ServiceGroup(Service):
         self._source._algo_reversed = flag
 
     algo_reversed = property(fset=set_algo_reversed)
+
+    def fromdict(self, grpdict):
+        """Populate group attributes from dict."""
+        BaseEntity.fromdict(self, grpdict)
+
+        if 'services' in grpdict:
+            dep_mapping = {}
+
+            # Wrap dependencies from YAML and build the service
+            for names, props in grpdict['services'].items():
+                for subservice in NodeSet(names):
+
+                    # Parsing dependencies
+                    wrap = DepWrapper()
+                    for prop in ('require', 'require_weak', 'check'):
+                        if prop in props:
+                            wrap.deps[prop] = props[prop]
+
+                    # Get subservices which might be Service or ServiceGroup
+                    service = None
+                    if 'services' in props:
+                        service = ServiceGroup(subservice)
+                        service.fromdict(props)
+                    else:
+                        service = Service(subservice)
+                        service.fromdict(props)
+
+                    # Link the group and its new subservice together
+                    self._subservices[subservice] = service
+                    service.parent = self
+
+                    wrap.source = service
+                    dep_mapping[subservice] = wrap
+
+            # Generate dependency links of the service
+            for wrap in dep_mapping.values():
+                # Not any dependencies so just attach
+                for dtype in wrap.deps:
+                    for dep in wrap.deps[dtype]:
+                        wrap.source.add_dep(self._subservices[dep],
+                                                         sgth=dtype.upper())
+
+            # Bind subgraph to the service group
+            for service in self.iter_subservices():
+                if not service.children:
+                    service.add_dep(self._source, parent=False)
+                    # Generate fake actions
+                    for action in service._actions:
+                        if action not in self._source._actions:
+                            self._source.add_action(
+                                Action(action, delay=0.01))
+                if not service.parents:
+                    service.add_dep(self._sink)
+                    for action in service._actions:
+                        if action not in self._sink._actions:
+                            self._sink.add_action(
+                                Action(action, delay=0.01))
+
+        for subser in self.iter_subservices():
+            subser.inherits_from(self)
+
+
+class DepWrapper(object):
+    '''
+    Tool class allowing us to wrap the dependencies of a service. This
+    class is used by the factory in order to provide an easiest way to
+    to deal with dependencies.
+    '''
+
+    def __init__(self):
+        self.source = None
+        self.deps = {'require': [], 'require_weak': [], 'check': []}

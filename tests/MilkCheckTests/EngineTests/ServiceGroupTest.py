@@ -556,3 +556,242 @@ class ServiceGroupTest(TestCase):
         grp.run('stop')
 
         self.assertEqual(grp.status, WARNING)
+
+class ServiceGroupFromDictTest(TestCase):
+    '''Test cases of ServiceGroup.fromdict()'''
+
+    def test_fromdict1(self):
+        '''Test instanciation of a service group from a dictionnary'''
+        sergrp = ServiceGroup('S1')
+        sergrp.fromdict(
+           {'services':
+                {'hpss_nfs':
+                    {'target': 'localhost',
+                     'actions':
+                        {'start': {'cmd': '/bin/True'},
+                        'stop': {'cmd': '/bin/False'}},
+                        'desc': "I'm the service hpss_nfs"
+                     },
+                 'lustre':
+                     {'target': 'localhost',
+                      'actions':
+                        {'start': {'cmd':'/bin/True'},
+                         'stop': {'cmd': '/bin/False'}},
+                      'desc': "I'm the service lustre"}},
+            'desc': "I'm the service S1",
+            'target': 'localhost',
+            'variables':{
+                'var1': 'toto',
+                'var2': 'titi'
+            },
+        })
+
+        self.assertEqual(len(sergrp.variables), 2)
+        self.assertTrue('var1' in sergrp.variables)
+        self.assertTrue('var2' in sergrp.variables)
+        self.assertTrue(sergrp.has_subservice('hpss_nfs'))
+        self.assertTrue(sergrp.has_subservice('lustre'))
+        self.assertTrue(
+            sergrp._subservices['hpss_nfs'].has_parent_dep('sink'))
+        self.assertTrue(
+            sergrp._subservices['hpss_nfs'].has_child_dep('source'))
+        self.assertTrue(
+            sergrp._subservices['lustre'].has_parent_dep('sink'))
+        self.assertTrue(
+            sergrp._subservices['lustre'].has_child_dep('source'))
+
+    def test_fromdict2(self):
+        '''
+        Test instanciation of a service group with dependencies between
+        subservices.
+        '''
+        sergrp = ServiceGroup('S1')
+        sergrp.fromdict(
+            {'services':
+                {'hpss_nfs':
+                    {'target': 'localhost',
+                     'require': ['lustre', 'test'],
+                     'actions':
+                        {'start': {'cmd': '/bin/True'},
+                        'stop': {'cmd': '/bin/False'}},
+                        'desc': "I'm the service hpss_nfs"
+                     },
+                 'lustre':
+                     {'target': 'localhost',
+                      'actions':
+                        {'start': {'cmd':'/bin/True'},
+                         'stop': {'cmd': '/bin/False'}},
+                      'desc': "I'm the service lustre"},
+                'test':
+                     {'target': 'localhost',
+                      'actions':
+                        {'start': {'cmd':'/bin/True'},
+                         'stop': {'cmd': '/bin/False'}},
+                      'desc': "I'm a test suite"}},
+            'variables':{'LUSTRE_FS_LIST': 'store0,work0'},
+            'desc': "I'm the service S1",
+            'target': 'localhost',
+        })
+        self.assertTrue(sergrp.has_subservice('hpss_nfs'))
+        self.assertTrue(sergrp.has_subservice('lustre'))
+        self.assertTrue(sergrp.has_subservice('test'))
+        self.assertFalse(
+            sergrp._subservices['hpss_nfs'].has_parent_dep('sink'))
+        self.assertTrue(
+            sergrp._subservices['hpss_nfs'].has_child_dep('source'))
+        self.assertTrue(
+            sergrp._subservices['lustre'].has_parent_dep('sink'))
+        self.assertFalse(
+            sergrp._subservices['test'].has_child_dep('source'))
+        self.assertTrue(
+            sergrp._subservices['test'].has_parent_dep('sink'))
+
+    def test_create_service_imbrications(self):
+        '''Test create service with mutliple level of subservices'''
+        sergrp = ServiceGroup('groupinit')
+        sergrp.fromdict(
+            {'services':
+                {'svcA':
+                    {'require': ['subgroup'],
+                    'actions':
+                        {'start': {'cmd': '/bin/True'},
+                        'stop': {'cmd': '/bin/False'}},
+                        'desc': 'I am the subservice $NAME'},
+                'subgroup':
+                    {'services':
+                        {'svcB':
+                            {'require_weak':['svcC'],
+                            'actions':
+                                {'start': {'cmd': '/bin/True'},
+                            '   stop': {'cmd': '/bin/False'}},
+                            'desc': 'I am the subservice $NAME'},
+                        'svcC':
+                            {'actions':
+                                {'start': {'cmd': '/bin/True'},
+                                'stop': {'cmd': '/bin/False'}},
+                                'desc': 'I am the subservice $NAME'}},
+                        'target': '127.0.0.1',
+                        'desc': "I'm the service $NAME"}},
+            'desc': 'I am a group',
+            'target': 'localhost',
+        })
+        for subservice in ('svcA', 'subgroup'):
+            if isinstance(sergrp._subservices[subservice], ServiceGroup):
+                for subsubser in ('svcB', 'svcC'):
+                    self.assertTrue(
+                    sergrp._subservices[subservice].has_subservice(subsubser))
+            self.assertTrue(sergrp.has_subservice(subservice))
+
+    def test_inheritance(self):
+        '''Test properties inherited from ServiceGroup to Service and Action'''
+        sergrp = ServiceGroup('groupinit')
+        sergrp.fromdict(
+            {'services':
+                {'svcA':
+                    {'require': ['subgroup'],
+                    'actions':
+                        {'start': {'cmd': '/bin/True'},
+                        'stop': {'cmd': '/bin/False'}},
+                        'desc': 'I am the subservice $NAME'},
+                'subgroup':
+                    {'services':
+                        {'svcB':
+                            {'require_weak':['svcC'],
+                            'actions':
+                                {'start': {'cmd': '/bin/True'},
+                            '   stop': {'cmd': '/bin/False'}},
+                            'desc': 'I am the subservice $NAME'},
+                        'svcC':
+                            {'actions':
+                                {'start': {'cmd': '/bin/True'},
+                                'stop': {'cmd': '/bin/False'}},
+                                'desc': 'I am the subservice $NAME'}},
+                        'target': '127.0.0.1',
+                        'desc': "I'm the service $NAME"}},
+            'desc': 'I am a group',
+            'target': 'localhost',
+        })
+        self.assertEqual(
+            sergrp._subservices['svcA'].target, NodeSet('localhost'))
+        self.assertEqual(
+            sergrp._subservices['subgroup'].target, NodeSet('127.0.0.1'))
+        subgroup = sergrp._subservices['subgroup']
+        self.assertEqual(
+            subgroup._subservices['svcB'].target, NodeSet('127.0.0.1'))
+        self.assertEqual(
+            subgroup._subservices['svcC'].target, NodeSet('127.0.0.1'))
+
+    def test_servicegroup_with_nodeset_like_actions_with_one_decl(self):
+        '''Test a service group with several group with nodeset-like names'''
+        sergrp = ServiceGroup('group1')
+        sergrp.fromdict({
+            'services': {
+                'da[1-3]': {
+                    'actions': {'start': {'cmd': '/bin/True'}}
+                },
+            }})
+
+        self.assertEqual(len(sergrp._subservices), 3)
+        self.assertTrue(sergrp.has_subservice('da1'))
+        self.assertTrue(sergrp.has_subservice('da2'))
+        self.assertTrue(sergrp.has_subservice('da3'))
+        self.assertEqual(len(sergrp._subservices['da1']._actions), 1)
+        self.assertEqual(len(sergrp._subservices['da2']._actions), 1)
+        self.assertEqual(len(sergrp._subservices['da3']._actions), 1)
+
+    def test_subservices_with_different_actions(self):
+        '''Test a service group with subservices with different actions'''
+        sergrp = ServiceGroup('group1')
+        sergrp.fromdict(
+            {
+            'services': {
+                'svc1': {
+                    'actions': {
+                          'start': {'cmd': '/bin/True'},
+                          'status': {'cmd': '/bin/True'},
+                          'stop': {'cmd': '/bin/True'},
+                    }
+                },
+                'svc2': {
+                    'require': [ 'svc1' ],
+                    'actions': {
+                          'start': {'cmd': '/bin/True'},
+                          'stop': {'cmd': '/bin/True'},
+                          'status': {'cmd': '/bin/True'},
+                    }
+                },
+                'svc3': {
+                    'require': [ 'svc1' ],
+                    'actions': {
+                          'start': {'cmd': '/bin/True'},
+                          'stop': {'cmd': '/bin/True'},
+                          'status': {'cmd': '/bin/True'},
+                    }
+                },
+            }})
+
+        self.assertEqual(len(sergrp._subservices), 3)
+        self.assertTrue(sergrp.has_subservice('svc1'))
+        self.assertTrue(sergrp.has_subservice('svc2'))
+        self.assertTrue(sergrp.has_subservice('svc3'))
+        self.assertEqual(len(sergrp._subservices['svc1']._actions), 3)
+        self.assertEqual(len(sergrp._subservices['svc2']._actions), 3)
+        self.assertEqual(len(sergrp._subservices['svc3']._actions), 3)
+
+    def test_group_with_weak_dep_error(self):
+        """A group with a weak dep error runs fine."""
+
+        dep1 = Service('dep1')
+        dep1.add_action(Action('stop', command='/bin/false'))
+
+        grp = ServiceGroup('group')
+        grp.fromdict({
+            'services': {
+                'svc1': { 'action': { 'cmd': "/bin/true" } }
+            }
+        })
+
+        grp.add_dep(dep1, sgth=REQUIRE_WEAK)
+        grp.run('stop')
+
+        self.assertEqual(grp.status, WARNING)
