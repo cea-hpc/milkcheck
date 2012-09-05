@@ -148,13 +148,13 @@ class ServiceGroupFactory(object):
                         service.add_dep(sergrp._source, parent=False)
                         # Generate fake actions
                         for action in service._actions:
-                            if not sergrp.has_action(action):
+                            if action not in sergrp._source._actions:
                                 sergrp._source.add_action(
                                     Action(action, delay=0.01))
                     if not service.parents:
                         service.add_dep(sergrp._sink)
                         for action in service._actions:
-                            if not sergrp.has_action(action):
+                            if action not in sergrp._sink._actions:
                                 sergrp._sink.add_action(
                                     Action(action, delay=0.01))
         for subser in sergrp.iter_subservices():

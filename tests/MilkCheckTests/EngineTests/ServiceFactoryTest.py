@@ -328,3 +328,43 @@ class ServiceGroupFactoryTest(TestCase):
         self.assertEqual(len(sergrp._subservices['da1']._actions), 1)
         self.assertEqual(len(sergrp._subservices['da2']._actions), 1)
         self.assertEqual(len(sergrp._subservices['da3']._actions), 1)
+
+    def test_subservices_with_different_actions(self):
+        '''Test a service group with subservices with different actions'''
+        sergrp = ServiceGroupFactory.create_servicegroup_from_dict(
+            {'service': {
+                'name': 'group1',
+                'services': {
+                    'svc1': {
+                        'actions': {
+                              'start': {'cmd': '/bin/True'},
+                              'status': {'cmd': '/bin/True'},
+                              'stop': {'cmd': '/bin/True'},
+                        }
+                    },
+                    'svc2': {
+                        'require': [ 'svc1' ],
+                        'actions': {
+                              'start': {'cmd': '/bin/True'},
+                              'stop': {'cmd': '/bin/True'},
+                              'status': {'cmd': '/bin/True'},
+                        }
+                    },
+                    'svc3': {
+                        'require': [ 'svc1' ],
+                        'actions': {
+                              'start': {'cmd': '/bin/True'},
+                              'stop': {'cmd': '/bin/True'},
+                              'status': {'cmd': '/bin/True'},
+                        }
+                    },
+                },
+            } })
+
+        self.assertEqual(len(sergrp._subservices), 3)
+        self.assertTrue(sergrp.has_subservice('svc1'))
+        self.assertTrue(sergrp.has_subservice('svc2'))
+        self.assertTrue(sergrp.has_subservice('svc3'))
+        self.assertEqual(len(sergrp._subservices['svc1']._actions), 3)
+        self.assertEqual(len(sergrp._subservices['svc2']._actions), 3)
+        self.assertEqual(len(sergrp._subservices['svc3']._actions), 3)

@@ -541,3 +541,18 @@ class ServiceGroupTest(TestCase):
         grp.run('stop')
         self.assertEqual(svc.status, ERROR)
         self.assertEqual(grp.status, SKIPPED)
+
+    def test_group_with_weak_dep_error(self):
+        """A group with a weak dep error runs fine (add_inter_dep())."""
+
+        dep1 = Service('dep1')
+        dep1.add_action(Action('stop', command='/bin/false'))
+
+        grp = ServiceGroup('group')
+        svc = Service('svc')
+        svc.add_action(Action('stop', command='/bin/true'))
+        grp.add_inter_dep(svc)
+        grp.add_dep(dep1, sgth=REQUIRE_WEAK)
+        grp.run('stop')
+
+        self.assertEqual(grp.status, WARNING)
