@@ -42,7 +42,7 @@ service:
     name: ping
     desc: Ping all needed servers
     mode: delegate
-    target: @servers
+    target: "@servers"
     actions:
         status:
             cmd: nodeset -S "\n" -e %TARGET | fping -r1 -u
@@ -96,7 +96,7 @@ service:
 service:
     name: crond
     desc: Command scheduler daemon crond
-    target: @webservers
+    target: "@webservers"
     actions:
         start,status,stop:
             # Equivalent to: 'service crond <ACTION_NAME>'
