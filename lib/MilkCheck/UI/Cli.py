@@ -186,7 +186,7 @@ class ConsoleDisplay(object):
                 action.resolve_property('command'), 'CYAN'))
         self.output(line)
 
-    def __gen_action_output(self, iterbuf, iterrc, error_only):
+    def __gen_action_output(self, iterbuf, iterrc, timeouts, error_only):
         '''Display command result from output and retcodes.'''
 
         # Build the list of non-zero rc nodes
@@ -211,6 +211,10 @@ class ConsoleDisplay(object):
                 output.append(' > %s exited with %s' %
                               (self.string_color(nodes, 'CYAN'),
                                self.string_color(retcode, 'RED')))
+        if len(timeouts):
+            output.append(' > %s has %s' %
+                          (self.string_color(timeouts, 'CYAN'),
+                           self.string_color('timeout', 'RED')))
         return output
 
     def print_action_results(self, action, error_only=False):
@@ -219,17 +223,23 @@ class ConsoleDisplay(object):
             (self.string_color(action.name, 'MAGENTA'),
              action.parent.fullname(),
              action.duration)]
+        buffers = []
+        retcodes = []
+        timeout = NodeSet()
         # Local action
         if action.worker.current_node is None:
-            line += self.__gen_action_output(
-                                       [(action.worker.read(), 'localhost')],
-                                       [(action.worker.retcode(),'localhost')],
-                                       error_only)
+            buffers = [(action.worker.read(), 'localhost')]
+            if action.worker.did_timeout():
+                timeout.add('localhost')
+            if action.worker.retcode() is not None:
+                retcodes.append((action.worker.retcode(),'localhost'))
         # Remote action
         else:
-            line += self.__gen_action_output(action.worker.iter_buffers(),
-                                             action.worker.iter_retcodes(),
-                                             error_only)
+            buffers = action.worker.iter_buffers()
+            retcodes = action.worker.iter_retcodes()
+            timeout = NodeSet.fromlist(action.worker.iter_keys_timeout())
+
+        line += self.__gen_action_output(buffers, retcodes, timeout, error_only)
         self.output("\n".join(line))
 
     def print_delayed_action(self, action):
@@ -304,7 +314,8 @@ class CommandLineInterface(UserView):
                     self._console.print_summary(self.actions)
             # Case 2 : Check configuration
             elif self._conf['config_dir']:
-                self._console.output("No actions specified, checking configuration...")
+                self._console.output("No actions specified, "
+                                     "checking configuration...")
                 manager.load_config(self._conf['config_dir'])
                 self._console.output("%s seems good" % self._conf['config_dir'])
             # Case 3: Nothing to do so just print MilkCheck help

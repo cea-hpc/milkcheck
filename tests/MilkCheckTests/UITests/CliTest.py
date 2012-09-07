@@ -6,8 +6,7 @@ This modules defines the tests cases targeting the class CommandLineInterface
 """
 
 # Classes
-import socket, sys, os, re
-from subprocess import Popen, PIPE
+import socket, sys, re
 from StringIO import StringIO
 
 from unittest import TestCase
@@ -24,8 +23,7 @@ from ClusterShell.NodeSet import NodeSet
 
 # Symbols
 from MilkCheck.Engine.BaseEntity import DONE, NO_STATUS, ERROR, DEP_ERROR
-from MilkCheck.UI.UserView import RC_OK, RC_WARNING, RC_ERROR, RC_EXCEPTION
-from MilkCheck.UI.UserView import RC_UNKNOWN_EXCEPTION
+from MilkCheck.UI.UserView import RC_OK, RC_ERROR, RC_EXCEPTION
 
 HOSTNAME = socket.gethostname().split('.')[0]
 
@@ -249,11 +247,11 @@ class CommandLineInterfaceTests(TestCase):
         self.assertEqual(manager.entities['G1'].status, DEP_ERROR)
 
     def test_execute_retcode_exception(self):
-       '''
-       Test if the method execute returns 9 if a known exception is raised
-       '''
-       cli = CommandLineInterface()
-       self.assertEqual(cli.execute(['S6', 'start']), RC_EXCEPTION)
+        '''
+        Test if the method execute returns 9 if a known exception is raised
+        '''
+        cli = CommandLineInterface()
+        self.assertEqual(cli.execute(['S6', 'start']), RC_EXCEPTION)
 
     def test_execute_retcode_unknow_exception(self):
         '''
@@ -289,7 +287,6 @@ class CommandLineOutputTests(TestCase):
                               _ start
            group --> service /
                              `- stop
-
         '''
 
         ConfigParser.DEFAULT_FIELDS['config_dir']['value'] = ''
@@ -301,16 +298,15 @@ class CommandLineOutputTests(TestCase):
         # ServiceGroup
         group = ServiceGroup('ServiceGroup')
         # Service
-        service = Service('service')
+        self.service = service = Service('service')
         service.desc = 'I am the service'
         # Actions
         start_action = Action('start', command='/bin/true')
         stop_action = Action('stop', command='/bin/false')
-
         start_action.inherits_from(service)
         stop_action.inherits_from(service)
-
-        service.add_actions(start_action, stop_action)
+        service.add_action(start_action)
+        service.add_action(stop_action)
 
         # Build graph
         group.add_inter_dep(target=service)
@@ -406,6 +402,17 @@ Options:
 ServiceGroup                                                      [    OK   ]
 """)
 
+    def test_command_output_ok_verbose2(self):
+        '''Test command line output with local action OK in verbose x2'''
+        self._output_check(['ServiceGroup', 'start', '-vv'],
+"""start ServiceGroup.service on localhost
+ > /bin/true
+start ServiceGroup.service ran in 0.00 s
+ > localhost exited with 0
+ServiceGroup.service - I am the service                           [    OK   ]
+ServiceGroup                                                      [    OK   ]
+""")
+
     def test_command_output_summary_ok(self):
         '''Test command line output with summary and all actions OK'''
         self._output_check(['ServiceGroup', 'start', '-s'],
@@ -434,4 +441,38 @@ ServiceGroup                                                      [DEP_ERROR]
 
  SUMMARY - 1 action (1 failed)
  + ServiceGroup.service.stop - I am the service
+""")
+
+    def test_command_output_timeout(self):
+        '''Test command line output with local timeout'''
+        self.service.add_action(Action('timeout', command='/bin/sleep 1',
+                                       timeout=0.1))
+        self._output_check(['ServiceGroup', 'timeout'],
+"""timeout ServiceGroup.service ran in 0.00 s
+ > localhost has timeout
+ServiceGroup.service - I am the service                           [ TIMEOUT ]
+ServiceGroup                                                      [DEP_ERROR]
+""")
+
+    def test_command_output_dist_timeout(self):
+        '''Test command line output with distant timeout'''
+        self.service.add_action(Action('dist_timeout', HOSTNAME,
+                                       command='/bin/sleep 1', timeout=0.1))
+        self._output_check(['ServiceGroup', 'dist_timeout'],
+"""dist_timeout ServiceGroup.service ran in 0.00 s
+ > aury1 has timeout
+ServiceGroup.service - I am the service                           [ TIMEOUT ]
+ServiceGroup                                                      [DEP_ERROR]
+""")
+
+    def test_command_output_multiple_dist_timeout(self):
+        '''Test command line output with timeout and multiple distant nodes'''
+        self.service.add_action(Action('multiple_dist_timeout',
+                                       NodeSet("localhost,%s" % HOSTNAME),
+                                       command='/bin/sleep 1', timeout=0.1))
+        self._output_check(['ServiceGroup', 'multiple_dist_timeout'],
+"""multiple_dist_timeout ServiceGroup.service ran in 0.00 s
+ > aury1,localhost has timeout
+ServiceGroup.service - I am the service                           [ TIMEOUT ]
+ServiceGroup                                                      [DEP_ERROR]
 """)
