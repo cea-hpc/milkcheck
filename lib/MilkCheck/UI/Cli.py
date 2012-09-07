@@ -106,6 +106,8 @@ class ConsoleDisplay(object):
         if rtasks:
             tasks_disp = '[%s]' % NodeSet.fromlist(rtasks)
             width = min(self._pl_width, self._term_width)
+            if not self.cleanup:
+                width = 0
             sys.stderr.write('\r%s\r%s\r' % (width * ' ', tasks_disp))
             sys.stderr.flush()
             self._pl_width = len(tasks_disp)
