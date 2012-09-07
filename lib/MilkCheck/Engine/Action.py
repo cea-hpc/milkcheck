@@ -75,19 +75,20 @@ class ActionEventHandler(MilkCheckEventHandler):
         self._action.worker = worker
 
         # Checkout actions issues
-        error = self._action.has_too_many_errors()
-        timeout = self._action.did_timeout()
+        errors = self._action.nb_errors()
+        timeouts = self._action.nb_timeout()
 
         # Classic Action was failed
-        if (error or timeout) and self._action.retry > 0:
+        if (errors or timeouts) and self._action.retry > 0:
             self._action.retry -= 1
             self._action.schedule()
 
-        # failed on too_many_errors
-        elif error:
-            self._action.update_status(ERROR)
-        elif timeout:
+        # timeout when more timeouts than permited
+        elif timeouts > self._action.errors and errors == 0:
             self._action.update_status(TIMEOUT)
+        # failed when too many errors
+        elif (errors + timeouts) > self._action.errors:
+            self._action.update_status(ERROR)
         else:
             self._action.update_status(DONE)
                 
@@ -187,29 +188,32 @@ class Action(BaseEntity):
             else:
                 self.parent.update_status(self.status)
         
-    def did_timeout(self):
-        '''Return whether this action has timed out.'''
-        return self.worker and self.worker.did_timeout()
+    def nb_timeout(self):
+        '''Return the number of timeout runs.'''
+        if self.worker:
+            if isinstance(self.worker, WorkerPopen):
+                if self.worker.did_timeout():
+                    return 1
+            else:
+                return len(list(self.worker.iter_keys_timeout()))
+        return 0
         
-    def has_too_many_errors(self):
+    def nb_errors(self):
         '''
-        Return true if the amount of error in the worker is greater than
-        the limit authorized by the action.
+        Return the amount of error in the worker.
         '''
-        too_many_errors = False
+        error_count = 0
         if self.worker:
             if isinstance(self.worker, WorkerPopen):
                 retcode = self.worker.retcode()
-                if retcode != 0 and self.errors < 1:
-                    too_many_errors = True
+                # We don't count timeout (retcode=None)
+                if retcode not in (None, 0):
+                    error_count = 1
             else:
-                error_count = 0
                 for retcode, nds in self.worker.iter_retcodes():
                     if retcode != 0:
                         error_count += len(nds)
-                        if error_count > self.errors:
-                            too_many_errors = True
-        return too_many_errors
+        return error_count
                     
     def set_retry(self, retry):
         '''
