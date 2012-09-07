@@ -126,9 +126,8 @@ class BaseEntity(object):
         # 'delegate' means manage targets but run localy.
         self.mode = None
 
-        # Maximum error authorized for the entity. -1 means that
-        # we do not want any error
-        self.errors = -1
+        # Maximum error authorized for the entity.
+        self.errors = 0
 
         # Max time allowed to compute an entity, -1 means no timeout
         self.timeout = -1
@@ -470,8 +469,7 @@ class BaseEntity(object):
         '''Inheritance of properties between entities'''
         if self.fanout <= -1 and entity.fanout:
             self.fanout = entity.fanout
-        if self.errors <= -1 and entity.errors >= 0:
-            self.errors = entity.errors
+        self.errors = self.errors or entity.errors
         if self.timeout is not None and self.timeout <= -1 and \
             entity.timeout >= 0:
             self.timeout = entity.timeout
