@@ -139,9 +139,9 @@ class ActionTest(TestCase):
 
     def test_mix_errors_timeout(self):
         """Test the result of mixed timeout and error actions."""
+        cmd = 'echo "${SSH_CLIENT%% *}" | egrep "^(127.0.0.1|::1)$" || sleep 1'
         action = Action(name='start', target='badname,%s,localhost' % HOSTNAME,
-                        command='/bin/sleep `echo $SSH_CLIENT | wc -c | cut -c1`',
-                        timeout=1.5)
+                        command=cmd, timeout=0.5)
         action.errors = 1
         service = Service('test_service')
         service.add_action(action)
