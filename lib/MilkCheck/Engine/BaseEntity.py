@@ -148,6 +148,29 @@ class Dependency(object):
         else:
             return self.target.status
 
+    def graph(self, source):
+        """ Return DOT dependencies output for the given source"""
+        tgt = self.target
+        src = source
+
+        dep_str = '"%s" -> "%s"' % (src.graph_info()[0],
+                                    tgt.graph_info()[0])
+        ginfo_target = tgt.graph_info()[1]
+        ginfo_source = src.graph_info()[1]
+        options = []
+        if self.is_weak():
+            options.append("style=dashed")
+        if ginfo_source :
+            options.append('ltail="%s"' % ginfo_source)
+        if ginfo_target :
+            options.append('lhead="%s"' % ginfo_target)
+        if options:
+            dep_str += " [%s]" % ",".join(options)
+
+        dep_str += ";\n"
+
+        return dep_str
+
 class BaseEntity(object):
     '''
     This class is abstract and shall not be instanciated.
@@ -202,6 +225,7 @@ class BaseEntity(object):
         # Children dependencies (e.g A<-B) so A is a child of B)
         self.children = {}
 
+        self.simulate = False
 
         # Agorithm's direction used
         # False : go in parent's direction
@@ -392,6 +416,42 @@ class BaseEntity(object):
         else:
             dep_list = self.deps().values()
             return [dep for dep in dep_list if dep.target.status in symbols]
+
+    def graph_info(self):
+        """ Return a tuple to manage dependencies output """
+        return (self.fullname(), None)
+
+    def graph(self, excluded=None):
+        """ Generate a graph of dependencies"""
+        grph = ""
+        # If the entity has a no dependency we just return the entity fullname
+        if not self.deps().values():
+            grph += '"%s";\n' % self.fullname()
+        else:
+            for dep in self.deps().values():
+                if not dep.target.excluded(excluded):
+                    if not dep.target.simulate:
+                        grph += dep.graph(self)
+                    else:
+                        grph += '"%s";\n' % self.fullname()
+        return grph
+
+    def excluded(self, excluded=None):
+        """Is the entity ecluded recusively"""
+        if not excluded:
+            return False
+        if not self.deps().values():
+            return self.fullname() in excluded
+
+        # FIXME: Better loop detection
+        if self.search(self.name):
+            return True
+
+        for dep in self.deps().values():
+            if dep.target.excluded(excluded):
+                return True
+
+        return self.fullname() in excluded
 
     def eval_deps_status(self):
         '''

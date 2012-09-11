@@ -10,6 +10,7 @@ import unittest
 # Classes
 from ClusterShell.NodeSet import NodeSet, NodeSetException
 from MilkCheck.Engine.BaseEntity import BaseEntity, Dependency
+from MilkCheck.Engine.ServiceGroup import ServiceGroup
 from MilkCheck.ServiceManager import service_manager_self
 
 # Symbols
@@ -317,7 +318,23 @@ class BaseEntityTest(unittest.TestCase):
         ent2.desc = "another description"
         ent2.parent = ent1
         self.assertEqual(ent2.longname(), "alpha.beta - another description")
+    
+    def test_excluded(self):
+        """Test the excluded mecanism"""
+        ent1 = BaseEntity('E1')
+        ent2 = BaseEntity('E2')
+        ent3 = BaseEntity('E3')
+        
+        ent3.add_dep(ent2)
 
+        self.assertFalse(ent1.excluded())
+        self.assertTrue(ent1.excluded(["E1"]))
+        self.assertTrue(ent3.excluded(["E2"]))
+
+    def test_graph_entity(self):
+        """Test the DOT graph output for an entity"""
+        ent1 = BaseEntity('E1')
+        self.assertEqual(ent1.graph(), '"E1";\n')
 
 class VariableBaseEntityTest(unittest.TestCase):
     """Tests cases for the class variable management methods for BaseEntity."""
@@ -495,7 +512,6 @@ class VariableBaseEntityTest(unittest.TestCase):
                  + ' $([ -n "%EXCLUDED_NODES" ] && echo "-x %EXCLUDED_NODES")'),
             '-n bar -x foo')
 
-
 class DependencyTest(unittest.TestCase):
     """Dependency test cases."""
 
@@ -534,3 +550,36 @@ class DependencyTest(unittest.TestCase):
         dep = Dependency(target=BaseEntity('Group'), intr=False)
         self.assertFalse(dep.is_internal())
 
+
+    def test_graph(self):
+        """Test the DOT output of a dependency"""
+        p_service = BaseEntity("PARENT")
+        c_service = BaseEntity("CHILD")
+        dep = Dependency(c_service, REQUIRE)
+        #self.assertEqual(dep.graph(p_service), '"CHILD" -> "PARENT";\n')
+        self.assertEqual(dep.graph(p_service), '"PARENT" -> "CHILD";\n')
+        p_group = ServiceGroup('P_Group')
+        c_group = ServiceGroup('C_Group')
+        p_dep = Dependency(p_group)
+        c_dep = Dependency(c_group)
+        self.assertEqual(c_dep.graph(p_group),
+                        '"P_Group.__hook" -> "C_Group.__hook" '
+                        '[ltail="cluster_P_Group",lhead="cluster_C_Group"];\n')
+        self.assertEqual(c_dep.graph(p_service), 
+                        '"PARENT" -> "C_Group.__hook" '
+                        '[lhead="cluster_C_Group"];\n')
+        self.assertEqual(dep.graph(p_group),
+                        '"P_Group.__hook" -> "CHILD" '
+                        '[ltail="cluster_P_Group"];\n')
+
+
+    def test_graph_dep_type(self):
+        """Test the DOT output of a dependency type"""
+        ent = BaseEntity("ENTITY")
+        dep_c = Dependency(BaseEntity("Base"), CHECK)
+        dep_r = Dependency(BaseEntity("Base"), REQUIRE)
+        dep_rw = Dependency(BaseEntity("Base"), REQUIRE_WEAK)
+        self.assertEqual(dep_c.graph(ent), '"ENTITY" -> "Base";\n')
+        self.assertEqual(dep_r.graph(ent), '"ENTITY" -> "Base";\n')
+        self.assertEqual(dep_rw.graph(ent), 
+                            '"ENTITY" -> "Base" [style=dashed];\n')

@@ -557,6 +557,18 @@ class ServiceGroupTest(TestCase):
 
         self.assertEqual(grp.status, WARNING)
 
+    def test_graph_entity(self):
+        """Test the DOT graph output"""
+        grp = ServiceGroup('Group')
+        self.assertEqual(grp.graph(), 'subgraph "cluster_Group" {\nlabel="Group";\nstyle=rounded;\nnode [style=filled];\n"Group.__hook" [style=invis];\n}\n')
+
+    def test_graph_in_graph(self):
+        """Test the DOT graph output with a servicegroup within a servicegroup"""
+        grp = ServiceGroup('Group')
+        subgrp = ServiceGroup('subGroup')
+        grp.add_inter_dep(subgrp)
+        self.assertEqual(grp.graph(), 'subgraph "cluster_Group" {\nlabel="Group";\nstyle=rounded;\nnode [style=filled];\n"Group.__hook" [style=invis];\nsubgraph "cluster_subGroup" {\nlabel="subGroup";\nstyle=rounded;\nnode [style=filled];\n"subGroup.__hook" [style=invis];\n}\n}\n')
+
 class ServiceGroupFromDictTest(TestCase):
     '''Test cases of ServiceGroup.fromdict()'''
 

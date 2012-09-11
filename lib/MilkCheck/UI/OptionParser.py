@@ -56,6 +56,10 @@ class McOptionParser(OptionParser):
                         callback=self.__config_debug, dest='debug',
                         help='Set debug mode and maximum verbosity')
 
+        self.add_option('-g', '--graph', action='store_true',
+                        dest='graph',
+                        help='Output dependencies graph')
+
         self.add_option('-s', '--summary', action='store_true',
                         dest='summary',
                         help='Display summary of executed actions')

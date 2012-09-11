@@ -170,6 +170,35 @@ class ServiceGroup(Service):
             depmap['internal'].append(Dependency(self._source))
         return depmap
 
+    def graph_info(self):
+        """ Return a tuple to manage dependencies output """
+        return ("%s.__hook" % self.fullname(), "cluster_%s" % self.fullname())
+
+    def graph(self, excluded=None):
+        """ Generate a subgraph of dependencies in the ServiceGroup"""
+        grph = ''
+        grph += 'subgraph "cluster_%s" {\nlabel="%s";\n' % (self.fullname(),
+                                                              self.fullname())
+        grph += 'style=rounded;\nnode [style=filled];\n'
+
+        # Create a default node to manage DOT output
+        # __hook will be used to attach the nodes to the subgraph
+        grph += '"%s.__hook" [style=invis];\n' % self.fullname()
+
+        # Graph content of the servicegroup
+        entities = self._subservices
+        for ent in entities.values():
+            if not ent.excluded(excluded):
+                grph += ent.graph(excluded=excluded)
+        grph += '}\n'
+
+        # Graph dependencies of the service group
+        for dep in self.deps().values():
+            if not dep.target.excluded(excluded):
+                if not dep.target.simulate:
+                    grph += dep.graph(self)
+        return grph
+
     def eval_deps_status(self):
         """
         Evaluate the result of the dependencies in order to check

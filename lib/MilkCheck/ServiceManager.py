@@ -258,6 +258,18 @@ class ServiceManager(EntityManager):
             self._graph_changed = True
         return retcode
 
+    def output_graph(self, services=None, excluded=None):
+        """Return entities graph (DOT format)"""
+        grph = "digraph dependency {\n"
+        grph += "compound=true;\n"
+        #grph += "node [shape=circle];\n"
+        grph += "node [style=filled];\n"
+        for service in (services or self.entities):
+            if not self.entities[service].excluded(excluded):
+                grph += self.entities[service].graph(excluded)
+        grph += '}\n'
+        return grph
+
     def load_config(self, conf):
         '''
         Load the configuration within the manager thanks to MilkCheckConfig

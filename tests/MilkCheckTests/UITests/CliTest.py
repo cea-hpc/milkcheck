@@ -542,6 +542,7 @@ options:
   -h, --help            show this help message and exit
   -v, --verbose         Increase or decrease verbosity
   -d, --debug           Set debug mode and maximum verbosity
+  -g, --graph           Output dependencies graph
   -s, --summary         Display summary of executed actions
   -c CONFIG_DIR, --config-dir=CONFIG_DIR
                         Change configuration files directory
@@ -566,6 +567,7 @@ Options:
   -h, --help            show this help message and exit
   -v, --verbose         Increase or decrease verbosity
   -d, --debug           Set debug mode and maximum verbosity
+  -g, --graph           Output dependencies graph
   -s, --summary         Display summary of executed actions
   -c CONFIG_DIR, --config-dir=CONFIG_DIR
                         Change configuration files directory

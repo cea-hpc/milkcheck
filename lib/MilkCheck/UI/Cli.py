@@ -306,18 +306,25 @@ class CommandLineInterface(UserView):
             action_manager_self().dryrun = self._conf['dryrun']
 
             manager = service_manager_self()
+            # Case 0: build the graph
+            if self._conf.get('graph', False):
+                manager.load_config(self._conf['config_dir'])
+                # Deps graph generation
+                self._console.output(manager.output_graph(self._args,
+                                     self._conf.get('excluded_svc', [])))
             # Case 1 : call services referenced in the manager with
             # the required action
-            if self._args:
+            elif self._args:
                 # Compute all services with the required action
                 services = self._args[:-1]
                 action = self._args[-1]
+                # Run tasks
                 retcode = manager.call_services(services, action,
-                                                conf=self._conf)
+                                            conf=self._conf)
                 if self._conf.get('summary', False):
                     self._console.print_summary(self.actions)
             # Case 2 : Check configuration
-            elif self._conf['config_dir']:
+            elif self._conf.get('config_dir', False):
                 self._console.output("No actions specified, "
                                      "checking configuration...")
                 manager.load_config(self._conf['config_dir'])

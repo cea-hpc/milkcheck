@@ -11,6 +11,7 @@ import socket
 from unittest import TestCase
 from ClusterShell.NodeSet import NodeSet
 from MilkCheck.Engine.Service import Service, ActionNotFoundError
+from MilkCheck.Engine.ServiceGroup import ServiceGroup
 from MilkCheck.Engine.Action import Action
 from MilkCheck.ServiceManager import ServiceManager, service_manager_self
 from MilkCheck.ServiceManager import ServiceAlreadyReferencedError
@@ -209,3 +210,97 @@ class ServiceManagerTest(TestCase):
             manager.call_services, ['S8'], 'start')
         self.assertRaises(ServiceNotFoundError,
             manager.call_services, ['S2', 'S8'], 'start')
+
+    def test_graph(self):
+        '''Test DOT graph output'''
+        manager = service_manager_self()
+        sergrp = ServiceGroup('S1')
+        sergrp.fromdict(
+           {'services':
+                {'srv1':
+                     {'target': 'localhost',
+                      'actions':
+                        {'start': {'cmd':'/bin/True'},
+                         'stop': {'cmd': '/bin/False'}},
+                      'desc': "I'm the service srv1"
+                    },
+                'subgroup':
+                    {'services':
+                        {'svcB':
+                            {'require_weak':['svcC'],
+                            'actions':
+                                {'start': {'cmd': '/bin/True'},
+                            '   stop': {'cmd': '/bin/False'}},
+                            'desc': 'I am the subservice $NAME'},
+                        'svcC':
+                            {'actions':
+                                {'start': {'cmd': '/bin/True'},
+                                'stop': {'cmd': '/bin/False'}},
+                                'desc': 'I am the subservice $NAME'}},
+                        'target': '127.0.0.1',
+                        'desc': "I'm the service $NAME"}},
+                })
+        manager.register_services(sergrp)
+        self.assertEqual(manager.output_graph(), 
+"""digraph dependency {
+compound=true;
+node [style=filled];
+subgraph "cluster_S1" {
+label="S1";
+style=rounded;
+node [style=filled];
+"S1.__hook" [style=invis];
+"S1.srv1";
+subgraph "cluster_S1.subgroup" {
+label="S1.subgroup";
+style=rounded;
+node [style=filled];
+"S1.subgroup.__hook" [style=invis];
+"S1.subgroup.svcB" -> "S1.subgroup.svcC" [style=dashed];
+"S1.subgroup.svcC";
+}
+}
+}
+""")
+
+    def test_graph_service_exlcude(self):
+        """Test the DOT graph output with excluded nodes"""
+        ''' Graph:
+            E3 -> E2 -> E1 -> D0
+                          `-> D1
+        '''
+        manager = service_manager_self()
+        entd0 = Service('D0')
+        entd1 = Service('D1')
+        ente1 = Service('E1')
+        ente2 = Service('E2')
+        ente3 = Service('E3')
+        ente3.add_dep(ente2)
+        ente2.add_dep(ente1)
+        ente1.add_dep(entd0)
+        ente1.add_dep(entd1)
+        manager.register_services(entd0, entd1, ente1, ente2, ente3)
+        self.assertEqual(manager.output_graph(excluded=['E2']),
+"""digraph dependency {
+compound=true;
+node [style=filled];
+"E1" -> "D0";
+"E1" -> "D1";
+"D0";
+"D1";
+}
+""")
+        self.assertEqual(manager.output_graph(excluded=['D0']),
+"""digraph dependency {
+compound=true;
+node [style=filled];
+"D1";
+}
+""")
+        self.assertEqual(manager.output_graph(excluded=['D0', 'D1']),
+"""digraph dependency {
+compound=true;
+node [style=filled];
+}
+""")
+
