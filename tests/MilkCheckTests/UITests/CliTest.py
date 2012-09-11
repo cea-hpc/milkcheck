@@ -368,11 +368,12 @@ G1                                                                [DEP_ERROR]
 S3 - I am the service S3                                          [DEP_ERROR]
 """,
 """[00:00:00] DEBUG    - Configuration
-debug: True
+dryrun: False
 verbosity: 5
-fanout: 64
-config_dir: 
 summary: False
+fanout: 64
+debug: True
+config_dir: 
 \r\r[I1]\r\r\r[I1]\r\r\r[I2]\r\r\r[I2]\r""")
 
     def test_excluded_node(self):
@@ -554,6 +555,7 @@ options:
                         Exclude the cluster's nodes specified
     -X EXCLUDED_SVC, --exclude-service=EXCLUDED_SVC
                         Skip the specified services
+    --dry-run           Only simulate command execution
 """)
         else:
             self._output_check([],
@@ -577,6 +579,7 @@ Options:
                         Exclude the cluster's nodes specified
     -X EXCLUDED_SVC, --exclude-service=EXCLUDED_SVC
                         Skip the specified services
+    --dry-run           Only simulate command execution
 """)
 
     def test_command_output_checkconfig(self):

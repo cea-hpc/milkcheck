@@ -303,6 +303,7 @@ class CommandLineInterface(UserView):
 
             # Configure ActionManager
             action_manager_self().default_fanout = self._conf['fanout']
+            action_manager_self().dryrun = self._conf['dryrun']
 
             manager = service_manager_self()
             # Case 1 : call services referenced in the manager with

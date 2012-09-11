@@ -36,6 +36,8 @@ class ActionManager(EntityManager):
         # MasterTask
         self._master_task = task_self()
 
+        self.dryrun = False
+
     def perform_action(self, action):
         """Perform an immediate action"""
         assert action, 'You cannot perform a NoneType object'
@@ -56,8 +58,12 @@ class ActionManager(EntityManager):
         # Action should have been set SKIPPED already.
         assert (action.target is None or len(action.target) > 0)
 
-        self._master_task.shell(action.resolve_property('command'),
-                                nodes=nodes, timeout=action.timeout,
+        # In dry-run mode, all commands are replaced by a simple ':'
+        command = ':'
+        if not self.dryrun:
+            command = action.resolve_property('command')
+
+        self._master_task.shell(command, nodes=nodes, timeout=action.timeout,
                                 handler=ActionEventHandler(action))
 
     def perform_delayed_action(self, action):

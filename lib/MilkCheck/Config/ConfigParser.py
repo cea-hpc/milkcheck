@@ -58,7 +58,7 @@ class ConfigParser(object):
         '''
         # Apply options overrides:
         for opt, value in vars(options).items():
-            if value:
+            if value is not None:
                 self[opt] = value
 
     def _check_data(self, data):

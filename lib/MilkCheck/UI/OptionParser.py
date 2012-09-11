@@ -83,6 +83,10 @@ class McOptionParser(OptionParser):
         eng.add_option('-X', '--exclude-service', action='append',
                  dest='excluded_svc', help='Skip the specified services')
 
+        eng.add_option('--dry-run', action='store_true',
+                       dest='dryrun', default=False,
+                       help='Only simulate command execution')
+
         self.add_option_group(eng)
 
     def error(self, msg):
