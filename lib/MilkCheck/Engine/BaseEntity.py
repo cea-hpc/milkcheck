@@ -6,10 +6,9 @@ This module contains the BaseEntity class definition
 """
 
 # Classes
+import re
 import logging
-import string
 from subprocess import Popen, PIPE
-from re import sub, search
 from ClusterShell.NodeSet import NodeSet
 
 # Status available for an entity
@@ -449,6 +448,64 @@ class BaseEntity(object):
         else:
             raise UndefinedVariableError(varname)
 
+    def _substitute(self, template):
+        """Substitute %xxx patterns from the provided template."""
+        delimiter = '%'
+        pattern = r"""
+          %(delim)s(?:
+            (?P<escaped>%(delim)s) | # Escape sequence of two delimiters
+            (?P<named>%(id)s)      | # delimiter and a Python identifier
+            {(?P<braced>%(id)s)}   | # delimiter and a braced identifier
+            \((?P<parenth>.+)\)    | # delimiter and parenthesis
+            (?P<invalid>)            # Other ill-formed delimiter exprs
+          )""" % {
+                'delim' : delimiter,
+                'id' : r'[_a-z][_a-z0-9]*',
+            }
+        pattern = re.compile(pattern, re.IGNORECASE | re.VERBOSE)
+
+        # Command substitution
+        def _cmd_repl(raw):
+            '''Replace a command execution pattern by its result.'''
+            logger = logging.getLogger('milkcheck')
+            cmd = Popen(raw, stdout=PIPE, stderr=PIPE, shell=True)
+            stdout = cmd.communicate()[0]
+            logger.debug("External command exited with %d: '%s'" %
+                         (cmd.returncode, stdout))
+            if cmd.returncode >= 126:
+                raise InvalidVariableError(raw)
+            return stdout.rstrip('\n')
+
+        def _invalid(mobj, template):
+            '''Helper to raise a detail error message'''
+            i = mobj.start('invalid')
+            lines = template[:i].splitlines(True)
+            if not lines:
+                colno = 1
+                lineno = 1
+            else:
+                colno = i - len(''.join(lines[:-1]))
+                lineno = len(lines)
+            raise ValueError('Invalid placeholder in string: line %d, col %d' %
+                             (lineno, colno))
+
+        # Helper function for .sub()
+        def _convert(mobj):
+            # Check the mobjst commobjn path first.
+            named = mobj.group('named') or mobj.group('braced')
+            if named is not None:
+                val = str(self._lookup_variable(named))
+                return self._resolve(val)
+            if mobj.group('escaped') is not None:
+                return delimiter
+            if mobj.group('parenth') is not None:
+                val = self._resolve(mobj.group('parenth'))
+                return _cmd_repl(val)
+            if mobj.group('invalid') is not None:
+                _invalid(mobj, template)
+            raise ValueError('Unrecognized named group in pattern', pattern)
+        return pattern.sub(_convert, template)
+
     def _resolve(self, value):
         '''
         This method takes a string containing symbols. Those strings may
@@ -466,24 +523,19 @@ class BaseEntity(object):
         # For compat: if provided value is not a str, we should not convert
         # it to a str if nothing matches.
         # XXX: Are we sure we want this behaviour?
-        if len(str(value)) == 0 or not search('\$\(.+\)|%\w+', str(value)):
+        if len(str(value)) == 0 or \
+          not re.search('[\$%]\(.+\)|%\w+', str(value)):
             return value
 
-        # Perform variable replacement
-        class _MyTemplate(string.Template):
-            """Implement MilkCheck variable syntax templating."""
-            delimiter = '%'
-        class _VarSource(dict):
-            """Simulate a dict which each item is a variable lookup."""
-            def __init__(self, entity):
-                dict.__init__(self)
-                self._entity = entity
-            def __getitem__(self, item):
-                value = str(self._entity._lookup_variable(item))
-                return self._entity._resolve(value)
-        value = _MyTemplate(str(value)).substitute(_VarSource(self))
+        # Replace all %xxx patterns
+        value = self._substitute(str(value))
 
-        # Command substitution
+        #
+        # XXX: COMPAT CODE
+        # Command substitution for oldstyle command repl: $(...)
+        # This needs to be keep just the time required for people to migrate
+        # from the old-style escaping.
+        #
         def repl(pattern):
             '''Replace a command execution pattern by its result.'''
             cmd = Popen(pattern.group(1), stdout=PIPE, stderr=PIPE, shell=True)
@@ -493,10 +545,7 @@ class BaseEntity(object):
             if cmd.returncode >= 126:
                 raise InvalidVariableError(pattern.group(1))
             return self._resolve(stdout.rstrip('\n'))
-        value = sub('\$\((.+?)\)', repl, str(value))
-
-        # Replace escape caracter '%'
-        value = sub('%%', '%', str(value))
+        value = re.sub('\$\((.+?)\)', repl, str(value))
 
         # Debugging
         if origvalue != value:

@@ -386,21 +386,33 @@ class VariableBaseEntityTest(unittest.TestCase):
     def test_resolve_value4(self):
         '''Test resolution of an expression'''
         service = BaseEntity('test_service')
-        self.assertEqual(service._resolve('$(echo hello world)'),
+        self.assertEqual(service._resolve('%(echo hello world)'),
                          'hello world')
 
     def test_resolve_value5(self):
         '''Test combining resolution of variables and expressions'''
         service = BaseEntity('test_service')
         service.add_var('NODES', 'localhost,127.0.0.1')
-        self.assertEqual(service._resolve('%NODES $(echo hello world) %NAME'),
+        self.assertEqual(service._resolve('%NODES %(echo hello world) %NAME'),
                          'localhost,127.0.0.1 hello world test_service')
 
     def test_resolve_value6(self):
         '''Test resolution of variable inside an expression'''
         service = BaseEntity('test_service')
-        self.assertEqual(service._resolve('$(echo %NAME)'),
+        self.assertEqual(service._resolve('%(echo %NAME)'),
                          'test_service')
+
+    def test_resolve_value7(self):
+        '''Test resolution of variable inside an expression (2)'''
+        service = BaseEntity('test_service')
+        service.add_var('CMD', 'echo')
+        self.assertEqual(service._resolve('%(%CMD foo)'), 'foo')
+
+    def test_resolve_compat(self):
+        '''Test resolution of an expression (compat mode $)'''
+        service = BaseEntity('test_service')
+        self.assertEqual(service._resolve('$(echo hello world)'),
+                         'hello world')
 
     def test_resolve_property1(self):
         '''Test replacement of symbols within a property'''

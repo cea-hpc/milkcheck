@@ -103,6 +103,19 @@ service:
             cmd: service %SERVICE %ACTION
 ---
 #
+# External command execution
+#
+# %( ... ) pattern could be used to execute, locally, an external
+# shell command and be substitute by the command output.
+# This apply to: target, command and variables
+service:
+    name: foo
+    target: %(cat /etc/foo_nodes | grep -v bad)
+    actions:
+        start:
+           cmd: service foo start
+---
+#
 # Multiple sub-services
 #
 # Several subservices could be declared easily, separating their name with
