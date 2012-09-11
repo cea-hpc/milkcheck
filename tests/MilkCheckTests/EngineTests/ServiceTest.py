@@ -631,6 +631,45 @@ class ServiceTest(TestCase):
         self.assertEqual(s2.status, MISSING)
         self.assertEqual(s3.status, DONE)
 
+    def test_double_deps(self):
+        """Test run() with service with a special double deps"""
+
+        # Was a bug when you got:
+
+        # _src -> otherotherother -> final
+        # _src -> source -> inter -> final
+        #
+        # inter was not run
+
+        svc1 = Service("final")
+        svc1.add_action(Action('start', command='/bin/true'))
+
+        svc2 = Service("inter")
+        svc2.add_action(Action('start', command='/bin/true'))
+        svc2.add_dep(svc1)
+
+        svc3 = Service("source")
+        svc3.add_action(Action('start', command='/bin/true'))
+        svc3.add_dep(svc1)
+        svc3.add_dep(svc2)
+
+        svc4 = Service("otherotherother")
+        svc4.add_action(Action('start', command='/bin/true'))
+        svc4.add_dep(svc1)
+
+        src = Service("_src")
+        src.add_action(Action('start', command=':'))
+        src.add_dep(svc4)
+        src.add_dep(svc3)
+
+        src.run('start')
+
+        self.assertEqual(svc1.status, DONE)
+        self.assertEqual(svc2.status, DONE)
+        self.assertEqual(svc3.status, DONE)
+        self.assertEqual(svc4.status, DONE)
+
+
 class ServiceFromDictTest(TestCase):
     '''This class tests Service.fromdict()'''
 

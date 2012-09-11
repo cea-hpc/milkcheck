@@ -173,8 +173,7 @@ class Service(BaseService):
         # Tag the service
         self._tagged = True
 
-        # NO_STATUS and not any dep in progress for the current service
-        if self.status is NO_STATUS and deps_status is not WAITING_STATUS:
+        if self.status is NO_STATUS:
 
             # If dependencies failed the current service will fail
             if deps_status == DEP_ERROR:
@@ -187,8 +186,15 @@ class Service(BaseService):
                 # Look for uncompleted dependencies 
                 deps = self.search_deps([NO_STATUS])
 
-                # For each existing deps just prepare it
-                self._process_dependencies(deps)
+                # XXX:
+                # _process_dependencies() does not only take care or deps,
+                # but also launch the service if there is no more deps.
+                # Such action should be done, depending on deps_status.
+                #
+                # As this function does not know yet how to handle this
+                # we check this before calling it.
+                if deps_status is not WAITING_STATUS or deps:
+                    self._process_dependencies(deps)
 
     def inherits_from(self, entity):
         '''Inherit properties from entity'''
