@@ -87,8 +87,7 @@ class ConsoleDisplay(object):
 
     def __init__(self):
         width = Terminal.size()[0]
-        # On very wide terminal, do not put the status too far away
-        self._term_width = min(width, MAXTERMWIDTH)
+        self._term_width = width
         self._pl_width = 0
         self._color = Terminal.isatty()
         # Cleanup line before printing a message (see output)
@@ -123,7 +122,9 @@ class ConsoleDisplay(object):
 
     def print_status(self, entity):
         '''Remove current line and print the status of an entity onSTDOUT'''
-        msg_width = self._term_width - (self._LARGEST_STATUS + 4)
+        # On very wide terminal, do not put the status too far away
+        msg_width = min(self._term_width, MAXTERMWIDTH) - \
+                                                     (self._LARGEST_STATUS + 4)
         line = '%%-%ds%%%ds' % (msg_width, (self._LARGEST_STATUS + 4))
 
         # Label w/o description
