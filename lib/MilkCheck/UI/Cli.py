@@ -278,24 +278,14 @@ class CommandLineInterface(UserView):
 
         self._logger = ConfigParser.install_logger()
 
-        # Profiling mode (help in unit tests)
-        self.profiling = False
-        # Used in profiling mode
-        # Each counter match to a verbosity level
-        self.count_low_verbmsg = 0
-        self.count_average_verbmsg = 0
-        self.count_high_verbmsg = 0
-
     def execute(self, command_line):
         '''
         Ask for the manager to execute orders given by the command line.
         '''
         self._mop = McOptionParser()
         self._mop.configure_mop()
-        self.count_low_verbmsg = 0
-        self.count_average_verbmsg = 0
-        self.count_high_verbmsg = 0
         retcode = RC_OK
+
         try:
             (self._options, self._args) = self._mop.parse_args(command_line)
 
@@ -370,12 +360,8 @@ class CommandLineInterface(UserView):
         if isinstance(obj, Action) and self._conf['verbosity'] >= 2:
             self._console.print_action_command(obj)
             self._console.print_running_tasks()
-            if self.profiling:
-                self.count_average_verbmsg += 1
         elif isinstance(obj, Service) and self._conf['verbosity'] >= 1:
             self._console.print_running_tasks()
-            if self.profiling:
-                self.count_low_verbmsg += 1
 
     def ev_complete(self, obj):
         '''
@@ -387,19 +373,13 @@ class CommandLineInterface(UserView):
             if self._conf['verbosity'] >= 3 and obj.status != SKIPPED:
                 self._console.print_action_results(obj)
                 self._console.print_running_tasks()
-                if self.profiling:
-                    self.count_high_verbmsg += 1
             elif obj.status in (TIMEOUT, ERROR, DEP_ERROR) and \
                       self._conf['verbosity'] >= 1:
                 self._console.print_action_results(obj,
                                            self._conf['verbosity'] == 1)
                 self._console.print_running_tasks()
-                if self.profiling:
-                    self.count_average_verbmsg += 1
         elif isinstance(obj, Service) and self._conf['verbosity'] >= 1:
             self._console.print_running_tasks()
-            if self.profiling:
-                self.count_low_verbmsg += 1
 
     def ev_status_changed(self, obj):
         '''
@@ -413,8 +393,6 @@ class CommandLineInterface(UserView):
 
             self._console.print_status(obj)
             self._console.print_running_tasks()
-            if self.profiling:
-                self.count_low_verbmsg += 1
 
     def ev_delayed(self, obj):
         '''
@@ -424,8 +402,6 @@ class CommandLineInterface(UserView):
         if isinstance(obj, Action) and self._conf['verbosity'] >= 3:
             self._console.print_delayed_action(obj)
             self._console.print_running_tasks()
-            if self.profiling:
-                self.count_average_verbmsg += 1
 
     def ev_trigger_dep(self, obj_source, obj_triggered):
         '''
@@ -435,11 +411,3 @@ class CommandLineInterface(UserView):
         Service A triggers Service B
         '''
         pass
-
-    def get_totalmsg_count(self):
-        '''Sum all counter to know how many message the CLI got'''
-        return  (self.count_low_verbmsg + \
-                    self.count_average_verbmsg + \
-                        self.count_high_verbmsg)
-
-    total_msg_count = property(fget=get_totalmsg_count)

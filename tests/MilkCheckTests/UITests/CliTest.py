@@ -22,8 +22,8 @@ from MilkCheck.Config.ConfigParser import ConfigParser
 from ClusterShell.NodeSet import NodeSet
 
 # Symbols
-from MilkCheck.Engine.BaseEntity import DONE, ERROR, DEP_ERROR
-from MilkCheck.UI.UserView import RC_OK, RC_ERROR, RC_EXCEPTION
+from MilkCheck.UI.UserView import RC_OK, RC_ERROR, RC_EXCEPTION, \
+                                  RC_UNKNOWN_EXCEPTION
 
 HOSTNAME = socket.gethostname().split('.')[0]
 
@@ -47,157 +47,56 @@ class MyOutput(StringIO):
 
         StringIO.write(self, line)
 
-class CommandLineInterfaceTests(TestCase):
-    '''Tests cases of the command line interface'''
+
+class CLICommon(TestCase):
 
     def setUp(self):
-        '''
-        Set up the graph of services within the service manager
-
-        Graph
-                ---> S2
-            S1                            --> I1 
-                        ---> G1 --> (sour)       --> (sink)
-                ---> S3                   --> I2 
-                        ---> S4
-
-        Each node has an action start and an action stop
-        '''
-
         ConfigParser.DEFAULT_FIELDS['config_dir']['value'] = ''
         ConfigParser.CONFIG_PATH = '/dev/null'
 
         ServiceManager._instance = None 
-        manager = service_manager_self()
-        s1 = Service('S1')
-        s1.desc = 'I am the service S1'
-        s2 = Service('S2')
-        s2.desc = 'I am the service S2'
-        s3 = Service('S3')
-        s3.desc = 'I am the service S3'
-        s4 = Service('S4')
-        s4.desc = 'I am the service S4'
-        g1 = ServiceGroup('G1')
-        i1 = Service('I1')
-        i1.desc = 'I am the service I1'
-        i2 = Service('I2')
-        i2.desc = 'I am the service I2'
+        self.manager = service_manager_self()
 
-        # Actions S1
-        start_s1 = Action('start', HOSTNAME + ', fortoy8', '/bin/true')
-        start_s1.delay = 1
-        stop_s1 = Action('stop', HOSTNAME + ',fortoy8', '/bin/true')
-        stop_s1.delay = 1
-        s1.add_actions(start_s1, stop_s1)
-        # Actions S2
-        start_s2 = Action('start', HOSTNAME + ',fortoy8', '/bin/true')
-        stop_s2 = Action('stop', HOSTNAME + ',fortoy8', '/bin/true')
-        s2.add_actions(start_s2, stop_s2)
-        # Actions S3
-        start_s3 = Action('start', HOSTNAME + ',fortoy8', '/bin/false')
-        stop_s3 = Action('stop', HOSTNAME + ',fortoy8', '/bin/false')
-        s3.add_actions(start_s3, stop_s3)
-        # Actions S4
-        start_s4 = Action('start', HOSTNAME + ',fortoy8', 'hostname')
-        stop_s4 = Action('stop', HOSTNAME + ',fortoy8', '/bin/true')
-        s4.add_actions(start_s4, stop_s4)
-        # Actions I1
-        start_i1 = Action('start', HOSTNAME + ',fortoy8', '/bin/true')
-        stop_i1 = Action('stop', HOSTNAME + ',fortoy8', '/bin/true')
-        i1.add_actions(start_i1, stop_i1)
-        # Actions I2
-        start_i2 = Action('start', HOSTNAME + ',fortoy8', '/bin/true')
-        stop_i2 = Action('stop', HOSTNAME + ',fortoy8', '/bin/true')
-        i2.add_actions(start_i2, stop_i2)
-
-        # Build graph
-        s1.add_dep(target=s2)
-        s1.add_dep(target=s3)
-        s3.add_dep(target=g1)
-        s3.add_dep(target=s4)
-        g1.add_inter_dep(target=i1)
-        g1.add_inter_dep(target=i2)
-
-        # Register services within the manager
-        manager.register_services(s1, s2, s3, s4, g1)
+        # Setup stdout and stderr as a MyOutput file
+        sys.stdout = MyOutput()
+        sys.stderr = MyOutput()
 
     def tearDown(self):
+        '''Restore sys.stdout and sys.stderr'''
+        sys.stdout = sys.__stdout__
+        sys.stderr = sys.__stderr__
         CallbackHandler._instance = None
 
-    def test_instanciation_cli(self):
-        '''Test the instanciation of the CLI'''
-        self.assertTrue(CommandLineInterface())
-
-    def test_execute_retcode_unknow_exception(self):
-        '''
-        Test if the method execute returns 12 if an unknown exception is raised
-        '''
+    def _output_check(self, args, retcode, outexpected, errexpected=None):
+        """
+        Test Milcheck output with:
+         - args: command line args for cli.execute
+         - outexpected: expected std output
+         - errexpected: optional expected stderr
+        """
         cli = CommandLineInterface()
-        self.assertRaises(TypeError, cli.execute, [8, 9])
+        cli._console.cleanup = False
+        cli._console._term_width = 77
+        rc = cli.execute(args)
 
-    def test_command_line_default_variables(self):
-        '''Test default values of automatic variables from command line.'''
-        cli = CommandLineInterface()
-        cli.execute(['status'])
-        manager = service_manager_self()
-        self.assertEqual(manager.variables['SELECTED_NODES'], '')
-        self.assertEqual(manager.variables['EXCLUDED_NODES'], '')
+        # STDOUT
+        msg = sys.stdout.getvalue()
+        for line1, line2 in zip(outexpected.splitlines(), msg.splitlines()):
+            self.assertEqual(line1, line2)
+        self.assertEqual(outexpected, msg)
 
-    def test_command_line_variables(self):
-        '''Test automatic variables from command line options.'''
-        cli = CommandLineInterface()
-        cli.execute(['status', '-n', 'foo[1-5]', '-x', 'foo8'])
-        manager = service_manager_self()
-        self.assertEqual(manager.variables['SELECTED_NODES'], 'foo[1-5]')
-        self.assertEqual(manager.variables['EXCLUDED_NODES'], 'foo8')
+        # STDERR
+        if errexpected:
+            msg = sys.stderr.getvalue()
+            for line1, line2 in zip(errexpected.splitlines(), msg.splitlines()):
+                self.assertEqual(line1, line2)
+            self.assertEqual(errexpected, msg)
 
-    # ---
+        # Check return code
+        self.assertEqual(rc, retcode)
 
-    def test_execute_multiple_services(self):
-        '''Test execution of S2 and G1 at the same time'''
-        cli = CommandLineInterface()
-        retcode = cli.execute(['S2', 'G1', 'start', '-d', '-x', 'fortoy8'])
-        manager = service_manager_self()
-        self.assertEqual(retcode, RC_OK)
-        self.assertEqual(manager.entities['S2'].status, DONE)
-        self.assertEqual(manager.entities['G1'].status, DONE)
 
-    def test_execute_multiple_services_reverse(self):
-        '''Test reverse execution of S2 and G1 at the same time'''
-        cli = CommandLineInterface()
-        retcode = cli.execute(['S2', 'G1', 'stop', '-d', '-x', 'fortoy8'])
-        manager = service_manager_self()
-        self.assertEqual(retcode, RC_ERROR)
-        self.assertEqual(manager.entities['S1'].status, DONE)
-        self.assertEqual(manager.entities['S3'].status, ERROR)
-        self.assertEqual(manager.entities['S2'].status, DONE)
-        self.assertEqual(manager.entities['G1'].status, DEP_ERROR)
-
-    def test_execute_overall_graph(self):
-        '''Test no services required so make all'''
-        cli = CommandLineInterface()
-        retcode = cli.execute(['start', '-d', '-x', 'fortoy8'])
-        manager = service_manager_self()
-        self.assertEqual(retcode, RC_ERROR)
-        self.assertEqual(manager.entities['S1'].status, DEP_ERROR)
-        self.assertEqual(manager.entities['S2'].status, DONE)
-        self.assertEqual(manager.entities['S3'].status, ERROR)
-        self.assertEqual(manager.entities['S4'].status, DONE)
-        self.assertEqual(manager.entities['G1'].status, DONE)
-
-    def test_execute_overall_graph_reverse(self):
-        '''Test no services required so make all reverse'''
-        cli = CommandLineInterface()
-        retcode = cli.execute(['stop', '-d', '-x', 'fortoy8'])
-        manager = service_manager_self()
-        self.assertEqual(retcode, RC_ERROR)
-        self.assertEqual(manager.entities['S1'].status, DONE)
-        self.assertEqual(manager.entities['S2'].status, DONE)
-        self.assertEqual(manager.entities['S3'].status, ERROR)
-        self.assertEqual(manager.entities['S4'].status, DEP_ERROR)
-        self.assertEqual(manager.entities['G1'].status, DEP_ERROR)
-
-class CLIOutputTests(TestCase):
+class CLIBigGraphTests(CLICommon):
     '''Tests cases of the command line interface'''
 
     def setUp(self):
@@ -211,16 +110,11 @@ class CLIOutputTests(TestCase):
 
         Each node has an action start and an action stop
         '''
-
-        ConfigParser.DEFAULT_FIELDS['config_dir']['value'] = ''
-        ConfigParser.CONFIG_PATH = '/dev/null'
-
-        ServiceManager._instance = None 
-        manager = service_manager_self()
+        CLICommon.setUp(self)
 
         svc1 = Service('S1')
         svc1.desc = 'I am the service S1'
-        svc2 = Service('S2')
+        self.svc2 = svc2 = Service('S2')
         svc2.desc = 'I am the service S2'
         svc3 = Service('S3')
         svc3.desc = 'I am the service S3'
@@ -258,48 +152,10 @@ class CLIOutputTests(TestCase):
         group1.add_inter_dep(target=inter2)
 
         # Register services within the manager
-        manager.register_services(svc1, svc2, svc3, group1)
-
-        # Setup stdout and stderr as a MyOutput file
-        sys.stdout = MyOutput()
-        sys.stderr = MyOutput()
-
-    def tearDown(self):
-        '''Restore sys.stdout and sys.stderr'''
-        sys.stdout = sys.__stdout__
-        sys.stderr = sys.__stderr__
-        CallbackHandler._instance = None
-
-    def _output_check(self, args, retcode, outexpected, errexpected=None):
-        """ 
-        Test Milcheck output with:
-         - args: command line args for cli.execute
-         - outexpected: expected std output
-         - errexpected: optional expected stderr
-        """
-        cli = CommandLineInterface()
-        cli._console.cleanup = False
-        cli._console._term_width = 77
-        rc = cli.execute(args)
-
-        # STDOUT
-        msg = sys.stdout.getvalue()
-        for line1, line2 in zip(outexpected.splitlines(), msg.splitlines()):
-            self.assertEqual(line1, line2)
-        self.assertEqual(outexpected, msg)
-
-        # STDERR
-        if errexpected:
-            msg = sys.stderr.getvalue()
-            for line1, line2 in zip(errexpected.splitlines(), msg.splitlines()):
-                self.assertEqual(line1, line2)
-            self.assertEqual(errexpected, msg)
-
-        # Check return code
-        self.assertEqual(rc, retcode)
+        self.manager.register_services(svc1, svc2, svc3, group1)
 
     def test_execute_std_verbosity(self):
-        '''Check CLI execute() (no option)'''
+        '''CLI execute() (no option)'''
         self._output_check(['S3', 'start'], RC_ERROR,
 """I1 - I am the service I1                                          [    OK   ]
 start I2 ran in 0.00 s
@@ -312,7 +168,7 @@ S3 - I am the service S3                                          [DEP_ERROR]
 """)
 
     def test_execute_verbosity_1(self):
-        '''Check CLI execute() (-v)'''
+        '''CLI execute() (-v)'''
         self._output_check(['S3', 'start', '-v'], RC_ERROR,
 """start I1 on HOSTNAME
  > echo ok
@@ -329,7 +185,7 @@ S3 - I am the service S3                                          [DEP_ERROR]
 """)
 
     def test_execute_verbosity_2(self):
-        '''Check CLI execute() (-vv)'''
+        '''CLI execute() (-vv)'''
         self._output_check(['S3', 'start', '-vv'], RC_ERROR,
 """start I1 on HOSTNAME
  > echo ok
@@ -349,7 +205,7 @@ S3 - I am the service S3                                          [DEP_ERROR]
 """)
 
     def test_execute_debug(self):
-        '''Check CLI execute() (-d)'''
+        '''CLI execute() (-d)'''
         self._output_check(['S3', 'start', '-d'], RC_ERROR,
 """start I1 on HOSTNAME
  > echo ok
@@ -457,18 +313,115 @@ start S1 ran in 0.00 s
 S1 - I am the service S1                                          [    OK   ]
 """)
 
-
     def test_execute_retcode_exception(self):
-        '''
-        Test if the method execute returns 9 if a known exception is raised
-        '''
-        self._output_check(['S6', 'start'], RC_EXCEPTION,
-"""""",
-"""[00:00:00] ERROR    - Undefined service [S6]
+        """CLI return '9' if a known exception is raised."""
+        self._output_check(['badSVC', 'start'], RC_EXCEPTION, "",
+                      """[00:00:00] ERROR    - Undefined service [badSVC]\n""")
+
+    def test_execute_unknown_exception(self):
+        """CLI return '12' if an unknown exception is raised."""
+        self.svc2.run = None
+        self._output_check(['S2', 'start'], RC_UNKNOWN_EXCEPTION, "",
+"""[00:00:00] ERROR    - Unexpected Exception : 'NoneType' object is not callable
 """)
 
+    def test_multiple_services(self):
+        """CLI execute() with explicit services (S1 G1 -d)"""
+        self._output_check(['S3', 'G1', 'start', '-d', '-x', 'BADNODE'],
+                           RC_ERROR,
+"""start I1 on HOSTNAME
+ > echo ok
+start I1 ran in 0.00 s
+ > HOSTNAME: ok
+ > HOSTNAME exited with 0
+I1 - I am the service I1                                          [    OK   ]
+start I2 on HOSTNAME
+ > /bin/true
+start I2 ran in 0.00 s
+ > HOSTNAME exited with 0
+I2 - I am the service I2                                          [    OK   ]
+G1                                                                [    OK   ]
+start S3 on HOSTNAME
+ > /bin/false
+start S3 ran in 0.00 s
+ > HOSTNAME exited with 1
+S3 - I am the service S3                                          [  ERROR  ]
+""",
+"""[00:00:00] DEBUG    - Configuration
+dryrun: False
+verbosity: 5
+summary: False
+excluded_nodes: BADNODE
+fanout: 64
+debug: True
+config_dir: 
+\r\r[I1]\r\r\r[I1]\r\r\r[I2]\r\r\r[I2]\r\r\r[S3]\r\r\r[S3]\r""")
 
-class CommandLineOutputTests(TestCase):
+    def test_multiple_services_reverse(self):
+        """CLI reverse execute() with explicit services (S1 S3 -d)"""
+        self._output_check(['S1', 'S3', 'stop', '-d', '-x', 'BADNODE'],
+                           RC_ERROR,
+"""stop S1 will fire in 1 s
+stop S1 on HOSTNAME
+ > /bin/true
+stop S1 ran in 0.00 s
+ > HOSTNAME exited with 0
+S1 - I am the service S1                                          [    OK   ]
+stop S3 on HOSTNAME
+ > /bin/false
+stop S3 ran in 0.00 s
+ > HOSTNAME exited with 1
+S3 - I am the service S3                                          [  ERROR  ]
+""",
+"""[00:00:00] DEBUG    - Configuration
+dryrun: False
+verbosity: 5
+summary: False
+excluded_nodes: BADNODE
+fanout: 64
+debug: True
+config_dir: 
+\r\r[S1]\r\r\r[S1]\r\r\r[S1]\r\r\r[S3]\r\r\r[S3]\r""")
+
+    def test_overall_graph(self):
+        """CLI execute() with whole graph (-v -x )"""
+        # This could be avoided if the graph is simplified
+        self.manager.forget_services(self.svc2)
+        self._output_check(['start', '-v', '-x', 'BADNODE'], RC_ERROR,
+"""start I1 on HOSTNAME
+ > echo ok
+I1 - I am the service I1                                          [    OK   ]
+start I2 on HOSTNAME
+ > /bin/true
+I2 - I am the service I2                                          [    OK   ]
+G1                                                                [    OK   ]
+start S3 on HOSTNAME
+ > /bin/false
+start S3 ran in 0.00 s
+ > HOSTNAME exited with 1
+S3 - I am the service S3                                          [  ERROR  ]
+S1 - I am the service S1                                          [DEP_ERROR]
+""",
+"""\r\r[I1]\r\r\r[I1]\r\r\r[I2]\r\r\r[I2]\r\r\r[S3]\r\r\r[S3]\r""")
+
+    def test_overall_graph_reverse(self):
+        """CLI reverse execute() with whole graph (-v -x )"""
+        # This could be avoided if the graph is simplified
+        self.manager.forget_services(self.svc2)
+        self._output_check(['stop', '-v', '-x', 'BADNODE'], RC_ERROR,
+"""stop S1 on HOSTNAME
+ > /bin/true
+S1 - I am the service S1                                          [    OK   ]
+stop S3 on HOSTNAME
+ > /bin/false
+stop S3 ran in 0.00 s
+ > HOSTNAME exited with 1
+S3 - I am the service S3                                          [  ERROR  ]
+G1                                                                [DEP_ERROR]
+""",
+"")
+
+class CommandLineOutputTests(CLICommon):
     '''Tests cases of the command line output'''
 
     def setUp(self):
@@ -480,12 +433,7 @@ class CommandLineOutputTests(TestCase):
            group --> service /
                              `- stop
         '''
-
-        ConfigParser.DEFAULT_FIELDS['config_dir']['value'] = ''
-        ConfigParser.CONFIG_PATH = '/dev/null'
-
-        ServiceManager._instance = None
-        manager = service_manager_self()
+        CLICommon.setUp(self)
 
         # ServiceGroup
         group = ServiceGroup('ServiceGroup')
@@ -505,36 +453,12 @@ class CommandLineOutputTests(TestCase):
         service.parent = group
 
         # Register services within the manager
-        manager.register_services(group, service)
-
-        # Setup stdout as a MyOutput file
-        self.oldstdout = sys.stdout
-        sys.stdout = MyOutput()
-        self.oldstderr = sys.stderr
-        sys.stderr = MyOutput()
-
-    def tearDown(self):
-        '''Restore sys.stdout and sys.stderr'''
-        sys.stdout = self.oldstdout
-        sys.stderr = self.oldstderr
-        CallbackHandler._instance = None
-
-    def _output_check(self, args, expected):
-        """ Test Milcheck output with:
-             - expected: expected output
-             - args: command line args for cli.execute
-        """
-        cli = CommandLineInterface()
-        cli._console.cleanup = False
-        cli._console._term_width = 77
-        cli.execute(args)
-        msg = sys.stdout.getvalue()
-        self.assertEqual(expected, msg)
+        self.manager.register_services(group, service)
 
     def test_command_output_help(self):
         '''Test command line help output'''
         if sys.version_info[0] == 2 and sys.version_info[1] < 5:
-            self._output_check([],
+            self._output_check([], RC_OK,
 """usage: nosetests [options] [SERVICE...] ACTION
 
 options:
@@ -559,7 +483,7 @@ options:
     --dry-run           Only simulate command execution
 """)
         else:
-            self._output_check([],
+            self._output_check([], RC_OK,
 """Usage: nosetests [options] [SERVICE...] ACTION
 
 Options:
@@ -586,21 +510,40 @@ Options:
 
     def test_command_output_checkconfig(self):
         '''Test command line output checking config'''
-        self._output_check(['-c', '../conf/base'],
+        self._output_check(['-c', '../conf/base'], RC_OK,
 """No actions specified, checking configuration...
 ../conf/base seems good
 """ )
 
+    def test_command_line_variables(self):
+        '''Test automatic variables from command line.'''
+        self._output_check(['ServiceGroup', 'start', '-n', 'fo1', '-x', 'fo2'],
+                           RC_OK,
+"""ServiceGroup.service - I am the service                           [    OK   ]
+ServiceGroup                                                      [    OK   ]
+""", "")
+        self.assertEqual(self.manager.variables['SELECTED_NODES'], 'fo1')
+        self.assertEqual(self.manager.variables['EXCLUDED_NODES'], 'fo2')
+
+    def test_command_line_default_variables(self):
+        '''Test default values of automatic variables from command line.'''
+        self._output_check(['ServiceGroup', 'start'], RC_OK,
+"""ServiceGroup.service - I am the service                           [    OK   ]
+ServiceGroup                                                      [    OK   ]
+""", "")
+        self.assertEqual(self.manager.variables['SELECTED_NODES'], '')
+        self.assertEqual(self.manager.variables['EXCLUDED_NODES'], '')
+
     def test_command_output_ok(self):
         '''Test command line output with all actions OK'''
-        self._output_check(['ServiceGroup', 'start'],
+        self._output_check(['ServiceGroup', 'start'], RC_OK,
 """ServiceGroup.service - I am the service                           [    OK   ]
 ServiceGroup                                                      [    OK   ]
 """)
 
     def test_command_output_ok_verbose2(self):
         '''Test command line output with local action OK in verbose x2'''
-        self._output_check(['ServiceGroup', 'start', '-vv'],
+        self._output_check(['ServiceGroup', 'start', '-vv'], RC_OK,
 """start ServiceGroup.service on localhost
  > /bin/true
 start ServiceGroup.service ran in 0.00 s
@@ -611,7 +554,7 @@ ServiceGroup                                                      [    OK   ]
 
     def test_command_output_summary_ok(self):
         '''Test command line output with summary and all actions OK'''
-        self._output_check(['ServiceGroup', 'start', '-s'],
+        self._output_check(['ServiceGroup', 'start', '-s'], RC_OK,
 """ServiceGroup.service - I am the service                           [    OK   ]
 ServiceGroup                                                      [    OK   ]
 
@@ -620,7 +563,7 @@ ServiceGroup                                                      [    OK   ]
 
     def test_command_output_error(self):
         '''Test command line output with all actions FAILED'''
-        self._output_check(['ServiceGroup', 'stop'],
+        self._output_check(['ServiceGroup', 'stop'], RC_ERROR,
 """stop ServiceGroup.service ran in 0.00 s
  > localhost exited with 1
 ServiceGroup.service - I am the service                           [  ERROR  ]
@@ -629,7 +572,7 @@ ServiceGroup                                                      [DEP_ERROR]
 
     def test_command_output_summary_error(self):
         '''Test command line output with summary and all actions FAILED'''
-        self._output_check(['ServiceGroup', 'stop', '-s'],
+        self._output_check(['ServiceGroup', 'stop', '-s'], RC_ERROR,
 """stop ServiceGroup.service ran in 0.00 s
  > localhost exited with 1
 ServiceGroup.service - I am the service                           [  ERROR  ]
@@ -643,7 +586,7 @@ ServiceGroup                                                      [DEP_ERROR]
         '''Test command line output with local timeout'''
         self.service.add_action(Action('timeout', command='/bin/sleep 1',
                                        timeout=0.1))
-        self._output_check(['ServiceGroup', 'timeout'],
+        self._output_check(['ServiceGroup', 'timeout'], RC_ERROR,
 """timeout ServiceGroup.service ran in 0.00 s
  > localhost has timeout
 ServiceGroup.service - I am the service                           [ TIMEOUT ]
@@ -654,7 +597,7 @@ ServiceGroup                                                      [DEP_ERROR]
         '''Test command line output with distant timeout'''
         self.service.add_action(Action('dist_timeout', HOSTNAME,
                                        command='/bin/sleep 1', timeout=0.1))
-        self._output_check(['ServiceGroup', 'dist_timeout'],
+        self._output_check(['ServiceGroup', 'dist_timeout'], RC_ERROR,
 """dist_timeout ServiceGroup.service ran in 0.00 s
  > HOSTNAME has timeout
 ServiceGroup.service - I am the service                           [ TIMEOUT ]
@@ -666,7 +609,7 @@ ServiceGroup                                                      [DEP_ERROR]
         self.service.add_action(Action('multiple_dist_timeout',
                                        NodeSet("localhost,%s" % HOSTNAME),
                                        command='/bin/sleep 1', timeout=0.1))
-        self._output_check(['ServiceGroup', 'multiple_dist_timeout'],
+        self._output_check(['ServiceGroup', 'multiple_dist_timeout'], RC_ERROR,
 """multiple_dist_timeout ServiceGroup.service ran in 0.00 s
  > HOSTNAME,localhost has timeout
 ServiceGroup.service - I am the service                           [ TIMEOUT ]
