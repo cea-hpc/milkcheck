@@ -5,14 +5,11 @@
 This module contains the
 '''
 
-import sys
+import re
 import yaml
-import logging
-import logging.config
-from os import environ, listdir
+from os import listdir
 from os.path import walk, isdir
 from os.path import isfile
-from re import match, compile, error
 
 from MilkCheck.ServiceManager import service_manager_self
 from MilkCheck.Engine.Service import Service
@@ -23,7 +20,7 @@ class MilkCheckConfig(object):
     This class load the configuration files located within the specified
     directory
     '''
-    def __init__(self, directory=None):
+    def __init__(self):
         self._filepath_base = '../conf/base/'
         self._flow = []
 
@@ -31,7 +28,7 @@ class MilkCheckConfig(object):
         '''List the files in dirname'''
         for my_file in names:
             if isfile('%s/%s' %(dirname, my_file)) and \
-                match('^[\w]*\.(yaml|yml)$', my_file):
+                re.match('^[\w]*\.(yaml|yml)$', my_file):
                 self.load_from_stream(
                     open('%s/%s' % (dirname, my_file),'r'))
 
@@ -59,8 +56,8 @@ class MilkCheckConfig(object):
         Load configuration from a stream. A stream could be a string or
         file descriptor
         '''
-        # filter() removes empty statement.
-        content = filter(None, yaml.safe_load_all(stream))
+        # removes empty statement.
+        content = [item for item in yaml.safe_load_all(stream) if item]
         if content:
             self._flow.extend(content)
 
@@ -108,7 +105,7 @@ class MilkCheckConfig(object):
                     raise KeyError("Bad declaration of: %s" % elem)
 
         # Build relations between services
-        for (sname, wrap) in dependencies.items():
+        for wrap in dependencies.values():
             for (dtype, values) in wrap.deps.items():
                 for dep in values:
                     wrap.source.add_dep(
@@ -117,7 +114,8 @@ class MilkCheckConfig(object):
         for wrap in dependencies.values():
             manager.register_service(wrap.source)
 
-    def _parse_deps(self, data):
+    @classmethod
+    def _parse_deps(cls, data):
         '''Return a DepWrapper containing the different types of dependencies'''
         wrap = DepWrapper()
         for content in ('require', 'require_weak', 'check'):
@@ -133,87 +131,3 @@ class MilkCheckConfig(object):
         return self._flow
 
     data_flow = property(fget=get_data_flow)
-
-class SyntaxChecker(object):
-    '''
-    This class is in charge of the control of the content parsed by the
-    configuration object. It use a set of rules in order to check the values
-    moreover it owns a logger able to specify to the user the different
-    kinds of error.
-    '''
-
-    def __init__(self, file_rules_path=None):
-        # Contains format rules by property
-        self._rules = {}
-        # Contains indications to evaluate misplaced properties
-        self._places = {}
-        # Contains the overall content
-        checking = None
-        logger = logging.getLogger('watcher')
-
-        if not file_rules_path:
-            file_rules_path = '%s/%s' \
-            % (environ['PYTHONPATH'],'MilkCheck/Config/checksyn.yaml')
-        try:
-            checking = yaml.load(open('%s' %(file_rules_path),'r'))
-        except IOError, exc:
-            logger.error('Config file required syntax checking not found')
-            sys.exit(2)
-        except yaml.YAMLError, exc:
-            if hasattr(exc, 'problem_mark'):
-                logger.error('Error at line %d column %d'
-                    %(exc.problem_mark.line+1, exc.problem_mark.column+1))
-            else:
-                logger.error('Error in configuration file : %s' % exc)
-            sys.exit(2)
-        except Exception, exc:
-            logger.error('Unexpected error : %s' %exc)
-        else:
-            if 'places' in checking:
-                self._places = checking['places']
-            else:
-                logger.error('Missing checking lement : places')
-                sys.exit(2)
-            if 'rules' in checking:
-                self._rules = self._compile_regex_rules(checking['rules'])
-            else:
-                logger.error('Missing checking element : rules')
-                sys.exit(2)
-
-    def _compile_regex_rules(self, regexps):
-        '''Compile all regex found in the dictionnary of rules : self._rules'''
-        logger = logging.getLogger('watcher')
-        rules = {}
-        for rule in  regexps:
-            regex = None
-            try:
-                regex = compile(regexps[rule])
-            except error, exc:
-                logger.warning('%s : %s' % (exc, regexps[rule]))
-            else:
-                rules[rule] = regex
-        return rules
-
-    def validate(self, filepath_doc):
-        '''Call the different checker defined in this class'''
-        doc_valid = True
-        # Load YAML target file
-        config = MilkCheckConfig()
-        config.load_from_stream(open(filepath_doc,'r'))
-        # Validation sequence
-        if config.data_flow:
-            if not self._validate_placement(config.data_flow):
-                return False
-        else:
-            return False
-        return doc_valid
-
-    def _validate_placement(self, data):
-        '''Validate the place of the different properties in the document.'''
-        pass
-
-    def _validate_content(self, data):
-        '''
-        Validate the content of the different properties in using self.rules.
-        '''
-        pass
