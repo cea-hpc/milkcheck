@@ -1,0 +1,144 @@
+MILKCHECK(8)
+===========
+:doctype: manpage
+:man source: milkcheck
+:man version: 1.0
+:man manual: Milkcheck User Documentation
+Aurelien Degremont <aurelien.degremont@cea.fr>
+Aurelien Cedeyn <aurelien.cedeyn@cea.fr>
+
+NAME
+------
+milkcheck - Parallel and hierachical service manager
+
+SYNOPSYS
+--------
+
+*milkcheck* [[--verbose] [--debug] [--summary] [--config-dir=directory] [-n nodes] [-x nodes] [-X service]] [SERVICE...] ACTION
+
+*milkcheck* [[-v] [-d] [-s] [-c directory] [-n nodes] [-x nodes] [-X service]] [SERVICE...] ACTION
+
+*milkcheck* -g [-X service]
+
+*milkcheck* --help
+
+*milkcheck* --version
+
+DESCRIPTION
+-----------
+*-h, --help*::
+         Show the help message and exit
+
+*-v, --verbose*::
+         Increase or decrease verbosity
+
+*-d, --debug*::
+         Set debug mode and maximum verbosity
+
+*-g, --graph*::
+         Output dependencies graph
+
+*-s, --summary*::
+         Display summary of executed actions
+
+*-c CONFIG_DIR, --config-dir=CONFIG_DIR*::
+         Change configuration files directory
+
+===  Engine parameters ===
+Those options allow you to configure the behaviour of the engine
+
+*-n ONLY_NODES, --only-nodes=ONLY_NODES*::
+         Use only the specified nodes
+
+*-x EXCLUDED_NODES, --exclude-nodes=EXCLUDED_NODES*::
+         Exclude the cluster's nodes specified
+
+*-X EXCLUDED_SVC, --exclude-service=EXCLUDED_SVC*::
+         Skip the specified services
+
+*--dry-run*::
+         Only simulate command execution
+
+*--version*::
+         Show program's version number and exit
+
+MILKCHECK CONFIGURATION
+-----------------------
+*Milkcheck's* configuration file is located in */etc/milkcheck/milkcheck.conf*.
+
+In this file you can specify the *SERVICE CONFIGURATION* directory, fanout and all available default options.
+
+=== Configuration file example ===
+.....
+# cat /etc/milkcheck/milkcheck.conf
+#
+# Configuration directory
+# This directory should contain yaml configuration files
+config_dir: /etc/milkcheck/conf
+
+# Default fanout connection for any service
+fanout: 64
+
+# Do not display summary by default (True/False)
+summary: False
+.....
+
+SERVICE CONFIGURATION
+-----------------------
+All *Milkcheck* services and actions are defined in a configuration directory located by default in */etc/milkcheck/conf*.
+
+In this directory you can have one or more configuration files describing services, groups and actions to perform.
+
+The syntax of theses files is YAML compliant an looks like :
+......
+# cat /etc/milkcheck/conf/cron.yaml
+#
+# Local service
+#
+# This service will run "service crond status" command on specified target when
+# "status" action is called.
+#
+service:
+    name: cron
+    desc: Crond service declaration
+    target: node[1-100]
+    actions:
+        status:
+            cmd: /sbin/service crond status
+......
+
+The *SERVICE CONFIGURATION* files must have the '.yaml' suffix to be parsed by *milkcheck*.
+
+EXAMPLES
+--------
+*milkcheck* status::
+    Launch the status command on all services described in the *SERVICE CONFIGURATION* directory.
+
+*milkcheck* cron status::
+    Launch the status command on cron service described in the *SERVICE CONFIGURATION* directory.
+
+*milkcheck* -s cron status::
+    Do the same as above but give a summary at the end of the execution.
+
+*milkcheck* -v status::
+    Increase verbosity.
+
+*milkcheck* -X cron status::
+    Launch the status command on all services described in the *SERVICE CONFIGURATION* directory excepting the cron service.
+
+*milkcheck* -n node1 status::
+    Launch the status command on all services described in the *SERVICE CONFIGURATION* directory but only on node1 if present in the target field of the service.
+
+*milkcheck* -x node1 status::
+    Launch the status command on all services described in the *SERVICE CONFIGURATION* directory but not node1.
+
+SEE ALSO
+--------
+*clustershell(1)*
+
+*/etc/milkcheck/conf/samples*::
+    Full documented configuration file.
+
+AUTHOR
+------
+*{author}* - <{email}>
