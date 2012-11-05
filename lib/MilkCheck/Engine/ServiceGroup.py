@@ -11,7 +11,8 @@ from MilkCheck.Engine.Service import Service, Action
 from MilkCheck.Engine.BaseEntity import BaseEntity, DEP_ORDER, Dependency
 
 # Symbols
-from MilkCheck.Engine.BaseEntity import DONE, WARNING, SKIPPED, REQUIRE
+from MilkCheck.Engine.BaseEntity import DONE, WARNING, SKIPPED, REQUIRE, \
+                                        MISSING
 
 # Exceptions
 from MilkCheck.ServiceManager import ServiceNotFoundError
@@ -241,8 +242,8 @@ class ServiceGroup(Service):
                 intd_status = self._source.status
 
             # The group node is a fake we just change his status
-            if intd_status == SKIPPED:
-                self.update_status(SKIPPED)
+            if intd_status in (SKIPPED, MISSING):
+                self.update_status(intd_status)
             elif self.warnings:
                 self.update_status(WARNING)
             else:

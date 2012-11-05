@@ -15,7 +15,7 @@ from MilkCheck.Engine.Action import Action
 from ClusterShell.NodeSet import NodeSet
 
 # Symbols
-from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, SKIPPED
+from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, SKIPPED, MISSING
 from MilkCheck.Engine.BaseEntity import WAITING_STATUS, DEP_ERROR
 from MilkCheck.Engine.BaseEntity import WARNING, ERROR
 from MilkCheck.Engine.BaseEntity import CHECK, REQUIRE_WEAK
@@ -541,6 +541,15 @@ class ServiceGroupTest(TestCase):
         grp.run('stop')
         self.assertEqual(svc.status, ERROR)
         self.assertEqual(grp.status, SKIPPED)
+
+    def test_missing_group(self):
+        """A group with only MISSING services should be MISSING"""
+        grp = ServiceGroup('group')
+        svc1 = Service('svc1')
+        svc1.add_action(Action('stop', HOSTNAME, '/bin/true'))
+        grp.add_inter_dep(target=svc1)
+        grp.run('start')
+        self.assertEqual(grp.status, MISSING)
 
     def test_group_with_weak_dep_error(self):
         """A group with a weak dep error runs fine (add_inter_dep())."""
