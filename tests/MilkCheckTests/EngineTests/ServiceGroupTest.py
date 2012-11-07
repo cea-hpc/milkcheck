@@ -799,7 +799,11 @@ class ServiceGroupFromDictTest(TestCase):
         grp = ServiceGroup('group')
         grp.fromdict({
             'services': {
-                'svc1': { 'action': { 'cmd': "/bin/true" } }
+                'svc1': {
+                    'actions': {
+                        'stop': { 'cmd': "/bin/true" },
+                    }
+                }
             }
         })
 
