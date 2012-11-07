@@ -179,6 +179,26 @@ class ServiceTest(TestCase):
         self.assertEqual(serv_depa.status, SKIPPED)
         self.assertEqual(serv_depb.status, SKIPPED)
 
+    def test_run_skipped_with_error_deps(self):
+        """Test run with ERROR dependencies for a SKIPPED service"""
+
+        # Define the main service
+        serv_test = Service('test_service', target=HOSTNAME)
+        start = Action(name='start', target=HOSTNAME, command='/bin/false')
+
+        serv_depa = Service('DEP_A')
+        serv_depa.add_action(start)
+        serv_test.add_dep(serv_depa)
+
+        missing = Action(name='start', command='/bin/true')
+        serv_test.add_action(missing)
+        serv_test.update_target(HOSTNAME, 'DIF')
+
+        serv_test.run('start')
+        self.assertEqual(serv_test.eval_deps_status(), DEP_ERROR)
+        self.assertEqual(serv_depa.status, ERROR)
+        self.assertEqual(serv_test.status, SKIPPED)
+
     def test_prepare_multilevel_dependencies(self):
         """Test prepare with multiple dependencies at different levels."""
         #Service Arthemis is delcared here

@@ -658,3 +658,8 @@ class BaseEntity(object):
             elif item == 'variables':
                 for varname, value in prop.items():
                     self.add_var(varname, value)
+
+    def skipped(self):
+        """Return if the Entity is SKIPPED"""
+        return (self.target != None and len(self.target) == 0)
+

@@ -150,7 +150,7 @@ class Action(BaseEntity):
         deps_status = self.eval_deps_status()
         # NO_STATUS and not any dep in progress for the current action
         if self.status is NO_STATUS and deps_status is not WAITING_STATUS:
-            if self.target is not None and len(self.target) == 0:
+            if self.skipped():
                 self.update_status(SKIPPED)
             elif deps_status is DEP_ERROR or not self.parents:
                 self.update_status(WAITING_STATUS)

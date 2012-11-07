@@ -16,7 +16,7 @@ from MilkCheck.Callback import call_back_self
 from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
 
 # Symbols
-from MilkCheck.Engine.BaseEntity import NO_STATUS, WARNING, MISSING
+from MilkCheck.Engine.BaseEntity import NO_STATUS, WARNING, MISSING, SKIPPED
 from MilkCheck.Engine.BaseEntity import WAITING_STATUS, DEP_ERROR, DONE
 from MilkCheck.Callback import EV_STATUS_CHANGED, EV_TRIGGER_DEP
 
@@ -176,9 +176,12 @@ class Service(BaseService):
         if self.status is NO_STATUS:
 
             # If dependencies failed the current service will fail
-            if deps_status == DEP_ERROR:
-                self.update_status(DEP_ERROR)
+            # except if the service is SKIPPED
+            if deps_status == DEP_ERROR and not self.skipped():
+                    self.update_status(DEP_ERROR)
             else:
+                if self.skipped():
+                    self.update_status(SKIPPED)
                 # Just flag if dependencies encountered problem
                 if deps_status == WARNING:
                     self.warnings = True
