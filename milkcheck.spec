@@ -22,11 +22,11 @@ actions, all of them based on shell commands.
 %setup -q
 
 %build
-make
+make VERSION=%{version}
 
 %install
 rm -rf %{buildroot}
-make install DESTDIR=%{buildroot} PYTHON=%{__python} MANDIR=%{_mandir} SYSCONFIGDIR=%{_sysconfdir}
+make install DESTDIR=%{buildroot} PYTHON=%{__python} MANDIR=%{_mandir} SYSCONFIGDIR=%{_sysconfdir} VERSION=%{version}
 
 %clean
 rm -rf $RPM_BUILD_ROOT
