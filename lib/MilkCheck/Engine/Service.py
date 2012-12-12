@@ -106,11 +106,6 @@ class Service(BaseService):
         '''Figure out whether the service has the specified action.'''
         return action_name in self._actions
 
-    def schedule(self, action_name):
-        '''Schedule an action available for this service'''
-        # Retrieve targeted action
-        self._actions[action_name].prepare()
-
     def update_status(self, status):
         '''
         Update the current service's status and whether all of his parents
@@ -159,7 +154,7 @@ class Service(BaseService):
         else:
             # It's time to be processed
             self.update_status(WAITING_STATUS)
-            self.schedule(self._last_action)
+            self._actions[self._last_action].prepare()
 
     def prepare(self, action_name=None):
         '''
