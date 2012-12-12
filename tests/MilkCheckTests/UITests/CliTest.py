@@ -320,7 +320,7 @@ S1 - I am the service S1                                          [    OK   ]
 
     def test_execute_unknown_exception(self):
         """CLI return '12' if an unknown exception is raised."""
-        self.svc2.run = None
+        service_manager_self().call_services = None
         self._output_check(['S2', 'start'], RC_UNKNOWN_EXCEPTION, "",
 """[00:00:00] ERROR    - Unexpected Exception : 'NoneType' object is not callable
 """)

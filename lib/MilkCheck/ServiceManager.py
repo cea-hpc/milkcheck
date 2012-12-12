@@ -205,41 +205,20 @@ class ServiceManager(EntityManager):
             reverse = True
             self._reverse_mod(reverse)
 
+        source = Service('src')
+        source.simulate = True
+        source.add_action(Action(name=action, command=':'))
+        if reverse:
+            source.algo_reversed = True
         # Perform all services
         if not services:
-            source = Service('src')
-            source.simulate = True
-            source.add_action(Action(name=action, command=':'))
-            if reverse:
-                source.algo_reversed = True
             for service in self.entities.values():
                 if reverse and not service.parents:
                     service.add_dep(target=source)
                 elif not reverse and not service.children:
                     source.add_dep(target=service)
-            source.run(action)
-            if reverse:
-                source.clear_child_deps()
-            else:
-                source.clear_parent_deps()
-            retcode = self.__retcode(source)
-            self._graph_changed = True
-        # Perform the required service
-        elif len(services) == 1:
-            if services[0] in self.entities:
-                self.entities[services[0]].run(action)
-                self._graph_changed = True
-            else:
-                raise ServiceNotFoundError('Undefined service [%s]'
-                    % services[0])
-            retcode = self.__retcode(self.entities[services[0]])
         # Perform required services
         else:
-            source = Service('src')
-            source.simulate = True
-            if reverse:
-                source.algo_reversed = True
-            source.add_action(Action(name=action, command=':'))
             for service in services:
                 if service in self.entities:
                     if reverse:
@@ -249,13 +228,14 @@ class ServiceManager(EntityManager):
                 else:
                     raise ServiceNotFoundError('Undefined service [%s]'
                         %service)
-            source.run(action)
-            if reverse:
-                source.clear_child_deps()
-            else:
-                source.clear_parent_deps()
-            retcode = self.__retcode(source)
-            self._graph_changed = True
+        source.run(action)
+        if reverse:
+            source.clear_child_deps()
+        else:
+            source.clear_parent_deps()
+
+        retcode = self.__retcode(source)
+        self._graph_changed = True
         return retcode
 
     def output_graph(self, services=None, excluded=None):
