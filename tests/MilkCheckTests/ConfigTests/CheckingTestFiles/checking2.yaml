@@ -1,8 +1,0 @@
-# For some property we need to control the validy of the content.
-# This allows you to specify your own type checking
-rules:
-    name:   '^[a-zA-Z0-9_]+$'
-    delay:  '^([0-9]+|[0-9]+\.[0-9]{1,2})$'
-    retry:  '^[0-9]+$'
-    fanout: '^[0-9]+$'
-    errors: '^[0-9]+$'
