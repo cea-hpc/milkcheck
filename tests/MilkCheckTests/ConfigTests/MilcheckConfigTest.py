@@ -21,8 +21,8 @@ class MilkCheckConfigTest(TestCase):
     def test_loading_conf_from_stream(self):
         '''Test parsing of a Yaml flow trough a stream'''
         config = MilkCheckConfig()
-        config.load_from_stream('''service:
-            name: S1
+        config.load_from_stream('''services:
+     S1:
             desc: "I'm the service S1"
             variables:
                 LUSTRE_FS_LIST: store0,work0
@@ -58,7 +58,7 @@ class MilkCheckConfigTest(TestCase):
         config.load_from_stream(fi)
         fi.close()
         self.assertTrue(config.data_flow)
-        self.assertTrue(len(config.data_flow) == 6)
+        self.assertEqual(len(config.data_flow), 2)
 
     def test_building_graph(self):
         '''Test graph building from configuration'''
@@ -98,8 +98,8 @@ class MilkCheckConfigTest(TestCase):
         config.load_from_stream('''---
 # This is en empty document.
 ---
-service:
-            name: S1
+services:
+    S1:
             desc: "I'm the service S1"
             variables:
                 LUSTRE_FS_LIST: store0,work0
@@ -117,3 +117,75 @@ service:
         config.build_graph()
         self.assertTrue(config._flow)
         self.assertTrue(len(config._flow) == 1)
+
+    def test_parse_with_services_syntax(self):
+        '''Test loading with empty YAML document in flow.'''
+        config = MilkCheckConfig()
+        config.load_from_stream('''---
+services:
+    foo[1-2]:
+        desc: "this is desc"
+        require: [ 'bar' ]
+        actions:
+            start:
+                cmd: run %NAME
+    bar:
+        actions:
+            start:
+                cmd: run_bar''')
+
+        config.build_graph()
+        # Get back the manager
+        manager = service_manager_self()
+        self.assertTrue('foo1' in manager.entities)
+        self.assertTrue('foo2' in manager.entities)
+        self.assertTrue('bar' in manager.entities)
+        self.assertTrue(manager.entities['foo1'].has_action('start'))
+        self.assertTrue(manager.entities['foo1'].has_parent_dep('bar'))
+        self.assertTrue(manager.entities['foo2'].has_action('start'))
+        self.assertTrue(manager.entities['foo2'].has_parent_dep('bar'))
+        self.assertTrue(manager.entities['bar'].has_action('start'))
+
+    def test_parse_with_compat_syntax(self):
+        '''Test loading with empty YAML document in flow.'''
+        config = MilkCheckConfig()
+        config.load_from_stream('''
+service:
+    name: compat
+    actions:
+        start:
+            cmd: echo foo
+---
+service:
+    name: compat_grp
+    services:
+        subsvc:
+            actions:
+                start:
+                    cmd: echo foo
+---
+services:
+    foo[1-2]:
+        desc: "this is desc"
+        require: [ 'bar' ]
+        actions:
+            start:
+                cmd: run %NAME
+    bar:
+        actions:
+            start:
+                cmd: run_bar''')
+
+        config.build_graph()
+        # Get back the manager
+        manager = service_manager_self()
+        self.assertTrue('compat' in manager.entities)
+        self.assertTrue('foo1' in manager.entities)
+        self.assertTrue('foo2' in manager.entities)
+        self.assertTrue('bar' in manager.entities)
+        self.assertTrue('compat_grp' in manager.entities)
+        self.assertTrue(manager.entities['foo1'].has_action('start'))
+        self.assertTrue(manager.entities['foo1'].has_parent_dep('bar'))
+        self.assertTrue(manager.entities['foo2'].has_action('start'))
+        self.assertTrue(manager.entities['foo2'].has_parent_dep('bar'))
+        self.assertTrue(manager.entities['bar'].has_action('start'))

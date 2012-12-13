@@ -1,3 +1,6 @@
+2013-01-23 Aurelien Degremont  <aurelien.degremont@cea.fr>
+	* Add new syntax style for config file.
+
 2013-01-17 Aurelien Cedeyn  <aurelien.cedeyn@cea.fr>
 	* Add --quiet option to reduce verbosity
 

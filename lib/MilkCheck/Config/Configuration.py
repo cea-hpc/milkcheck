@@ -100,6 +100,28 @@ class MilkCheckConfig(object):
                     wrap = self._parse_deps(subelems)
                     wrap.source = ser
                     dependencies[ser.name] = wrap
+                # Support for new style syntax to declare services
+                # This is a simple mode, for compatibility, with old-style
+                # syntax.
+                elif elem == 'services':
+                    grp = ServiceGroup('ALL')
+                    grp.fromdict({elem: subelems})
+                    for subservice in grp.iter_subservices():
+                        # Dependencies are already handled inside the service
+                        # group.
+                        # This code is only here for compat (see below), to
+                        # list all services which should be registered in
+                        # ServiceManager.  When compat will be dropped, this
+                        # will be simplified.
+                        subservice.parent = None
+                        wrap = DepWrapper()
+                        wrap.source = subservice
+                        dependencies[subservice.name] = wrap
+                    # Services should be untied to its fake service group.
+                    for svc in grp._source.parents.values():
+                        svc.target.remove_dep('source')
+                    for svc in grp._sink.children.values():
+                        svc.target.remove_dep('sink', parent=True)
                 else:
                     # XXX: Raise an exception with a better error handling
                     raise KeyError("Bad declaration of: %s" % elem)

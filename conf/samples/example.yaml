@@ -1,131 +1,124 @@
-#
-# Local service
-#
-# This service will run "service crond status" command on local host when
-# 'status' action is called.
-#
-service:
-    name: local
-    desc: Simplest service declaration
-    actions:
-        status:
-            cmd: service crond status
----
-#
-# Distant service
-#
-# This service will run, in parallel, "service sshd status" command on host
-# listed by 'target' (foo, bar and baz) when 'status' action is called.
-#
-service:
-    name: remote
-    desc: simple distant service
-    target: foo,bar,baz
-    actions:
-        status:
-           cmd: service sshd status
----
-#
-# Delegated mode
-# Apply.   service, actions
-# Default. standard
-#
-# "mode: [standard, delegate]"
-#
-# This mode uses a service with target, but command is run locally.
-# Milkcheck will manage the target like a distant service and so
-# all command line argument like -w or -x will be applied to target.
-# If this results into an empty target, no command will be run.
-# This is intended for commands which handle their own connection.
-#
-service:
-    name: ping
-    desc: Ping all needed servers
-    mode: delegate
-    target: "@servers"
-    actions:
-        status:
-            cmd: nodeset -S "\n" -e %TARGET | fping -r1 -u
-        power:
-            cmd: ipmipower -h %TARGET --stat
----
-#
-# Service group
-#
-# Several service could be grouped together and dependencies set
-# to the whole group.
-service:
-    name: group
-    services:
-        'svc1':
-            actions:
-                start:
-                    cmd: service one start
-        'svc2':
-            actions:
-                start:
-                    cmd: service two start
----
-#
-# Action aliases
-#
-# You can declare multiple actions, separating action name with comma.
-# This is useful to declare action name aliases, or if you combine it with
-# automatic variables (see below).
-# You can use a NodeSet-like syntax for action aliases (ie: change[01-10])
-service:
-    name: multiple
-    desc: Multiple action in a single declaration
-    actions:
-        start,run:
-            cmd: service foo start
----
-#
-# Automatic variables.
-#
-# Milkcheck generates a list of automatic variables depending
-# on context.
-# %FANOUT          current 'fanout'
-# %TIMEOUT         current 'timeout'
-# %TARGET          current 'target'
-# %DESC            current 'desc'
-# %SERVICE         service name
-# %ACTION          action name
-# %SELECTED_NODES  arguments of -x/--excluded command line flag
-# %EXCLUDED_NODES  arguments of -n/--nodes command line flag
-service:
-    name: crond
-    desc: Command scheduler daemon crond
-    target: "@webservers"
-    actions:
-        start,status,stop:
-            # Equivalent to: 'service crond <ACTION_NAME>'
-            cmd: service %SERVICE %ACTION
----
-#
-# External command execution
-#
-# %( ... ) pattern could be used to execute, locally, an external
-# shell command and be substitute by the command output.
-# This apply to: target, command and variables
-service:
-    name: foo
-    target: %(cat /etc/foo_nodes | grep -v bad)
-    actions:
-        start:
-           cmd: service foo start
----
-#
-# Multiple sub-services
-#
-# Several subservices could be declared easily, separating their name with
-# comma, like for actions.
-# You can use a NodeSet-like syntax for the name pattern (ie: da[1-15])
-service:
-   name: group
-   services:
-       # This creates 3 sub-services with one 'start' action
-       'foo,bar,baz':
-           actions:
-               start:
-                   cmd: service %SERVICE %ACTION
+services:
+    #
+    # Local service
+    #
+    # This service will run "service crond status" command on local host when
+    # 'status' action is called.
+    #
+    local:
+        desc: Simplest service declaration
+        actions:
+            status:
+                cmd: service crond status
+
+    #
+    # Distant service
+    #
+    # This service will run, in parallel, "service sshd status" command on host
+    # listed by 'target' (foo, bar and baz) when 'status' action is called.
+    #
+    remote:
+        desc: simple distant service
+        target: foo,bar,baz
+        actions:
+            status:
+                cmd: service sshd status
+
+    #
+    # Delegated mode
+    # Apply.   service, actions
+    # Default. standard
+    #
+    # "mode: [standard, delegate]"
+    #
+    # This mode uses a service with target, but command is run locally.
+    # Milkcheck will manage the target like a distant service and so
+    # all command line argument like -w or -x will be applied to target.
+    # If this results into an empty target, no command will be run.
+    # This is intended for commands which handle their own connection.
+    #
+    ping:
+        desc: Ping all needed servers
+        mode: delegate
+        target: "@servers"
+        actions:
+            status:
+                cmd: nodeset -S "\n" -e %TARGET | fping -r1 -u
+            power:
+                cmd: ipmipower -h %TARGET --stat
+
+    #
+    # Service group
+    #
+    # Several service could be grouped together and dependencies set
+    # to the whole group.
+    group:
+        services:
+            'svc1':
+                actions:
+                    start:
+                        cmd: service one start
+            'svc2':
+                actions:
+                    start:
+                        cmd: service two start
+
+    #
+    # Action aliases
+    #
+    # You can declare multiple actions, separating action name with comma.
+    # This is useful to declare action name aliases, or if you combine it with
+    # automatic variables (see below).
+    # You can use a NodeSet-like syntax for action aliases (ie: change[01-10])
+    multiple:
+        desc: Multiple action in a single declaration
+        actions:
+            start,run:
+                cmd: service foo start
+
+    #
+    # Automatic variables.
+    #
+    # Milkcheck generates a list of automatic variables depending
+    # on context.
+    # %FANOUT          current 'fanout'
+    # %TIMEOUT         current 'timeout'
+    # %TARGET          current 'target'
+    # %DESC            current 'desc'
+    # %SERVICE         service name
+    # %ACTION          action name
+    # %SELECTED_NODES  arguments of -x/--excluded command line flag
+    # %EXCLUDED_NODES  arguments of -n/--nodes command line flag
+    crond:
+        desc: Command scheduler daemon crond
+        target: "@webservers"
+        actions:
+            start,status,stop:
+                # Equivalent to: 'service crond <ACTION_NAME>'
+                cmd: service %SERVICE %ACTION
+
+    #
+    # External command execution
+    #
+    # %( ... ) pattern could be used to execute, locally, an external
+    # shell command and be substitute by the command output.
+    # This apply to: target, command and variables
+    foo:
+        target: "%(awk '!/^#/' /etc/hosts)"
+        actions:
+            start:
+               cmd: service foo start
+
+    #
+    # Multiple sub-services
+    #
+    # Several subservices could be declared easily, separating their name with
+    # comma, like for actions.
+    # You can use a NodeSet-like syntax for the name pattern (ie: da[1-15])
+    group:
+        services:
+            # This creates 3 sub-services with one 'start' action
+            'foo,bar,baz':
+                actions:
+                    start:
+                        cmd: service %SERVICE %ACTION
