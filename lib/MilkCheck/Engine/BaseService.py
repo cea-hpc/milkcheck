@@ -8,7 +8,6 @@ defnition of the different states that a service can go through
 
 # Classes
 from MilkCheck.Engine.BaseEntity import BaseEntity
-from ClusterShell.Task import task_self
 
 class BaseService(BaseEntity):
     '''
@@ -46,7 +45,6 @@ class BaseService(BaseEntity):
         
         # Prepare the service and start the master task
         self.prepare(action_name)
-        task_self().resume()
         
     def prepare(self, action_name=None):
         '''

@@ -7,7 +7,6 @@ definition of a basic event handler and the ActionEventHandler.
 """
 # Classes
 from datetime import datetime
-from ClusterShell.Task import task_self
 from ClusterShell.Worker.Popen import WorkerPopen
 from ClusterShell.Event import EventHandler
 from MilkCheck.Engine.BaseEntity import BaseEntity
@@ -138,7 +137,7 @@ class Action(BaseEntity):
     def run(self):
         '''Prepare the current action and set up the master task'''
         self.prepare()
-        task_self().resume()
+        action_manager_self().run()
 
     def prepare(self):
         '''
