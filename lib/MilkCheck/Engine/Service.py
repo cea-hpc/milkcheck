@@ -173,7 +173,7 @@ class Service(BaseService):
             # If dependencies failed the current service will fail
             # except if the service is SKIPPED
             if deps_status == DEP_ERROR and not self.skipped():
-                    self.update_status(DEP_ERROR)
+                self.update_status(DEP_ERROR)
             else:
                 if self.skipped():
                     self.update_status(SKIPPED)
