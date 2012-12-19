@@ -355,7 +355,7 @@ class BaseEntity(object):
 
     def clear_parent_deps(self):
         '''Remove all parent dependencies of an entity'''
-        for dpname in self.children.keys():
+        for dpname in self.parents.keys():
             self.remove_dep(dpname)
 
     def clear_child_deps(self):

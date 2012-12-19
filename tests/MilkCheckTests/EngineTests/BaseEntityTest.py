@@ -290,6 +290,17 @@ class BaseEntityTest(unittest.TestCase):
         ent1.add_dep(target=ent2)
         ent1.add_dep(target=ent3)
         ent1.clear_parent_deps()
+        self.assertFalse(ent1.has_parent_dep('B'))
+        self.assertFalse(ent1.has_parent_dep('C'))
+
+    def test_clear_childs(self):
+        '''Test remove all childrens dependencies'''
+        ent1 = BaseEntity(name='A')
+        ent2 = BaseEntity(name='B')
+        ent3 = BaseEntity(name='C')
+        ent1.add_dep(target=ent2, parent=False)
+        ent1.add_dep(target=ent3, parent=False)
+        ent1.clear_child_deps()
         self.assertFalse(ent1.has_child_dep('B'))
         self.assertFalse(ent1.has_child_dep('C'))
 
