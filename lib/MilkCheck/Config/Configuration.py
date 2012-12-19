@@ -21,7 +21,6 @@ class MilkCheckConfig(object):
     directory
     '''
     def __init__(self):
-        self._filepath_base = '../conf/base/'
         self._flow = []
 
     def _go_through(self, arg, dirname=None, names=None):
@@ -45,11 +44,6 @@ class MilkCheckConfig(object):
                     names=listdir(directory))
         else:
             raise ValueError("Invalid directory '%s'" % directory)
-#            if recursive:
-#                walk(self._filepath_base, self._go_through, None)
-#            else:
-#                self._go_through(None, dirname=self._filepath_base,
-#                    names=listdir(self._filepath_base))
 
     def load_from_stream(self, stream):
         '''

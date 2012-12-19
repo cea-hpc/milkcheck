@@ -512,9 +512,9 @@ Options:
 
     def test_command_output_checkconfig(self):
         '''Test command line output checking config'''
-        self._output_check(['-c', '../conf/base'], RC_OK,
+        self._output_check(['-c', '../conf/samples'], RC_OK,
 """No actions specified, checking configuration...
-../conf/base seems good
+../conf/samples seems good
 """ )
 
     def test_command_line_variables(self):
