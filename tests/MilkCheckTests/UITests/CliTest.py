@@ -22,8 +22,8 @@ from MilkCheck.Config.ConfigParser import ConfigParser
 from ClusterShell.NodeSet import NodeSet
 
 # Symbols
-from MilkCheck.UI.UserView import RC_OK, RC_ERROR, RC_EXCEPTION, \
-                                  RC_UNKNOWN_EXCEPTION, RC_WARNING
+from MilkCheck.UI.Cli import RC_OK, RC_ERROR, RC_EXCEPTION, RC_WARNING, \
+                             RC_UNKNOWN_EXCEPTION
 from MilkCheck.Engine.BaseEntity import REQUIRE_WEAK
 
 HOSTNAME = socket.gethostname().split('.')[0]
