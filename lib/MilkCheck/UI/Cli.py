@@ -33,6 +33,7 @@ from MilkCheck.Engine.Service import ActionNotFoundError
 from MilkCheck.Engine.BaseEntity import WARNING, SKIPPED, LOCKED
 from MilkCheck.Engine.BaseEntity import TIMEOUT, ERROR, DEP_ERROR, DONE
 from MilkCheck.UI.UserView import RC_OK, RC_EXCEPTION, RC_UNKNOWN_EXCEPTION
+from MilkCheck.UI.UserView import RC_WARNING, RC_ERROR
 
 MAXTERMWIDTH = 120
 
@@ -309,8 +310,8 @@ class CommandLineInterface(UserView):
                 services = self._args[:-1]
                 action = self._args[-1]
                 # Run tasks
-                retcode = manager.call_services(services, action,
-                                            conf=self._conf)
+                manager.call_services(services, action, conf=self._conf)
+                retcode = self.retcode()
                 if self._conf.get('summary', False):
                     self._console.print_summary(self.actions)
             # Case 2 : Check configuration
@@ -351,6 +352,20 @@ class CommandLineInterface(UserView):
                 self._logger.error('Unexpected Exception : %s' % exc)
             return RC_UNKNOWN_EXCEPTION
         return retcode
+
+    def retcode(self):
+        '''
+        Determine a retcode from a the last point of the graph
+        RETCODE: 0 everything went as we expected
+        RETCODE: 3 means that the status is WARNING
+        RETCODE: 6 means that the status is DEP_ERROR
+        '''
+        if service_manager_self().source.status is WARNING:
+            return RC_WARNING
+        elif service_manager_self().source.status in (DEP_ERROR, ERROR):
+            return RC_ERROR
+        else:
+            return RC_OK
 
     def ev_started(self, obj):
         '''

@@ -15,8 +15,7 @@ from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
 from MilkCheck.Engine.BaseEntity import VariableAlreadyReferencedError
 
 # Symbols
-from MilkCheck.Engine.BaseEntity import LOCKED, WARNING, DEP_ERROR, ERROR
-from MilkCheck.UI.UserView import RC_OK, RC_WARNING, RC_ERROR
+from MilkCheck.Engine.BaseEntity import LOCKED
 
 class ServiceNotFoundError(MilkCheckEngineError):
     '''
@@ -45,14 +44,18 @@ class ServiceManager(EntityManager):
         EntityManager.__init__(self)
         # Variables declared in the global scope
         self.variables = {}
-        # Status of the graph
-        self._graph_changed = False
+        # Top service
+        self.source = Service('root')
+        self.source.simulate = True
 
-    def __refresh_graph(self):
+    def __refresh_graph(self, reverse):
         '''Reinitialize the right values for the graph of services'''
         for service in self.entities.values():
             service.reset()
-        self._graph_changed = False
+        if reverse:
+            self.source.clear_child_deps()
+        else:
+            self.source.clear_parent_deps()
 
     def has_service(self, service):
         '''Determine if the service is registered within the manager'''
@@ -168,75 +171,48 @@ class ServiceManager(EntityManager):
         for service in self.entities.values():
             service.update_target(nodeset, mode)
 
-    def __retcode(self, source):
-        '''
-        Determine a retcode from a the last point of the graph
-        RETCODE: 0 verything went as we expected
-        RETCODE: 3 means that the status is DONE_WITH_WARNING
-        RETCODE: 6 means that the status is DEP_ERROR
-        '''
-        if source.status is WARNING:
-            return RC_WARNING
-        elif source.status in (DEP_ERROR, ERROR):
-            return RC_ERROR
-        else:
-            return RC_OK
-
     def call_services(self, services, action, conf=None):
         '''Allow the user to call one or multiple services.'''
         assert action, 'action name cannot be None'
-        # Retcode
-        retcode = 0
 
+        reverse = (action == 'stop')
         self.variables.clear()
 
         # Create global variable from configuration
         self._variable_config(conf)
 
         # Make sure that the graph is usable
-        if self._graph_changed:
-            self.__refresh_graph()
+        self.__refresh_graph(reverse)
         # Apply configuration over the graph
         if conf:
             self._apply_config(conf)
-        # Service are going to use reversed algorithms
-        reverse = False
-        if action == 'stop':
-            reverse = True
-            self._reverse_mod(reverse)
 
-        source = Service('src')
-        source.simulate = True
-        source.add_action(Action(name=action, command=':'))
-        if reverse:
-            source.algo_reversed = True
+        self.source.reset()
+        # Enable reverse mode if needed
+        self._reverse_mod(reverse)
+        self.source.algo_reversed = reverse
+
+        if not self.source.has_action(action):
+            self.source.add_action(Action(name=action, command=':'))
         # Perform all services
         if not services:
             for service in self.entities.values():
                 if reverse and not service.parents:
-                    service.add_dep(target=source)
+                    service.add_dep(target=self.source)
                 elif not reverse and not service.children:
-                    source.add_dep(target=service)
+                    self.source.add_dep(target=service)
         # Perform required services
         else:
-            for service in services:
-                if service in self.entities:
+            for service_name in services:
+                if service_name in self.entities:
                     if reverse:
-                        self.entities[service].add_dep(target=source)
+                        self.entities[service_name].add_dep(target=self.source)
                     else:
-                        source.add_dep(target=self.entities[service])
+                        self.source.add_dep(target=self.entities[service_name])
                 else:
                     raise ServiceNotFoundError('Undefined service [%s]'
-                        %service)
-        source.run(action)
-        if reverse:
-            source.clear_child_deps()
-        else:
-            source.clear_parent_deps()
-
-        retcode = self.__retcode(source)
-        self._graph_changed = True
-        return retcode
+                        % service_name)
+        self.source.run(action)
 
     def output_graph(self, services=None, excluded=None):
         """Return entities graph (DOT format)"""

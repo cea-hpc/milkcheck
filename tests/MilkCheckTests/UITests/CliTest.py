@@ -23,7 +23,8 @@ from ClusterShell.NodeSet import NodeSet
 
 # Symbols
 from MilkCheck.UI.UserView import RC_OK, RC_ERROR, RC_EXCEPTION, \
-                                  RC_UNKNOWN_EXCEPTION
+                                  RC_UNKNOWN_EXCEPTION, RC_WARNING
+from MilkCheck.Engine.BaseEntity import REQUIRE_WEAK
 
 HOSTNAME = socket.gethostname().split('.')[0]
 
@@ -614,4 +615,28 @@ ServiceGroup                                                      [DEP_ERROR]
  > HOSTNAME,localhost has timeout
 ServiceGroup.service - I am the service                           [ TIMEOUT ]
 ServiceGroup                                                      [DEP_ERROR]
+""")
+    def test_command_output_warning(self):
+        '''Test command line output with warning'''
+        svc_warn = Service('service_failled')
+        svc_warn.desc = 'I am the failled service'
+        svc_ok = Service('service_ok')
+        svc_ok.desc = 'I am the ok service'
+        # Actions
+        action = Action('warning', command='/bin/false')
+        action.inherits_from(svc_warn)
+        svc_warn.add_action(action)
+        action = Action('warning', command='/bin/true')
+        action.inherits_from(svc_ok)
+        svc_ok.add_action(action)
+
+        # Register services within the manager
+        svc_ok.add_dep(target=svc_warn, sgth=REQUIRE_WEAK)
+        self.manager.register_services(svc_warn, svc_ok)
+
+        self._output_check(['service_ok', 'warning'], RC_WARNING,
+"""warning service_failled ran in 0.00 s
+ > localhost exited with 1
+service_failled - I am the failled service                        [  ERROR  ]
+service_ok - I am the ok service                                  [ WARNING ]
 """)
