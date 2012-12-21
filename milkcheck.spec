@@ -39,6 +39,7 @@ rm -rf $RPM_BUILD_ROOT
 %{python_sitelib}/MilkCheck-*-py?.?.egg-info
 %{_bindir}/milkcheck
 %{_mandir}/man8/*
+%doc ChangeLog
 
 %changelog
 * Fri Nov  9 2012 Aurelien Degremont <aurelien.degremont@cea.fr> 0.9.2-1

@@ -37,7 +37,7 @@ rpm: version $(TARBALL) $(SPECFILE) $(RPMTOPDIR) $(MANPAGE)
 	rpmbuild --define "_topdir $(RPMTOPDIR)" --define "_sourcedir $$PWD" -ba $(SPECFILE)
 
 $(TARBALL): version
-	git archive --prefix=$(NAME)-$(VERSION)/ HEAD conf/samples scripts lib doc setup.py Makefile | gzip -9 >$@
+	git archive --prefix=$(NAME)-$(VERSION)/ HEAD ChangeLog conf/samples scripts lib doc setup.py Makefile | gzip -9 >$@
 
 .PHONY: rpm clean all version test doc
 
