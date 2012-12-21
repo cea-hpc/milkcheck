@@ -24,6 +24,7 @@ from MilkCheck.Engine.BaseEntity import IllegalDependencyTypeError
 from MilkCheck.Engine.BaseEntity import DependencyAlreadyReferenced
 from MilkCheck.Engine.BaseEntity import UndefinedVariableError
 from MilkCheck.Engine.BaseEntity import VariableAlreadyExistError
+from MilkCheck.Engine.BaseEntity import InvalidVariableError
 
 import socket
 HOSTNAME = socket.gethostname().split('.')[0]
@@ -457,11 +458,22 @@ class VariableBaseEntityTest(unittest.TestCase):
         service.add_var('CMD', 'echo')
         self.assertEqual(service._resolve('%(%CMD foo)'), 'foo')
 
+    def test_resolve_value8(self):
+        '''Test resolution of invalid variable name'''
+        service = BaseEntity('test_service')
+        self.assertRaises(ValueError, service._resolve, '%0foo')
+
+    def test_resolve_value9(self):
+        '''Test resolution of false command'''
+        service = BaseEntity('test_service')
+        self.assertRaises(InvalidVariableError, service._resolve, '%(notexist)')
+
     def test_resolve_compat(self):
         '''Test resolution of an expression (compat mode $)'''
         service = BaseEntity('test_service')
         self.assertEqual(service._resolve('$(echo hello world)'),
                          'hello world')
+        self.assertRaises(InvalidVariableError, service._resolve, '$(notexist)')
 
     def test_resolve_property1(self):
         '''Test replacement of symbols within a property'''
