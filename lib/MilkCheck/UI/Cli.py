@@ -28,7 +28,7 @@ from MilkCheck.ServiceManager import ServiceNotFoundError
 from MilkCheck.UI.OptionParser import InvalidOptionError
 from MilkCheck.Engine.BaseEntity import InvalidVariableError
 from MilkCheck.Engine.BaseEntity import UndefinedVariableError
-from MilkCheck.Engine.BaseEntity import VariableAlreadyReferencedError
+from MilkCheck.Engine.BaseEntity import VariableAlreadyExistError
 from MilkCheck.Engine.BaseEntity import DependencyAlreadyReferenced
 from MilkCheck.Engine.BaseEntity import IllegalDependencyTypeError
 from MilkCheck.Engine.Service import ActionNotFoundError
@@ -340,7 +340,7 @@ class CommandLineInterface(CoreEvent):
                 ActionNotFoundError,
                 InvalidVariableError,
                 UndefinedVariableError,
-                VariableAlreadyReferencedError,
+                VariableAlreadyExistError,
                 DependencyAlreadyReferenced,
                 IllegalDependencyTypeError,
                 ConfigParserError,

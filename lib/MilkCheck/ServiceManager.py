@@ -12,7 +12,7 @@ from MilkCheck.Engine.Action import Action
 
 # Exceptions
 from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
-from MilkCheck.Engine.BaseEntity import VariableAlreadyReferencedError
+from MilkCheck.Engine.BaseEntity import VariableAlreadyExistError
 
 # Symbols
 from MilkCheck.Engine.BaseEntity import LOCKED
@@ -66,7 +66,7 @@ class ServiceManager(EntityManager):
         if varname not in self.variables:
             self.variables[varname] = value
         else:
-            raise VariableAlreadyReferencedError
+            raise VariableAlreadyExistError
 
     def remove_var(self, varname):
         '''Remove var from the the service manager'''

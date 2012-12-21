@@ -23,6 +23,7 @@ from MilkCheck.Engine.BaseEntity import WARNING
 from MilkCheck.Engine.BaseEntity import IllegalDependencyTypeError
 from MilkCheck.Engine.BaseEntity import DependencyAlreadyReferenced
 from MilkCheck.Engine.BaseEntity import UndefinedVariableError
+from MilkCheck.Engine.BaseEntity import VariableAlreadyExistError
 
 import socket
 HOSTNAME = socket.gethostname().split('.')[0]
@@ -349,6 +350,26 @@ class BaseEntityTest(unittest.TestCase):
 
 class VariableBaseEntityTest(unittest.TestCase):
     """Tests cases for the class variable management methods for BaseEntity."""
+
+    def test_add_variable_twice(self):
+        '''Add a variable twice raises VariableAlreadyExistError'''
+        svc = BaseEntity('test_var')
+        svc.add_var('var', 'foo')
+        self.assertRaises(VariableAlreadyExistError, svc.add_var, 'var', 'foo')
+
+    def test_remove_variable(self):
+        '''Remove a variable, defined or not, is fine.'''
+        svc = BaseEntity('test_var')
+        svc.add_var('var', 'foo')
+        self.assertEqual(svc._lookup_variable('var'), 'foo')
+
+        # Remove it
+        svc.remove_var('var')
+        self.assertRaises(UndefinedVariableError, svc._lookup_variable, 'var')
+
+        # Remove it again does not raise an exception.
+        svc.remove_var('var')
+        self.assertRaises(UndefinedVariableError, svc._lookup_variable, 'var')
 
     def test_lookup_variables1(self):
         '''Test variables resolution through a single entity'''

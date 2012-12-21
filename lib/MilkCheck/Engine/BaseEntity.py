@@ -76,10 +76,10 @@ class IllegalDependencyTypeError(MilkCheckEngineError):
     CHECK, REQUIRE OR REQUIRE_WEAK to dep_type
     """
 
-class VariableAlreadyReferencedError(MilkCheckEngineError):
+class VariableAlreadyExistError(MilkCheckEngineError):
     '''
     Exception raised as soon as you try to add a variable
-    which is already referenced for this entity.
+    which is already defined for this entity.
     '''
 
 class UndefinedVariableError(MilkCheckEngineError):
@@ -244,7 +244,7 @@ class BaseEntity(object):
         if varname not in self.variables:
             self.variables[varname] = value
         else:
-            raise VariableAlreadyReferencedError
+            raise VariableAlreadyExistError
 
     def remove_var(self, varname):
         '''Remove an existing var from the entity'''
@@ -549,8 +549,8 @@ class BaseEntity(object):
             raise ValueError('Invalid placeholder in string: line %d, col %d' %
                              (lineno, colno))
 
-        # Helper function for .sub()
         def _convert(mobj):
+            """Helper function for .sub()"""
             # Check the mobjst commobjn path first.
             named = mobj.group('named') or mobj.group('braced')
             if named is not None:
