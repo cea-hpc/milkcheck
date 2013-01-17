@@ -161,7 +161,6 @@ class CLIBigGraphTests(CLICommon):
 """I1 - I am the service I1                                          [    OK   ]
 start I2 ran in 0.00 s
  > BADNODE: ssh: Could not resolve hostname BADNODE: Name or service not known
- > HOSTNAME exited with 0
  > BADNODE exited with 255
 I2 - I am the service I2                                          [  ERROR  ]
 G1                                                                [DEP_ERROR]

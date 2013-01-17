@@ -221,7 +221,7 @@ class ConsoleDisplay(object):
                 output.append(' > %s exited with %s' %
                               (self.string_color(nodes, 'CYAN'),
                                self.string_color(retcode, 'GREEN')))
-            else:
+            elif retcode != 0:
                 output.append(' > %s exited with %s' %
                               (self.string_color(nodes, 'CYAN'),
                                self.string_color(retcode, 'RED')))
