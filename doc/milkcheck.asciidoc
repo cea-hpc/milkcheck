@@ -14,9 +14,9 @@ milkcheck - Parallel and hierachical service manager
 SYNOPSYS
 --------
 
-*milkcheck* [[--verbose] [--debug] [--summary] [--config-dir=directory] [-n nodes] [-x nodes] [-X service]] [SERVICE...] ACTION
+*milkcheck* [[--verbose] [--debug] [--quiet] [--summary] [--config-dir=directory] [-n nodes] [-x nodes] [-X service]] [SERVICE...] ACTION
 
-*milkcheck* [[-v] [-d] [-s] [-c directory] [-n nodes] [-x nodes] [-X service]] [SERVICE...] ACTION
+*milkcheck* [[-v] [-d] [-q] [-s] [-c directory] [-n nodes] [-x nodes] [-X service]] [SERVICE...] ACTION
 
 *milkcheck* -g [-X service]
 
@@ -44,6 +44,8 @@ DESCRIPTION
 *-c CONFIG_DIR, --config-dir=CONFIG_DIR*::
          Change configuration files directory
 
+*-q, --quiet*::
+         Set quiet mode with minimum verbosity
 ===  Engine parameters ===
 Those options allow you to configure the behaviour of the engine
 

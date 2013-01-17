@@ -70,6 +70,9 @@ class McOptionParser(OptionParser):
                         dest='config_dir',
                         help='Change configuration files directory')
 
+        self.add_option('-q', '--quiet', action='store_const', dest='verbosity',
+                        const=0, help='Enable quiet mode')
+
         # Engine options
         eng = OptionGroup(self, 'Engine parameters',
             'Those options allow you to configure the behaviour of the engine')

@@ -470,6 +470,7 @@ options:
   -s, --summary         Display summary of executed actions
   -c CONFIG_DIR, --config-dir=CONFIG_DIR
                         Change configuration files directory
+  -q, --quiet           Enable quiet mode
 
   Engine parameters:
     Those options allow you to configure the behaviour of the engine
@@ -495,6 +496,7 @@ Options:
   -s, --summary         Display summary of executed actions
   -c CONFIG_DIR, --config-dir=CONFIG_DIR
                         Change configuration files directory
+  -q, --quiet           Enable quiet mode
 
   Engine parameters:
     Those options allow you to configure the behaviour of the engine
@@ -638,4 +640,17 @@ ServiceGroup                                                      [DEP_ERROR]
  > localhost exited with 1
 service_failled - I am the failled service                        [  ERROR  ]
 service_ok - I am the ok service                                  [ WARNING ]
+""")
+
+    def test_command_output_error_quiet(self):
+        '''Test command line output with all actions FAILED in quiet mode'''
+        self._output_check(['ServiceGroup', 'stop', '-q'], RC_ERROR,
+"""ServiceGroup.service - I am the service                           [  ERROR  ]
+ServiceGroup                                                      [DEP_ERROR]
+""")
+    def test_command_output_ok_quiet(self):
+        '''Test command line output with all actions OK in quiet mode'''
+        self._output_check(['ServiceGroup', 'start', '-q'], RC_OK,
+"""ServiceGroup.service - I am the service                           [    OK   ]
+ServiceGroup                                                      [    OK   ]
 """)

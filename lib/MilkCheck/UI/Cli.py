@@ -414,10 +414,10 @@ class CommandLineInterface(CoreEvent):
         Status of the object given as parameter. Actions or Service's status
         might have changed.
         '''
-        if isinstance(obj, Service) and self._conf['verbosity'] >= 1 and \
-            not (obj.status == SKIPPED and self._options.verbosity < 3) and \
-            obj.status in (TIMEOUT, ERROR, DEP_ERROR, DONE,
-                           WARNING, SKIPPED) and not obj.simulate:
+        if isinstance(obj, Service) and not (obj.status == SKIPPED and \
+                               self._options.verbosity < 3) and \
+                               obj.status in (TIMEOUT, ERROR, DEP_ERROR, DONE,
+                               WARNING, SKIPPED) and not obj.simulate:
 
             self._console.print_status(obj)
             self._console.print_running_tasks()
