@@ -142,7 +142,8 @@ class ActionManagerTest(TestCase):
         ser.run('start')
         task_manager = action_manager_self()
         self.assertEqual(task_manager.tasks_done_count, 1)
-        self.assertTrue(action.duration < 0.5)
+        self.assertTrue(action.duration < 0.5,
+                        "Too long: %.2f > 0.5" % action.duration)
 
     def test_perform_action_bad_service(self):
         '''test perform action with a simulate service hooked to the action'''
