@@ -23,11 +23,12 @@ class ActionManagerTest(TestCase):
     def tearDown(self):
         ActionManager._instance = None
 
-    def assertNear(self, target, delta, value):
-        if value > target + delta:
-            self.assertEqual(target, value)
-        if value < target - delta:
-            self.assertEqual(target, value)
+    def assert_near(self, target, delta, value):
+        """Like self.assertTrue(target - delta < value < target + delta)"""
+        low = target - delta
+        high = target + delta
+        self.assertTrue(low <= value <= high,
+                        "%.2f is not [%f and %f]" % (value, low, high))
 
     def test_instanciation(self):
         """Test singleton handling of action_manager_self"""
@@ -129,14 +130,11 @@ class ActionManagerTest(TestCase):
         task_manager.add_task(task2)
         task_manager.add_task(task3)
         self.assertTrue(task_manager.running_tasks)
-        count_set = 0
-        for aset in task_manager.running_tasks:
-            count_set += 1
-        self.assertEqual(count_set, 3)
+        self.assertEqual(len(task_manager.running_tasks), 3)
 
     def test_perform_action(self):
         """test perform an action without any delay"""
-        action = Action('start', 'localhost', '/bin/true')
+        action = Action('start', HOSTNAME, '/bin/true')
         ser = Service('TEST')
         ser.add_action(action)
         ser.run('start')
@@ -170,11 +168,14 @@ class ActionManagerTest(TestCase):
 
     def test_perform_delayed_action(self):
         """test perform an action with a delay"""
-        action = Action('start', HOSTNAME, 'sleep 1')
+        action = Action('start', HOSTNAME, 'sleep 0.5')
         ser = Service('TEST')
         ser.add_action(action)
         ser.run('start')
         task_manager = action_manager_self()
         ActionManager._instance = None
         self.assertEqual(task_manager.tasks_done_count, 1)
-        self.assertNear(1, 0.3, action.duration)
+        # SSH could length up to 0.4 sec.
+        # So max is 0.5 + 0.4 = 0.9, min is 0.5
+        # Average is: 0.7 +/- 0.2
+        self.assert_near(0.7, 0.2, action.duration)
