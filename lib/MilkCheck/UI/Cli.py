@@ -11,7 +11,7 @@ specificities.
 '''
 
 # classes
-import fcntl, termios, struct, os, sys
+import fcntl, termios, struct, os, sys, traceback
 from signal import SIGINT
 from ClusterShell.NodeSet import NodeSet
 from MilkCheck.Callback import CoreEvent, call_back_self
@@ -346,24 +346,25 @@ class CommandLineInterface(CoreEvent):
                 ConfigParserError,
                 ScannerError), exc:
             self._logger.error(str(exc))
-            return RC_EXCEPTION
+            retcode = RC_EXCEPTION
         except InvalidOptionError, exc:
             self._logger.critical('Invalid options: %s\n' % exc)
             self._mop.print_help()
-            return RC_EXCEPTION
+            retcode = RC_EXCEPTION
         except KeyboardInterrupt, exc:
             self._logger.error('Keyboard Interrupt')
-            return (128 + SIGINT)
+            retcode = (128 + SIGINT)
         except ScannerError, exc:
             self._logger.error('Bad syntax in config file :\n%s' % exc)
-            return RC_EXCEPTION
+            retcode = RC_EXCEPTION
         except Exception, exc:
             # In debug mode, propagate the error
             if (not self._conf or self._conf.get('debug')):
-                raise
+                traceback.print_exc(file=sys.stdout)
             else:
                 self._logger.error('Unexpected Exception : %s' % exc)
-            return RC_UNKNOWN_EXCEPTION
+            retcode = RC_UNKNOWN_EXCEPTION
+
         return retcode
 
     def retcode(self):

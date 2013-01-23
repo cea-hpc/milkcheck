@@ -7,10 +7,42 @@ This module defines the tests cases targeting the CallBackHandler.
 
 # Classes
 from unittest import TestCase
+from MilkCheck.Callback import CallbackHandler, call_back_self, CoreEvent
 
 # Symbols
-from MilkCheck.Callback import CallbackHandler, call_back_self
-from MilkCheck.Callback import EV_STARTED
+from MilkCheck.Callback import EV_STARTED, EV_COMPLETE, EV_STATUS_CHANGED
+from MilkCheck.Callback import EV_TRIGGER_DEP
+
+class EventTest(CoreEvent):
+    '''
+    Class test to manage recieved events
+    '''
+    def __init__(self):
+        '''Init last_event to gather the recieved event type'''
+        CoreEvent.__init__(self)
+        self.last_event = None
+        call_back_self().attach(self)
+
+    def ev_started(self, obj):
+        '''Event triggered when recieve EV_STARTED'''
+        self.last_event = EV_STARTED
+
+    def ev_complete(self, obj):
+        '''Event triggered when recieve EV_COMPLETE'''
+        self.last_event = EV_COMPLETE
+
+    def ev_status_changed(self, obj):
+        '''Event triggered when recieve EV_STATUS_CHANGED'''
+        self.last_event = EV_STATUS_CHANGED
+
+    def ev_delayed(self, obj):
+        '''Event triggered when recieve EV_TRIGGER_DEP'''
+        self.last_event = EV_TRIGGER_DEP
+
+    def ev_trigger_dep(self, obj_source, obj_triggered):
+        '''Event triggered when recieve EV_TRIGGER_DEP'''
+        self.last_event = EV_TRIGGER_DEP
+
 
 class CallBackHandlerTest(TestCase):
     '''
@@ -39,3 +71,16 @@ class CallBackHandlerTest(TestCase):
         chandler.detach(obj)
         self.assertTrue(obj not in chandler._interfaces)
         CallbackHandler._instance = None
+
+    def test_notify_interface(self):
+        '''Test notification on event type'''
+        event = EventTest()
+        for evname in (EV_STARTED, EV_COMPLETE, EV_STATUS_CHANGED):
+            call_back_self().notify(None, evname)
+            self.assertEqual(event.last_event, evname)
+
+        # EV_TRIGGER_DEP need a tuple as object parameter
+        evname = EV_TRIGGER_DEP
+        call_back_self().notify((None, None), EV_TRIGGER_DEP)
+        self.assertEqual(event.last_event, evname)
+

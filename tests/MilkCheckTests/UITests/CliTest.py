@@ -13,6 +13,7 @@ from unittest import TestCase
 
 from MilkCheck.UI.Cli import CommandLineInterface
 from MilkCheck.ServiceManager import ServiceManager
+from MilkCheck.ActionManager import ActionManager
 from MilkCheck.ServiceManager import service_manager_self
 from MilkCheck.Engine.Service import Service
 from MilkCheck.Engine.Action import Action
@@ -25,6 +26,12 @@ from ClusterShell.NodeSet import NodeSet
 from MilkCheck.UI.Cli import RC_OK, RC_ERROR, RC_EXCEPTION, RC_WARNING, \
                              RC_UNKNOWN_EXCEPTION
 from MilkCheck.Engine.BaseEntity import REQUIRE_WEAK
+
+# Exceptions
+from yaml.scanner import ScannerError
+from signal import SIGINT
+from MilkCheck.Engine.Service import ActionNotFoundError
+from MilkCheck.UI.OptionParser import InvalidOptionError
 
 HOSTNAME = socket.gethostname().split('.')[0]
 
@@ -46,10 +53,13 @@ class MyOutput(StringIO):
         line = re.sub('ssh: (\w+): (Name or service not known)',
                       'ssh: Could not resolve hostname \\1: \\2', line)
 
+        # Traceback output doesn't need line number and source location
+        line = re.sub('File .*, line .*, in (.*)',
+                      'File "source.py", line 000, in \\1', line)
         StringIO.write(self, line)
 
-
 class CLICommon(TestCase):
+    ''' Class to manage Cli in tests'''
 
     def setUp(self):
         ConfigParser.DEFAULT_FIELDS['config_dir']['value'] = ''
@@ -57,6 +67,7 @@ class CLICommon(TestCase):
 
         ServiceManager._instance = None 
         self.manager = service_manager_self()
+        ActionManager._instance = None
 
         # Setup stdout and stderr as a MyOutput file
         sys.stdout = MyOutput()
@@ -322,7 +333,8 @@ S1 - I am the service S1                                          [    OK   ]
         """CLI return '12' if an unknown exception is raised."""
         service_manager_self().call_services = None
         self._output_check(['S2', 'start'], RC_UNKNOWN_EXCEPTION, "",
-"""[00:00:00] ERROR    - Unexpected Exception : 'NoneType' object is not callable
+"""[00:00:00] ERROR    - Unexpected Exception : 'NoneType'"""\
+""" object is not callable
 """)
 
     def test_multiple_services(self):
@@ -654,3 +666,144 @@ ServiceGroup                                                      [DEP_ERROR]
 """ServiceGroup.service - I am the service                           [    OK   ]
 ServiceGroup                                                      [    OK   ]
 """)
+
+def raiser(exception):
+    '''Raise exception (used in lambda functions)'''
+    raise exception
+
+class CommandLineExceptionsOutputTests(CLICommon):
+    '''Tests output messages when an exception occurs'''
+
+    def setUp(self):
+        '''
+        Set up mocking to test exceptions
+        '''
+        CLICommon.setUp(self)
+        self.call_services_backup = service_manager_self().call_services
+
+    def tearDown(self):
+        '''Restore ServiceManager'''
+        CLICommon.tearDown(self)
+        service_manager_self().call_services = self.call_services_backup
+
+    def test_KeyboardInterrupt_output(self):
+        '''Test command line output on KeybordInterrupt'''
+        service_manager_self().call_services = \
+                lambda services, action, conf=None : raiser(KeyboardInterrupt)
+        self._output_check(['start'], (128 + SIGINT),
+'''''',
+'''[00:00:00] ERROR    - Keyboard Interrupt
+''')
+    def test_ScannerError_output(self):
+        '''Test command line output on ScannerError'''
+        service_manager_self().call_services = \
+                lambda services, action, conf=None: raiser(ScannerError)
+        self._output_check(['start'], RC_EXCEPTION,
+'''''',
+'''[00:00:00] ERROR    - 
+''')
+    def test_ActionNotFound_output(self):
+        '''Test command line output on ActionNotFound'''
+        service_manager_self().call_services = \
+                lambda services, action, conf=None: raiser(
+                                        ActionNotFoundError("Test", "Debug"))
+        self._output_check(['start'], RC_EXCEPTION,
+'''''',
+'''[00:00:00] ERROR    - Action [Debug] not referenced for [Test]
+''')
+    def test_InvalidOptionError_output(self):
+        '''Test command line output on InvalidOption'''
+        service_manager_self().call_services = \
+                lambda services, action, conf=None: raiser(InvalidOptionError)
+        if sys.version_info >= (2, 5):
+            self._output_check(['start'], RC_EXCEPTION,
+'''Usage: nosetests [options] [SERVICE...] ACTION
+
+Options:
+  --version             show program's version number and exit
+  -h, --help            show this help message and exit
+  -v, --verbose         Increase or decrease verbosity
+  -d, --debug           Set debug mode and maximum verbosity
+  -g, --graph           Output dependencies graph
+  -s, --summary         Display summary of executed actions
+  -c CONFIG_DIR, --config-dir=CONFIG_DIR
+                        Change configuration files directory
+  -q, --quiet           Enable quiet mode
+
+  Engine parameters:
+    Those options allow you to configure the behaviour of the engine
+
+    -n ONLY_NODES, --only-nodes=ONLY_NODES
+                        Use only the specified nodes
+    -x EXCLUDED_NODES, --exclude-nodes=EXCLUDED_NODES
+                        Exclude the cluster's nodes specified
+    -X EXCLUDED_SVC, --exclude-service=EXCLUDED_SVC
+                        Skip the specified services
+    --dry-run           Only simulate command execution
+''',
+'''[00:00:00] CRITICAL - Invalid options: 
+
+[00:00:00] CRITICAL - Invalid options: 
+
+''')
+        else:
+            self._output_check(['start'], RC_EXCEPTION,
+'''usage: nosetests [options] [SERVICE...] ACTION
+
+options:
+  --version             show program's version number and exit
+  -h, --help            show this help message and exit
+  -v, --verbose         Increase or decrease verbosity
+  -d, --debug           Set debug mode and maximum verbosity
+  -g, --graph           Output dependencies graph
+  -s, --summary         Display summary of executed actions
+  -c CONFIG_DIR, --config-dir=CONFIG_DIR
+                        Change configuration files directory
+  -q, --quiet           Enable quiet mode
+
+  Engine parameters:
+    Those options allow you to configure the behaviour of the engine
+
+    -n ONLY_NODES, --only-nodes=ONLY_NODES
+                        Use only the specified nodes
+    -x EXCLUDED_NODES, --exclude-nodes=EXCLUDED_NODES
+                        Exclude the cluster's nodes specified
+    -X EXCLUDED_SVC, --exclude-service=EXCLUDED_SVC
+                        Skip the specified services
+    --dry-run           Only simulate command execution
+''',
+'''[00:00:00] CRITICAL - Invalid options: 
+
+[00:00:00] CRITICAL - Invalid options: 
+
+''')
+    def test_UnhandledException_output(self):
+        '''Test command line output on UnhandledException'''
+        service_manager_self().call_services = \
+                lambda services, action, conf=None: raiser(ZeroDivisionError)
+        self._output_check(['start'], RC_UNKNOWN_EXCEPTION,
+'''''',
+'''[00:00:00] ERROR    - Unexpected Exception : 
+''')
+    def test_UnhandledExceptionDebug_output(self):
+        '''Test command line output on UnhandledException in debug mode'''
+        service_manager_self().call_services = \
+                lambda services, action, conf=None: raiser(ZeroDivisionError)
+        self._output_check(['start', '-d'], RC_UNKNOWN_EXCEPTION,
+'''Traceback (most recent call last):
+  File "source.py", line 000, in execute
+    manager.call_services(services, action, conf=self._conf)
+  File "source.py", line 000, in <lambda>
+    lambda services, action, conf=None: raiser(ZeroDivisionError)
+  File "source.py", line 000, in raiser
+    raise exception
+ZeroDivisionError
+''',
+'''[00:00:00] DEBUG    - Configuration
+dryrun: False
+verbosity: 5
+summary: False
+fanout: 64
+debug: True
+config_dir: 
+''')
