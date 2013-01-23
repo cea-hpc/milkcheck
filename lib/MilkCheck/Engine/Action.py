@@ -11,6 +11,7 @@ from ClusterShell.Worker.Popen import WorkerPopen
 from ClusterShell.Event import EventHandler
 from MilkCheck.Engine.BaseEntity import BaseEntity
 from MilkCheck.Callback import call_back_self
+from ClusterShell.NodeSet import NodeSet
 
 # Symbols
 from MilkCheck.Engine.BaseEntity import DONE, TIMEOUT, ERROR
@@ -58,6 +59,10 @@ class ActionEventHandler(MilkCheckEventHandler):
     process an action.
     '''
     
+    def ev_hup(self, worker):
+        '''Update remaining target'''
+        self._action.pending_target.remove(worker.current_node)
+
     def ev_close(self, worker):
         '''
         This event is raised by the master task as soon as an action is
@@ -90,7 +95,7 @@ class ActionEventHandler(MilkCheckEventHandler):
             self._action.update_status(ERROR)
         else:
             self._action.update_status(DONE)
-                
+
 class Action(BaseEntity):
     '''
     This class models an action. An action is generally hooked to a service
@@ -123,6 +128,9 @@ class Action(BaseEntity):
         # Allow us to determine time used by an action within the master task
         self.start_time = None
         self.stop_time = None
+
+        # Store pending targets
+        self.pending_target = NodeSet()
 
     def reset(self):
         '''
@@ -252,7 +260,9 @@ class Action(BaseEntity):
         '''
         if not self.start_time:
             self.start_time = datetime.now()
-            
+
+        self.pending_target.add(self.target)
+
         if self.delay > 0 and allow_delay:
             # Action will be started as soon as the timer is done
             action_manager_self().perform_delayed_action(self)

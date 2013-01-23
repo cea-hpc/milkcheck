@@ -13,7 +13,7 @@ from MilkCheck.Engine.Action import ActionEventHandler
 from MilkCheck.Callback import call_back_self
 
 # Symbols
-from MilkCheck.Callback import EV_STARTED, EV_COMPLETE, EV_DELAYED
+from MilkCheck.Callback import EV_STARTED, EV_COMPLETE, EV_DELAYED, EV_FINISHED
 
 class ActionManager(EntityManager):
     """
@@ -131,6 +131,8 @@ class ActionManager(EntityManager):
                     self.fanout = None
             # Current number of task is decremented
             self._tasks_count -= 1
+        if not self.tasks_count:
+            call_back_self().notify(task.parent, EV_FINISHED)
 
     def _is_running_task(self, task):
         """

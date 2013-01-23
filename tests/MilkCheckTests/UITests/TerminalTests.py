@@ -5,7 +5,7 @@
 This modules defines the tests cases targeting the class Terminal
 """
 
-import sys, fcntl, termios, struct, os
+import os
 from unittest import TestCase
 from MilkCheck.UI.Cli import Terminal
 
@@ -15,6 +15,13 @@ class MockTerminal(Terminal):
     @classmethod
     def _ioctl_gwinsz(cls, fds):
         return None
+
+    @classmethod
+    def isafgtty(cls, descriptor):
+        '''
+        Return True for any 'descriptor'
+        '''
+        return True
     
 class TerminalTests(TestCase):
     '''Tests cases for the class Terminal'''
@@ -28,7 +35,7 @@ class TerminalTests(TestCase):
         '''Test terminal size from environment variables'''
         os.environ['LINES'] = '20'
         os.environ['COLUMNS'] = '100'
-        self.assertTrue(MockTerminal.size(), (20,100))
+        self.assertTrue(MockTerminal.size(), (20, 100))
         del os.environ['LINES']
         del os.environ['COLUMNS']
 
@@ -39,3 +46,8 @@ class TerminalTests(TestCase):
         if 'COLUMNS' in  os.environ:
             del os.environ['COLUMNS']
         self.assertEqual(MockTerminal.size(), (80, 25))
+
+    def test_terminal_tty(self):
+        '''Test tty mode'''
+        self.assertFalse(Terminal.isinteractive())
+        self.assertTrue(MockTerminal.isinteractive())

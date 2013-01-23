@@ -1,3 +1,6 @@
+2013-01-24 Aurelien Cedeyn  <aurelien.cedeyn@cea.fr>
+	* Return key display running informations
+
 2013-01-23 Aurelien Degremont  <aurelien.degremont@cea.fr>
 	* Add new syntax style for config file.
 

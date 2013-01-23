@@ -11,7 +11,7 @@ specificities.
 '''
 
 # classes
-import fcntl, termios, struct, os, sys, traceback
+import fcntl, termios, struct, os, sys, traceback, threading, select
 from signal import SIGINT
 from ClusterShell.NodeSet import NodeSet
 from MilkCheck.Callback import CoreEvent, call_back_self
@@ -36,6 +36,7 @@ from MilkCheck.Engine.Service import ActionNotFoundError
 # Symbols
 from MilkCheck.Engine.BaseEntity import WARNING, SKIPPED, LOCKED
 from MilkCheck.Engine.BaseEntity import TIMEOUT, ERROR, DEP_ERROR, DONE
+from MilkCheck.Engine.BaseEntity import NO_STATUS, WAITING_STATUS
 
 # Definition of retcodes
 RC_OK = 0
@@ -80,6 +81,21 @@ class Terminal(object):
     def isatty(cls):
         '''Determine if the current terminal is teletypewriter'''
         return sys.stdout.isatty() and sys.stderr.isatty()
+
+    @classmethod
+    def isafgtty(cls, descriptor):
+        '''
+        Return True if 'descriptor' is a foreground tty
+        '''
+        return descriptor.isatty() and \
+               os.tcgetpgrp(descriptor.fileno()) == os.getpgrp()
+
+    @classmethod
+    def isinteractive(cls):
+        '''
+        Return True if Terminal is interactive
+        '''
+        return cls.isafgtty(sys.stdin) and cls.isafgtty(sys.stdout)
 
 class ConsoleDisplay(object):
     '''
@@ -265,6 +281,65 @@ class ConsoleDisplay(object):
              action.delay)
         self.output(line)
 
+    def print_manager_status(self, manager):
+        ''' Display current ActionManager status'''
+        msg =  self.string_color("\nCurrent running status\n", 'MAGENTA')
+        for act in manager.running_tasks:
+            if act.status in (NO_STATUS, WAITING_STATUS):
+                target = str(act.pending_target) or 'localhost'
+                # Manage line length (truncate if greater
+                # than the terminal width)
+                name_len = len(" > %s on " % act.fullname())
+                if name_len + len(target) > self._term_width:
+                    tgt_len = self._term_width - name_len - 4
+                    target = "%s..." % target[:tgt_len]
+                msg += " > %s on %s\n" % (
+                                 self.string_color(act.fullname(), 'CYAN'),
+                                 self.string_color(target, 'YELLOW'))
+        self.output(msg)
+
+class InteractiveThread(threading.Thread):
+    '''
+    Separated thread to manage user input
+    '''
+    def __init__(self, console):
+        '''Setup console to manage display on user input'''
+        threading.Thread.__init__(self)
+        self._console = console
+        self._runnable = True
+        self._watcher = select.poll()
+
+    def _got_events(self):
+        '''Poll stdin events'''
+        return self._watcher.poll(1000)
+
+    def _flush_events(self):
+        '''Flush stdin'''
+        sys.stdin.readline()
+
+    def run(self):
+        '''Poll stdin and print current running status if needed'''
+        self._watcher.register(sys.stdin, select.POLLIN |
+                                         select.POLLPRI |
+                                         select.POLLERR |
+                                         select.POLLHUP |
+                                         select.POLLNVAL)
+        while(self._runnable):
+            for (desc, event) in self._got_events():
+                # We only should receive event from stdin
+                assert(desc == 0)
+                if event and event & (select.POLLIN | select.POLLPRI):
+                    self._flush_events()
+                    self._console.print_manager_status(action_manager_self())
+                # Unexpected or not wanted event
+                else:
+                    print "Unexpected event on interactive thread"
+                    self._runnable = False
+
+    def quit(self):
+        '''Properly quit the thread'''
+        self._runnable = False
+
 class CommandLineInterface(CoreEvent):
     '''
     This class models the Command Line Interface which is a CoreEvent. From
@@ -287,10 +362,13 @@ class CommandLineInterface(CoreEvent):
         self.actions = []
         # Displayer
         self._console = ConsoleDisplay()
+        # Store interactive mode
+        self.interactive = Terminal.isinteractive()
 
         self._logger = ConfigParser.install_logger()
 
         call_back_self().attach(self)
+        self.inter_thread = InteractiveThread(self._console)
 
     def execute(self, command_line):
         '''
@@ -322,9 +400,16 @@ class CommandLineInterface(CoreEvent):
                 # Compute all services with the required action
                 services = self._args[:-1]
                 action = self._args[-1]
+
+                # Create a thread in interactive mode to manage
+                # current running status
+                if self.interactive:
+                    self.inter_thread.start()
+
                 # Run tasks
                 manager.call_services(services, action, conf=self._conf)
                 retcode = self.retcode()
+
                 if self._conf.get('summary', False):
                     self._console.print_summary(self.actions)
             # Case 2 : Check configuration
@@ -364,6 +449,8 @@ class CommandLineInterface(CoreEvent):
             else:
                 self._logger.error('Unexpected Exception : %s' % exc)
             retcode = RC_UNKNOWN_EXCEPTION
+
+        self.inter_thread.quit()
 
         return retcode
 
@@ -438,5 +525,11 @@ class CommandLineInterface(CoreEvent):
         event is raised when the obj_source triggered another object. Sample :
         Action A triggers Action B
         Service A triggers Service B
+        '''
+        pass
+
+    def ev_finished(self, obj):
+        '''
+        Finalize milcheck call
         '''
         pass

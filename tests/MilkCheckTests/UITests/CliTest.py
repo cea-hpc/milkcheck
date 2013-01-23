@@ -6,14 +6,16 @@ This modules defines the tests cases targeting the class CommandLineInterface
 """
 
 # Classes
-import socket, sys, re
+import socket, sys, re, time, select
 from StringIO import StringIO
 
 from unittest import TestCase
 
+import MilkCheck.UI.Cli
 from MilkCheck.UI.Cli import CommandLineInterface
+import MilkCheck.ServiceManager
 from MilkCheck.ServiceManager import ServiceManager
-from MilkCheck.ActionManager import ActionManager
+from MilkCheck.ActionManager import ActionManager, action_manager_self
 from MilkCheck.ServiceManager import service_manager_self
 from MilkCheck.Engine.Service import Service
 from MilkCheck.Engine.Action import Action
@@ -666,6 +668,87 @@ ServiceGroup                                                      [DEP_ERROR]
 """ServiceGroup.service - I am the service                           [    OK   ]
 ServiceGroup                                                      [    OK   ]
 """)
+
+class MockInterTerminal(MilkCheck.UI.Cli.Terminal):
+    '''Manage a fake terminal to test interactive mode'''
+
+    called = False
+
+    @classmethod
+    def isinteractive(cls):
+        '''Simulate interactive mode'''
+        return True
+
+class MockInteractiveThread(MilkCheck.UI.Cli.InteractiveThread):
+    '''Manage a fake thread to test interactive output'''
+    display = True
+    def _flush_events(self):
+        '''Don't flush anything'''
+        pass
+
+    def _got_events(self):
+        '''Return fake event only once'''
+        time.sleep(0.2)
+        if self.display :
+            self.display = False
+            return [(0, select.POLLIN)]
+
+class CommandLineInteractiveOutputTests(CLICommon):
+    '''Tests cases of the command line output in interactive mode'''
+
+    def setUp(self):
+        '''
+        Set up the graph of services within the service manager
+
+        Graph
+                                _ start
+                   -- service1 /
+                 -'             _ start
+                  '-- service2 /
+        '''
+
+        self.backup_terminal = MilkCheck.UI.Cli.Terminal
+        self.backup_interactivethr = MilkCheck.UI.Cli.InteractiveThread
+        MilkCheck.UI.Cli.Terminal = MockInterTerminal
+        MilkCheck.UI.Cli.InteractiveThread = MockInteractiveThread
+        MockInterTerminal.called = False
+        CLICommon.setUp(self)
+
+        # Service
+        service1 = Service('service1')
+        service1.desc = 'I am the service 1'
+        service2 = Service('service2')
+        service2.desc = 'I am the service 2'
+        # Actions
+        action = Action('start', command='/bin/sleep 0.1')
+        action.inherits_from(service1)
+        service1.add_action(action)
+
+        service2.add_dep(target=service1)
+
+        action = Action('start', command='/bin/sleep 0.8')
+        action.inherits_from(service2)
+        service2.add_action(action)
+
+        # Register services within the manager
+        self.manager.register_services(service1, service2)
+
+    def tearDown(self):
+        '''Restore MilkCheck.UI.Cli.Terminal'''
+        CLICommon.tearDown(self)
+        MilkCheck.UI.Cli.Terminal = self.backup_terminal
+        MilkCheck.UI.Cli.InteractiveThread = self.backup_interactivethr
+
+    def test_command_output_interactive(self):
+        '''Test command line output in interactive mode'''
+        self._output_check(['start'], RC_OK,
+'''service1 - I am the service 1                                     [    OK   ]
+
+Current running status
+ > service2.start on localhost
+
+service2 - I am the service 2                                     [    OK   ]
+''')
 
 def raiser(exception):
     '''Raise exception (used in lambda functions)'''

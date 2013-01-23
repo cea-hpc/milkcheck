@@ -9,6 +9,7 @@ CoreEvent.
 EV_STATUS_CHANGED = 'EV_STATUS_CHANGED'
 EV_STARTED = 'EV_STARTED'
 EV_COMPLETE = 'EV_COMPLETE'
+EV_FINISHED = 'EV_FINISHED'
 EV_DELAYED = 'EV_DELAYED'
 EV_TRIGGER_DEP = 'EV_TRIGGER_DEP'
 
@@ -39,8 +40,6 @@ class CallbackHandler(object):
 
     def notify(self, obj, ev_name):
         '''Notify the interfaces registered within the callback handler'''
-        assert ev_name in (EV_STATUS_CHANGED, EV_STARTED, EV_COMPLETE, \
-        EV_DELAYED, EV_TRIGGER_DEP), 'event name not recognized'
         for interface in self._interfaces:
             if ev_name is EV_STATUS_CHANGED:
                 interface.ev_status_changed(obj)
@@ -48,6 +47,8 @@ class CallbackHandler(object):
                 interface.ev_started(obj)
             elif ev_name is EV_COMPLETE:
                 interface.ev_complete(obj)
+            elif ev_name is EV_FINISHED:
+                interface.ev_finished(obj)
             elif ev_name is EV_TRIGGER_DEP:
                 assert isinstance(obj, tuple)
                 (source, target) = obj
@@ -79,6 +80,10 @@ class CoreEvent(object):
         Something is complete on the object given as parameter. This migh be
         the end of a command on a node,  an action or a service.
         '''
+        raise NotImplementedError
+
+    def ev_finished(self, obj):
+        '''All tasks are done.'''
         raise NotImplementedError
 
     def ev_status_changed(self, obj):

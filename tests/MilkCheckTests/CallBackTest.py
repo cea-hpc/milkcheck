@@ -11,7 +11,7 @@ from MilkCheck.Callback import CallbackHandler, call_back_self, CoreEvent
 
 # Symbols
 from MilkCheck.Callback import EV_STARTED, EV_COMPLETE, EV_STATUS_CHANGED
-from MilkCheck.Callback import EV_TRIGGER_DEP
+from MilkCheck.Callback import EV_TRIGGER_DEP, EV_FINISHED
 
 class EventTest(CoreEvent):
     '''
@@ -42,6 +42,10 @@ class EventTest(CoreEvent):
     def ev_trigger_dep(self, obj_source, obj_triggered):
         '''Event triggered when recieve EV_TRIGGER_DEP'''
         self.last_event = EV_TRIGGER_DEP
+
+    def ev_finished(self, obj):
+        '''Event triggered when recieve EV_FINISHED'''
+        self.last_event = EV_FINISHED
 
 
 class CallBackHandlerTest(TestCase):
@@ -75,7 +79,7 @@ class CallBackHandlerTest(TestCase):
     def test_notify_interface(self):
         '''Test notification on event type'''
         event = EventTest()
-        for evname in (EV_STARTED, EV_COMPLETE, EV_STATUS_CHANGED):
+        for evname in (EV_STARTED, EV_COMPLETE, EV_STATUS_CHANGED, EV_FINISHED):
             call_back_self().notify(None, evname)
             self.assertEqual(event.last_event, evname)
 
