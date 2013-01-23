@@ -64,6 +64,55 @@ services:
                         cmd: service two start
 
     #
+    # Fanout
+    #
+    # Apply.   service, actions
+    # Default. 'fanout' value in milkcheck.conf
+    #
+    # "fanout: <integer>"
+    #
+    # Max number of concurrent execution of this command on the targets.
+    limit:
+        target: "foo[1-200]"
+        fanout: 20
+        actions:
+            status:
+                cmd: service sshd status
+
+    #
+    # Timeout
+    #
+    # Apply.   service, actions
+    # Default. (no timeout)
+    #
+    # "timeout: <float>"
+    #
+    # Amount of time, in second, the command should complete before being
+    # killed.
+    countdown:
+        actions:
+            start:
+                timeout: 2
+                cmd: service sshd start
+
+    #
+    # Errors
+    #
+    # Apply.   service, actions
+    # Default. 0
+    #
+    # "timeout: <integer>"
+    #
+    # Number of command failure before the action is considered on error.
+    tolerant:
+        errors: 2
+        target: "foo[1-10]"
+        actions:
+            start:
+                cmd: service sshd start
+
+
+    #
     # Action aliases
     #
     # You can declare multiple actions, separating action name with comma.

@@ -268,6 +268,7 @@ class ActionFromDictTest(TestCase):
                 'fanout': 4,
                 'retry': 5,
                 'delay': 2,
+                'errors': 3,
                 'timeout': 4,
                 'cmd': '/bin/True',
                 'desc': 'my desc',
@@ -279,6 +280,7 @@ class ActionFromDictTest(TestCase):
         self.assertEqual(act.target, NodeSet('localhost'))
         self.assertEqual(act.fanout, 4)
         self.assertEqual(act.retry, 5)
+        self.assertEqual(act.errors, 3)
         self.assertEqual(act.delay, 2)
         self.assertEqual(act.timeout, 4)
         self.assertEqual(act.command, '/bin/True')
