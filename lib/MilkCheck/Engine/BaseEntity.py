@@ -257,10 +257,8 @@ class BaseEntity(object):
         if not mode:
             self.target = NodeSet(nodeset)
         elif mode is 'DIF' and self.target:
-            self.target = NodeSet(self.resolve_property('target'))
             self.target.difference_update(nodeset)
         elif mode is 'INT' and self.target:
-            self.target = NodeSet(self.resolve_property('target'))
             self.target.intersection_update(nodeset)
 
     def get_target(self):

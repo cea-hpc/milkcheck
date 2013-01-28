@@ -16,12 +16,12 @@ class InvalidOptionError(Exception):
     '''Exception raised when the parser ran against an unexpected option.'''
     pass
 
-def check_nodeset(option, opt, value):
+def check_nodeset(_option, _opt, _value):
     '''Try to build a nodeset from the option value.'''
     try:
-        return NodeSet(value)
+        return NodeSet(_value)
     except NodeSetException:
-        raise InvalidOptionError('%s is not a valid nodeset' % value)
+        raise InvalidOptionError('%s is not a valid nodeset' % _value)
 
 
 class MilkCheckOption(Option):
@@ -100,22 +100,22 @@ class McOptionParser(OptionParser):
         '''Raise an exception when the parser gets an error.'''
         raise InvalidOptionError(' %s' % msg)
 
-    def __config_debug(self, option, opt, value, parser):
+    def __config_debug(self, _option, _opt, _value, _parser):
         '''Configure the debug mode when the parser gets the option -d.'''
         self.values.verbosity = 5
         self.values.debug = True
 
-    def __check_dir(self, option, opt, value, parser):
+    def __check_dir(self, _option, _opt, _value, _parser):
         '''Check the content of the option -c'''
-        if value and isdir(value):
-            setattr(self.values, option.dest, value)
+        if _value and isdir(_value):
+            setattr(self.values, _option.dest, _value)
         else:
             self.error('-c/--config-dir should be a valid directory')
 
-    def __check_service_mode(self, option, opt, value, parser):
+    def __check_service_mode(self, _option, _opt, _value, _parser):
         '''Check whether we are in the service execution mode.'''
-        if self.values.only_nodes and option.dest is 'excluded_nodes':
-            self.values.only_nodes.difference_update(value)
-        elif self.values.excluded_nodes and option.dest is 'only_nodes':
-            value.difference_update(self.values.excluded_nodes)
-        setattr(self.values, option.dest, value)
+        if self.values.only_nodes and _option.dest is 'excluded_nodes':
+            self.values.only_nodes.difference_update(_value)
+        elif self.values.excluded_nodes and _option.dest is 'only_nodes':
+            _value.difference_update(self.values.excluded_nodes)
+        setattr(self.values, _option.dest, _value)

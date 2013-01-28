@@ -23,7 +23,7 @@ class MilkCheckConfig(object):
     def __init__(self):
         self._flow = []
 
-    def _go_through(self, arg, dirname=None, names=None):
+    def _go_through(self, _arg, dirname=None, names=None):
         '''List the files in dirname'''
         for my_file in names:
             if isfile('%s/%s' %(dirname, my_file)) and \

@@ -37,14 +37,8 @@ class ServiceGroup(Service):
         self._subservices = {}
 
     def update_target(self, nodeset, mode=None):
-        '''Update the attribute target of a service'''
-        assert nodeset, 'The nodeset cannot be None'
-        if not mode:
-            self.target = nodeset
-        elif mode is 'DIF' and self.target:
-            self.target.difference_update(nodeset)
-        elif mode is 'INT' and self.target:
-            self.target.intersection_update(nodeset)
+        '''Update the attribute target of a ServiceGroup'''
+        BaseEntity.update_target(self, nodeset, mode)
         for service in self._subservices.values():
             service.update_target(nodeset, mode)
 
