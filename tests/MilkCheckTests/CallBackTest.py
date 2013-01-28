@@ -11,7 +11,7 @@ from MilkCheck.Callback import CallbackHandler, call_back_self, CoreEvent
 
 # Symbols
 from MilkCheck.Callback import EV_STARTED, EV_COMPLETE, EV_STATUS_CHANGED
-from MilkCheck.Callback import EV_TRIGGER_DEP, EV_FINISHED
+from MilkCheck.Callback import EV_TRIGGER_DEP, EV_FINISHED, EV_DELAYED
 
 class EventTest(CoreEvent):
     '''
@@ -47,17 +47,19 @@ class EventTest(CoreEvent):
         '''Event triggered when recieve EV_FINISHED'''
         self.last_event = EV_FINISHED
 
-
 class CallBackHandlerTest(TestCase):
     '''
     Tests cases of CallBackHandler
     '''
+    def tearDown(self):
+        '''Restore CallbackHandler'''
+        CallbackHandler._instance = None
+
     def test_instanciation(self):
         '''Test the instanciation of a CallBackHandler'''
         self.assertTrue(CallbackHandler())
         self.assertTrue(call_back_self())
         self.assertTrue(call_back_self() is call_back_self())
-        CallbackHandler._instance = None
 
     def test_attach_interface(self):
         '''Test ability to attach interface to the handler'''
@@ -65,7 +67,6 @@ class CallBackHandlerTest(TestCase):
         obj = object()
         chandler.attach(obj)
         self.assertTrue(obj in chandler._interfaces)
-        CallbackHandler._instance = None
 
     def test_detach_interface(self):
         '''Test ability to detach interface from the handler'''
@@ -74,7 +75,6 @@ class CallBackHandlerTest(TestCase):
         chandler.attach(obj)
         chandler.detach(obj)
         self.assertTrue(obj not in chandler._interfaces)
-        CallbackHandler._instance = None
 
     def test_notify_interface(self):
         '''Test notification on event type'''
@@ -88,3 +88,22 @@ class CallBackHandlerTest(TestCase):
         call_back_self().notify((None, None), EV_TRIGGER_DEP)
         self.assertEqual(event.last_event, evname)
 
+    def test_notimplemented(self):
+        '''Test NotImplementedError'''
+        result = []
+        event = CoreEvent()
+        call_back_self().attach(event)
+        events = [EV_STARTED,        EV_COMPLETE,
+                  EV_STATUS_CHANGED, EV_FINISHED,
+                  EV_TRIGGER_DEP, EV_DELAYED]
+        for evname in events:
+            try:
+                # Need a tuple as first arg to bypass assert for EV_DELAYED
+                # in call_back_self().notify()
+                call_back_self().notify((None, None), evname)
+            except NotImplementedError:
+                result.append(evname)
+
+        self.assertEqual(len(events), len(result),
+                "%s should raise NotImplementedError" %
+                        list(set(events) - set(result) ))

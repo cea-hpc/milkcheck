@@ -34,5 +34,13 @@ class EntityManagerTest(TestCase):
         self.assertTrue(ent1._algo_reversed and ent2._algo_reversed)
         self.assertFalse(not ent1._algo_reversed and not ent2._algo_reversed)
 
+    def test_iter_entities(self):
+        """Test EntityManager iterator"""
+        entity_manager_self().entities["foo"] = 1
+        entity_manager_self().entities["bar"] = 3
+        self.assertEqual(sorted(list(entity_manager_self().iter_entities())),
+                                                                       [1, 3],
+                                    "Inserted entities are not what expected")
+
     def tearDown(self):
         EntityManager._instance = None
