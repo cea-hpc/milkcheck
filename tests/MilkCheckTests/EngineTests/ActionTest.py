@@ -166,6 +166,32 @@ class ActionTest(TestCase):
         action.retry = 5
         self.assertEqual(action.retry, 5)
 
+    def test_retry_error(self):
+        """Test retry behaviour when errors"""
+        action = Action('start', command='/bin/false')
+        action.delay = 0.1
+        action.retry = 3
+        service = Service('retry')
+        service.add_action(action)
+        service.run('start')
+        self.assertEqual(action.retry, 0)
+        self.assertEqual(action.status, ERROR)
+        self.assertTrue(0.3 < action.duration < 0.5,
+                        "%.3f is not between 0.3 and 0.5" % action.duration)
+
+    def test_retry_timeout(self):
+        """Test retry behaviour when timeout"""
+        action = Action('start', command='/bin/sleep 0.5', timeout=0.1)
+        action.delay = 0.1
+        action.retry = 2
+        service = Service('retry')
+        service.add_action(action)
+        service.run('start')
+        self.assertEqual(action.retry, 0)
+        self.assertEqual(action.status, TIMEOUT)
+        self.assertTrue(0.6 < action.duration < 0.8,
+                        "%.3f is not between 0.6 and 0.8" % action.duration)
+
     def test_schedule(self):
         """Test behaviour method schedule"""
         a1 = Action(name='start', target=HOSTNAME, command='/bin/true')

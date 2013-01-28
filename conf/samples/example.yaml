@@ -111,6 +111,39 @@ services:
             start:
                 cmd: service sshd start
 
+    #
+    # Delay
+    #
+    # Apply.   service, actions
+    # Default. (no delay)
+    #
+    # "delay: <float>"
+    #
+    # Waiting time, in second, before action is effectively launched.
+    # (See also 'retry')
+    shifted:
+        delay: 10
+        actions:
+            restart:
+                cmd: /bin/restart
+
+    #
+    # Retry
+    #
+    # Apply.   service, actions
+    # Default. (no retry)
+    #
+    # "retry: <integer>"
+    #
+    # Re-launch the action if it has failed, up to 'retry value' times.
+    # 'delay' is awaited between each run. A 'delay' is mandatory when
+    # using 'retry'.
+    again:
+        actions:
+            restart:
+                delay: 0.5
+                retry: 2
+                cmd: /bin/relaunched
 
     #
     # Action aliases
