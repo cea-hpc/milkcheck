@@ -64,6 +64,28 @@ services:
                         cmd: service two start
 
     #
+    # Service dependency
+    #
+    # Apply.    service
+    # Default.  (no dependency)
+    #
+    # "require: <list>"
+    #
+    # Services can be sequenced, based on dependency between them. In the
+    # example below, service 'svc2' will be launched after 'svc1' because it
+    # requires it. Also, if service 'svc1' fails, svc2 will not be launched as
+    # its dependencies are not fulfilled.
+    svc1:
+        actions:
+           run:
+              cmd: service svc1 start
+    svc2:
+        require: [ svc1 ]
+        actions:
+           run:
+              cmd: service svc2 start
+
+    #
     # Fanout
     #
     # Apply.   service, actions
@@ -200,7 +222,7 @@ services:
     group:
         services:
             # This creates 3 sub-services with one 'start' action
-            'foo,bar,baz':
+            foo,bar,baz:
                 actions:
                     start:
                         cmd: service %SERVICE %ACTION

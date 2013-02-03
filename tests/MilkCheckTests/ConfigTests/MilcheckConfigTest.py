@@ -158,6 +158,7 @@ service:
 ---
 service:
     name: compat_grp
+    require: compat
     services:
         subsvc:
             actions:
@@ -189,3 +190,4 @@ services:
         self.assertTrue(manager.entities['foo2'].has_action('start'))
         self.assertTrue(manager.entities['foo2'].has_parent_dep('bar'))
         self.assertTrue(manager.entities['bar'].has_action('start'))
+        self.assertTrue(manager.entities['compat_grp'].has_parent_dep('compat'))
