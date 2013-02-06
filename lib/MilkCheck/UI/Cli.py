@@ -306,39 +306,53 @@ class InteractiveThread(threading.Thread):
         '''Setup console to manage display on user input'''
         threading.Thread.__init__(self)
         self._console = console
-        self._runnable = True
+        # _run_state and _run_ctl controls the thread termination
+        self._run_state, self._run_ctl = os.pipe()
         self._watcher = select.poll()
 
     def _got_events(self):
         '''Poll stdin events'''
-        return self._watcher.poll(1000)
+        return self._watcher.poll()
 
     def _flush_events(self):
         '''Flush stdin'''
         sys.stdin.readline()
 
+    def _register(self, desc):
+        '''Register file descriptor to watch'''
+        self._watcher.register(desc, select.POLLIN  |
+                                     select.POLLPRI |
+                                     select.POLLERR |
+                                     select.POLLHUP |
+                                     select.POLLNVAL)
+
     def run(self):
         '''Poll stdin and print current running status if needed'''
-        self._watcher.register(sys.stdin, select.POLLIN |
-                                         select.POLLPRI |
-                                         select.POLLERR |
-                                         select.POLLHUP |
-                                         select.POLLNVAL)
-        while(self._runnable):
+        self._register(sys.stdin)
+        self._register(self._run_state)
+        runnable = True
+        while(runnable):
             for (desc, event) in self._got_events():
-                # We only should receive event from stdin
-                assert(desc == 0)
-                if event and event & (select.POLLIN | select.POLLPRI):
-                    self._flush_events()
-                    self._console.print_manager_status(action_manager_self())
-                # Unexpected or not wanted event
-                else:
-                    print "Unexpected event on interactive thread"
-                    self._runnable = False
+                if event:
+                    if desc == self._run_state:
+                        # _run_state hangs up, stop the loop
+                        runnable = False
+                    elif event & (select.POLLIN | select.POLLPRI):
+                        self._flush_events()
+                        self._console.print_manager_status(action_manager_self())
+                    # Unexpected or not wanted event
+                    else:
+                        print "Unexpected event on interactive thread"
+                        runnable = False
+
+    def join(self, timeout=None):
+        '''Only join if thread is alive'''
+        if self.isAlive():
+            threading.Thread.join(self, timeout)
 
     def quit(self):
         '''Properly quit the thread'''
-        self._runnable = False
+        os.close(self._run_ctl)
 
 class CommandLineInterface(CoreEvent):
     '''
@@ -450,7 +464,9 @@ class CommandLineInterface(CoreEvent):
                 self._logger.error('Unexpected Exception : %s' % exc)
             retcode = RC_UNKNOWN_EXCEPTION
 
+        # Quit the interactive thread
         self.inter_thread.quit()
+        self.inter_thread.join()
 
         return retcode
 
