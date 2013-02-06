@@ -15,7 +15,7 @@ import MilkCheck.UI.Cli
 from MilkCheck.UI.Cli import CommandLineInterface
 import MilkCheck.ServiceManager
 from MilkCheck.ServiceManager import ServiceManager
-from MilkCheck.ActionManager import ActionManager, action_manager_self
+from MilkCheck.ActionManager import ActionManager
 from MilkCheck.ServiceManager import service_manager_self
 from MilkCheck.Engine.Service import Service
 from MilkCheck.Engine.Action import Action
@@ -25,7 +25,7 @@ from MilkCheck.Config.ConfigParser import ConfigParser
 from ClusterShell.NodeSet import NodeSet
 
 # Symbols
-from MilkCheck.UI.Cli import RC_OK, RC_ERROR, RC_EXCEPTION, RC_WARNING, \
+from MilkCheck.UI.Cli import RC_OK, RC_ERROR, RC_EXCEPTION, \
                              RC_UNKNOWN_EXCEPTION
 from MilkCheck.Engine.BaseEntity import REQUIRE_WEAK
 
@@ -649,11 +649,11 @@ ServiceGroup                                                      [DEP_ERROR]
         svc_ok.add_dep(target=svc_warn, sgth=REQUIRE_WEAK)
         self.manager.register_services(svc_warn, svc_ok)
 
-        self._output_check(['service_ok', 'warning'], RC_WARNING,
+        self._output_check(['service_ok', 'warning'], RC_OK,
 """warning service_failled ran in 0.00 s
  > localhost exited with 1
 service_failled - I am the failled service                        [  ERROR  ]
-service_ok - I am the ok service                                  [ WARNING ]
+service_ok - I am the ok service                                  [    OK   ]
 """)
 
     def test_command_output_error_quiet(self):

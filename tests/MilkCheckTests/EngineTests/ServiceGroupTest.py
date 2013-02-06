@@ -70,15 +70,13 @@ class ServiceGroupTest(TestCase):
         action.retry = 3
         action.status = DONE
         ser1.add_action(action)
-        ser1.warnings = True
-        ser1.status = WARNING
+        ser1.status = ERROR
         group.add_inter_dep(target=ser1)
         group.status = DEP_ERROR
         group.reset()
         self.assertEqual(group.status, NO_STATUS)
         self.assertEqual(ser1.status, NO_STATUS)
         self.assertEqual(action.status, NO_STATUS)
-        self.assertFalse(ser1.warnings)
         self.assertEqual(action.retry, 5)
         
     def test_search_node_graph(self):
@@ -430,11 +428,11 @@ class ServiceGroupTest(TestCase):
         group.add_dep(target=ext_serv2, sgth=REQUIRE_WEAK)
         # Prepare group
         group.run('start')
-        self.assertEqual(group.status, WARNING)
+        self.assertEqual(group.status, DONE)
         self.assertEqual(ext_serv1.status, DONE)
         self.assertEqual(ext_serv2.status, ERROR)
         self.assertEqual(inter_serv1.status, DONE)
-        self.assertEqual(inter_serv2.status, WARNING)
+        self.assertEqual(inter_serv2.status, DONE)
         self.assertEqual(inter_serv3.status, ERROR)
 
     def test_prepare_group_with_errors_two(self):
@@ -564,7 +562,7 @@ class ServiceGroupTest(TestCase):
         grp.add_dep(dep1, sgth=REQUIRE_WEAK)
         grp.run('stop')
 
-        self.assertEqual(grp.status, WARNING)
+        self.assertEqual(grp.status, DONE)
 
     def test_graph_entity(self):
         """Test the DOT graph output"""
@@ -620,6 +618,23 @@ class ServiceGroupFromDictTest(TestCase):
             sergrp._subservices['lustre'].has_parent_dep('sink'))
         self.assertTrue(
             sergrp._subservices['lustre'].has_child_dep('source'))
+
+    def test_fromdict_before(self):
+        """Test 'before' as an alias of 'require_weak'"""
+        grp = ServiceGroup('grp')
+        grp.fromdict({
+            'services': {
+                'svc1': {
+                    'actions': { 'start': { 'cmd': '/bin/true' } }
+                },
+                'svc2': {
+                    'before': [ 'svc1' ],
+                    'actions': { 'start': { 'cmd': '/bin/true' } }
+                }
+            }
+        })
+        svc1 = grp._subservices['svc2'].parents['svc1']
+        self.assertEqual(svc1.dep_type, REQUIRE_WEAK)
 
     def test_fromdict2(self):
         '''
@@ -819,4 +834,4 @@ class ServiceGroupFromDictTest(TestCase):
         grp.add_dep(dep1, sgth=REQUIRE_WEAK)
         grp.run('stop')
 
-        self.assertEqual(grp.status, WARNING)
+        self.assertEqual(grp.status, DONE)

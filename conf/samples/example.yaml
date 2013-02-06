@@ -86,6 +86,28 @@ services:
               cmd: service svc2 start
 
     #
+    # Service ordering
+    #
+    # Apply.    service
+    # Default.  (no ordering, everything in parallel)
+    #
+    # "before: <list>"
+    #
+    # By default, all independent services are run in parallel. You can prevent
+    # this and control the order they will be run using 'before' option.
+    # This is similar to 'require' option except that it does not check the
+    # execution status of the pointed services. Whatever their results, the
+    # execution will continue.
+    jobs:
+        actions:
+           stop:
+              cmd: service jobs stop
+    power:
+        before: [ jobs ]
+        actions:
+           stop:
+              cmd: halt
+    #
     # Fanout
     #
     # Apply.   service, actions

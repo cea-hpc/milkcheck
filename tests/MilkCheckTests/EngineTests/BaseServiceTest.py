@@ -21,10 +21,8 @@ class BaseServiceTest(TestCase):
         '''Test reset values of a BaseService object'''
         serv = BaseService("HIGHER_POINT")
         serv.origin = True
-        serv.warnings = True
         serv.reset()
         self.assertFalse(serv.origin)
-        self.assertFalse(serv.warnings)
         
     def test_update_status(self):
         """Test the method update_status without children."""

@@ -15,7 +15,7 @@ from MilkCheck.Engine.Service import Service
 from MilkCheck.Engine.Action import Action
 
 # Symbols
-from MilkCheck.Engine.BaseEntity import DEP_ERROR, DONE, WARNING
+from MilkCheck.Engine.BaseEntity import DEP_ERROR, DONE
 from MilkCheck.Engine.BaseEntity import CHECK, REQUIRE_WEAK
 
 HOSTNAME = socket.gethostname().split('.')[0]
@@ -77,9 +77,9 @@ class CoreTest(TestCase):
         self.assertEqual(grp2.status, DEP_ERROR)
         self.assertEqual(s3.status, DEP_ERROR)
         self.assertEqual(s2.status, DEP_ERROR)
-        self.assertEqual(grp1.status, WARNING)
-        self.assertEqual(s1.status, WARNING)
-        self.assertEqual(group_init.status, WARNING)
+        self.assertEqual(grp1.status, DONE)
+        self.assertEqual(s1.status, DONE)
+        self.assertEqual(group_init.status, DONE)
 
     def test_core_behaviour_reverse(self):
         '''Test ability of the core to solve a large graph in reverse mode'''

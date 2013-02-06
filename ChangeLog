@@ -1,3 +1,6 @@
+2013-02-06 Aurelien Degremont  <aurelien.degremont@cea.fr>
+	* Add 'before' option and disable WARNING.
+
 2013-01-24 Aurelien Cedeyn  <aurelien.cedeyn@cea.fr>
 	* Return key display running informations
 

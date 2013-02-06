@@ -134,6 +134,8 @@ class MilkCheckConfig(object):
     def _parse_deps(cls, data):
         '''Return a DepWrapper containing the different types of dependencies'''
         wrap = DepWrapper()
+        # This does not support 'before' alias for require_weak.
+        # Only in new style configuration
         for content in ('require', 'require_weak', 'check'):
             if content in data:
                 if type(data[content]) is str:

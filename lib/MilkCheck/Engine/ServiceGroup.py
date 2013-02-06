@@ -11,8 +11,7 @@ from MilkCheck.Engine.Service import Service, Action
 from MilkCheck.Engine.BaseEntity import BaseEntity, DEP_ORDER, Dependency
 
 # Symbols
-from MilkCheck.Engine.BaseEntity import DONE, WARNING, SKIPPED, REQUIRE, \
-                                        MISSING
+from MilkCheck.Engine.BaseEntity import DONE, SKIPPED, REQUIRE, MISSING
 
 # Exceptions
 from MilkCheck.ServiceManager import ServiceNotFoundError
@@ -238,8 +237,6 @@ class ServiceGroup(Service):
             # The group node is a fake we just change his status
             if intd_status in (SKIPPED, MISSING):
                 self.update_status(intd_status)
-            elif self.warnings:
-                self.update_status(WARNING)
             else:
                 self.update_status(DONE)
 
@@ -280,8 +277,11 @@ class ServiceGroup(Service):
 
                     # Parsing dependencies
                     wrap = DepWrapper()
-                    for prop in ('require', 'require_weak', 'check'):
+                    for prop in ('require', 'require_weak', 'before', 'check'):
                         if prop in props:
+                            if prop == 'before':
+                                props['require_weak'] = props[prop]
+                                prop = 'require_weak'
                             wrap.deps[prop] = props[prop]
 
                     # Get subservices which might be Service or ServiceGroup

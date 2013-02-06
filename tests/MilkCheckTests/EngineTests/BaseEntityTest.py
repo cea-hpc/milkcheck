@@ -240,18 +240,18 @@ class BaseEntityTest(unittest.TestCase):
         self.assertEqual(service.eval_deps_status(), DEP_ERROR)
 
     def test_eval_deps_warnings(self):
-        """Test that eval_deps_status return WARNING"""
+        """eval_deps_status() is DONE with REQUIRE_WEAK on error"""
         service = BaseEntity("test_service")
         serv_a = BaseEntity("A")
         serv_b = BaseEntity("B")
         service.add_dep(serv_a, REQUIRE_WEAK)
         service.add_dep(serv_b, REQUIRE_WEAK)
-        serv_b.status = ERROR
-        serv_a.status = TIMEOUT
-        self.assertEqual(service.eval_deps_status(), WARNING)
         serv_a.status = DONE
-        serv_b.status = WARNING
-        self.assertEqual(service.eval_deps_status(), WARNING)
+        serv_b.status = ERROR
+        self.assertEqual(service.eval_deps_status(), DONE)
+        serv_b.status = DEP_ERROR
+        serv_a.status = TIMEOUT
+        self.assertEqual(service.eval_deps_status(), DONE)
 
     def test_inheritance_of_properties1(self):
         '''Test inheritance between entities'''

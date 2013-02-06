@@ -20,9 +20,6 @@ class BaseService(BaseEntity):
     def __init__(self, name, target=None):
         BaseEntity.__init__(self, name, target)
         
-        # Define whether the service has warnings
-        self.warnings = False
-        
         # Define a flag allowing us to specify that this service
         # is the original caller so we do not have to start his
         # children 
@@ -34,7 +31,6 @@ class BaseService(BaseEntity):
     def reset(self):
         '''Reset values of attributes in order to perform multiple exec'''
         BaseEntity.reset(self)
-        self.warnings = False
         self.origin = False
 
     def run(self, action_name):

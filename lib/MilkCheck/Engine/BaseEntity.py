@@ -144,7 +144,7 @@ class Dependency(object):
             if self.is_strong():
                 return DEP_ERROR
             else:
-                return WARNING
+                return DONE
         else:
             return self.target.status
 

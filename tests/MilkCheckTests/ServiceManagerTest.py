@@ -9,8 +9,7 @@ RunningTasksManager and the ServiceManager itself
 # Classes
 import socket
 from unittest import TestCase
-from ClusterShell.NodeSet import NodeSet
-from MilkCheck.Engine.Service import Service, ActionNotFoundError
+from MilkCheck.Engine.Service import Service
 from MilkCheck.Engine.ServiceGroup import ServiceGroup
 from MilkCheck.Engine.Action import Action
 from MilkCheck.ServiceManager import ServiceManager, service_manager_self
@@ -160,8 +159,8 @@ class ServiceManagerTest(TestCase):
         self.assertTrue(manager.source.status not in (WARNING, ERROR,
                                                             DEP_ERROR))
 
-    def test_call_services_retcode3(self):
-        '''Test call_services return 3 whether source is WARNING'''
+    def test_call_services_retcode_weak(self):
+        '''Test call_services return 0 (OK) even with require_weak'''
         manager = service_manager_self()
         s1 = Service('S1')
         s2 = Service('S2')
@@ -176,7 +175,7 @@ class ServiceManagerTest(TestCase):
         s2.add_dep(target=s4)
         manager.register_services(s1, s2, s3, s4)
         manager.call_services([], 'start')
-        self.assertEqual(manager.source.status, WARNING)
+        self.assertEqual(manager.source.status, DONE)
 
     def test_call_services_retcode6(self):
         '''Test call_services return 6 whether source is DEP_ERROR'''

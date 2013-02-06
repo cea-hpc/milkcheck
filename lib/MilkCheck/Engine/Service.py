@@ -16,8 +16,8 @@ from MilkCheck.Callback import call_back_self
 from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
 
 # Symbols
-from MilkCheck.Engine.BaseEntity import NO_STATUS, WARNING, MISSING, SKIPPED
-from MilkCheck.Engine.BaseEntity import WAITING_STATUS, DEP_ERROR, DONE
+from MilkCheck.Engine.BaseEntity import NO_STATUS, MISSING, SKIPPED, DEP_ERROR
+from MilkCheck.Engine.BaseEntity import WAITING_STATUS
 from MilkCheck.Callback import EV_STATUS_CHANGED, EV_TRIGGER_DEP
 
 class ActionNotFoundError(MilkCheckEngineError):
@@ -105,17 +105,13 @@ class Service(BaseService):
         Update the current service's status and whether all of his parents
         dependencies are solved start children dependencies.
         '''
-        if self.warnings and status is DONE:
-            self.status = WARNING
-        else:
-            self.status = status
+        self.status = status
 
         if not self.simulate:
             call_back_self().notify(self, EV_STATUS_CHANGED)
 
         # I got a status so I'm DONE or DEP_ERROR and I'm not the calling point
-        if self.status not in (NO_STATUS, WAITING_STATUS) and \
-            not self.origin:
+        if self.status not in (NO_STATUS, WAITING_STATUS) and not self.origin:
 
             # Trigger each service which depend on me as soon as it does not
             # have WAITING_STATUS parents
@@ -124,13 +120,11 @@ class Service(BaseService):
                 deps = self.parents
 
             for dep in deps.values():
-                if dep.target.status is NO_STATUS and \
-                    dep.target.is_ready() and \
-                        dep.target._tagged:
+                tgt = dep.target
+                if tgt.status is NO_STATUS and tgt.is_ready() and tgt._tagged:
                     if not self.simulate:
-                        call_back_self().notify((self, dep.target),
-                        EV_TRIGGER_DEP)
-                    dep.target.prepare()
+                        call_back_self().notify((self, tgt), EV_TRIGGER_DEP)
+                    tgt.prepare()
 
     def _process_dependencies(self, deps):
         '''Perform a prepare on each dependency in deps'''
@@ -171,9 +165,6 @@ class Service(BaseService):
             else:
                 if self.skipped():
                     self.update_status(SKIPPED)
-                # Just flag if dependencies encountered problem
-                if deps_status == WARNING:
-                    self.warnings = True
 
                 # Look for uncompleted dependencies 
                 deps = self.search_deps([NO_STATUS])
