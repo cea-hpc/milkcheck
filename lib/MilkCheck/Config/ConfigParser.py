@@ -22,9 +22,10 @@ class ConfigParser(object):
 
     CONFIG_PATH = '/etc/milkcheck/milkcheck.conf'
     DEFAULT_FIELDS = {
-         'config_dir':  { 'value': '/etc/milkcheck/conf', 'type': str },
-         'fanout':      { 'value': '64', 'type': int },
-         'summary':     { 'value': False, 'type': bool },
+         'config_dir':      { 'value': '/etc/milkcheck/conf', 'type': str },
+         'fanout':          { 'value': '64', 'type': int },
+         'reverse_actions': { 'value': ['stop'], 'type': list },
+         'summary':         { 'value': False, 'type': bool },
          }
 
     def __init__(self, options):

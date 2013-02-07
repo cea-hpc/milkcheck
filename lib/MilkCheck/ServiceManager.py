@@ -175,7 +175,11 @@ class ServiceManager(EntityManager):
         '''Allow the user to call one or multiple services.'''
         assert action, 'action name cannot be None'
 
-        reverse = (action == 'stop')
+        # Manage reverse mode based on configuration
+        reverse = False
+        if conf:
+            reverse = action in conf.get('reverse_actions')
+
         self.variables.clear()
 
         # Create global variable from configuration

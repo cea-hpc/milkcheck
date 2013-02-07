@@ -46,6 +46,7 @@ DESCRIPTION
 
 *-q, --quiet*::
          Set quiet mode with minimum verbosity
+
 ===  Engine parameters ===
 Those options allow you to configure the behaviour of the engine
 
@@ -80,6 +81,9 @@ config_dir: /etc/milkcheck/conf
 
 # Default fanout connection for any service
 fanout: 64
+
+# Actions names that reverse dependencies (usually, 'start' uses the standard dependencies and 'stop' uses the reversed ones)
+reverse_actions: ['stop']
 
 # Do not display summary by default (True/False)
 summary: False

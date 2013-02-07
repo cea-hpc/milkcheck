@@ -9,9 +9,9 @@ RunningTasksManager and the ServiceManager itself
 # Classes
 import socket
 from unittest import TestCase
+from MilkCheck.Engine.Action import Action
 from MilkCheck.Engine.Service import Service
 from MilkCheck.Engine.ServiceGroup import ServiceGroup
-from MilkCheck.Engine.Action import Action
 from MilkCheck.ServiceManager import ServiceManager, service_manager_self
 from MilkCheck.ServiceManager import ServiceAlreadyReferencedError
 from MilkCheck.ServiceManager import ServiceNotFoundError
@@ -309,4 +309,35 @@ compound=true;
 node [style=filled];
 }
 """)
+
+    def test_call_services_reversed(self):
+        '''Test service_manager with custom reversed actions'''
+        manager = service_manager_self()
+        s1 = Service('S1')
+        s2 = Service('S2')
+        s1.add_action(Action('wait', command='/bin/true'))
+        s2.add_action(Action('wait', command='/bin/true'))
+        s1.add_dep(s2)
+        manager.register_services(s1, s2)
+        manager.call_services(['S1'], 'wait',
+                        conf={"reverse_actions": ['wait']})
+        self.assertTrue(s1._algo_reversed)
+        self.assertTrue(s2._algo_reversed)
+
+    def test_call_services_reversed_multiple(self):
+        '''Test service_manager with multiple custom reversed actions'''
+        manager = service_manager_self()
+        s1 = Service('S1')
+        s2 = Service('S2')
+        s1.add_action(Action('stop', command='/bin/true'))
+        s2.add_action(Action('wait', command='/bin/true'))
+        manager.register_services(s1, s2)
+        actions = ['stop', 'wait']
+        for act in actions:
+            s1._algo_reversed = False
+            s2._algo_reversed = False
+            manager.call_services(['S1'], act,
+                            conf={"reverse_actions": actions})
+            self.assertTrue(s1._algo_reversed)
+            self.assertTrue(s2._algo_reversed)
 
