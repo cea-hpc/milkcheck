@@ -1,7 +1,7 @@
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 
 Name:		milkcheck
-Version:	0.9.2
+Version:	0.10
 Release:	1%{?dist}
 Summary:	Distributed cluster command management
 
@@ -45,6 +45,9 @@ rm -rf $RPM_BUILD_ROOT
 %{vimdatadir}/syntax/milkcheck.vim
 
 %changelog
+* Thu Feb  7 2013 Aurelien Degremont <aurelien.degremont@cea.fr> 0.10-1
+- Update to 0.10 release. (--quiet, new syntax, interactive mode, ...)
+
 * Fri Nov  9 2012 Aurelien Degremont <aurelien.degremont@cea.fr> 0.9.2-1
 - Update to 0.9.2 release. (Bugfixes, man page, --dry-run mode, ...)
 
