@@ -18,7 +18,7 @@ else
 endif
 
 " Redefine yamlKey
-syn match   yamlKey     '\(\w\|,\)\+\(\s\+\(\w\|,\)\+\)*\ze\s*:' contains=mlkKeyword,mlkKeyDelim
+syn match   yamlKey     '\(\w\|,\|-\)\+\(\s\+\(\w\|,\|-\)\+\)*\ze\s*:' contains=mlkKeyword,mlkKeyDelim
 
 syn match   mlkKeyDelim  contained ','
 syn keyword mlkKeyword   contained variables services actions
