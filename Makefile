@@ -11,6 +11,7 @@ DESTDIR=/
 MANDIR=/usr/share/man
 SYSCONFIGDIR=/etc
 PYTHON=python
+VIMDATADIR=/usr/share/vim/vimfiles
 
 all: $(MANPAGE)
 	$(PYTHON) setup.py build
@@ -23,6 +24,10 @@ install: all
 	install -d $(DESTDIR)/$(MANDIR)/man8/
 	# doc files
 	install -p -m 0644 doc/*.8 $(DESTDIR)/$(MANDIR)/man8/
+	# vim files
+	install -d $(DESTDIR)/$(VIMDATADIR)/{ftdetect,syntax}
+	install -p -m 0644 doc/vim/ftdetect/milkcheck.vim $(DESTDIR)/$(VIMDATADIR)/ftdetect
+	install -p -m 0644 doc/vim/syntax/milkcheck.vim $(DESTDIR)/$(VIMDATADIR)/syntax
 
 version:
 ifeq ($(VERSION),*)

@@ -25,8 +25,9 @@ actions, all of them based on shell commands.
 make VERSION=%{version}
 
 %install
+%define vimdatadir %{_datadir}/vim/vimfiles
 rm -rf %{buildroot}
-make install DESTDIR=%{buildroot} PYTHON=%{__python} MANDIR=%{_mandir} SYSCONFIGDIR=%{_sysconfdir} VERSION=%{version}
+make install DESTDIR=%{buildroot} PYTHON=%{__python} MANDIR=%{_mandir} SYSCONFIGDIR=%{_sysconfdir} VERSION=%{version} VIMDATADIR=%{vimdatadir}
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -40,6 +41,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/milkcheck
 %{_mandir}/man8/*
 %doc ChangeLog
+%{vimdatadir}/ftdetect/milkcheck.vim
+%{vimdatadir}/syntax/milkcheck.vim
 
 %changelog
 * Fri Nov  9 2012 Aurelien Degremont <aurelien.degremont@cea.fr> 0.9.2-1

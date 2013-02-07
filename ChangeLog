@@ -1,3 +1,6 @@
+2013-02-07 Aurelien Degremont  <aurelien.degremont@cea.fr>
+	* Add vim syntax color support.
+
 2013-02-06 Aurelien Degremont  <aurelien.degremont@cea.fr>
 	* Add 'before' option and disable WARNING.
 
