@@ -6,7 +6,7 @@ Release:	1%{?dist}
 Summary:	Distributed cluster command management
 
 Group:		System Environment/Base
-License:	CEA-DAM
+License:	CeCILL
 Source0:	%{name}-%{version}.tar.gz
 BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 BuildArch:	noarch
@@ -40,7 +40,10 @@ rm -rf $RPM_BUILD_ROOT
 %{python_sitelib}/MilkCheck-*-py?.?.egg-info
 %{_bindir}/milkcheck
 %{_mandir}/man8/*
+%doc AUTHORS
 %doc ChangeLog
+%doc Licence_CeCILL_V2-en.txt
+%doc Licence_CeCILL_V2-fr.txt
 %{vimdatadir}/ftdetect/milkcheck.vim
 %{vimdatadir}/syntax/milkcheck.vim
 

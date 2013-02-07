@@ -9,7 +9,7 @@ if not os.getenv('VERSION'):
 
 setup(name='MilkCheck',
       version=os.getenv('VERSION'),
-      license='CEA-DAM',
+      license='CeCILL',
       description='Parallele command execution manager',
       author='Aurelien Degremont',
       author_email='aurelien.degremont@cea.fr',
