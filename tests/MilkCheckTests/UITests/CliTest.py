@@ -748,8 +748,53 @@ class CommandLineInteractiveOutputTests(CLICommon):
         self._output_check(['start'], RC_OK,
 '''service1 - I am the service 1                                     [    OK   ]
 
-Current running status
+Actions in progress
  > service2.start on localhost
+
+service2 - I am the service 2                                     [    OK   ]
+''')
+
+    def test_interactive_large_nodeset(self):
+        '''Test command line output in interactive mode with larget nodeset'''
+        class CustomAction(Action):
+            def schedule(self, allow_delay=True):
+                Action.schedule(self, allow_delay)
+                self.pending_target = NodeSet(HOSTNAME + ',foo')
+
+        # Replace start action with a modified one
+        act = CustomAction('start', target=HOSTNAME, command='sleep 0.8')
+        svc2 = self.manager.entities['service2']
+        svc2.remove_action('start')
+        svc2.add_action(act)
+
+        self._output_check(['start'], RC_OK,
+'''service1 - I am the service 1                                     [    OK   ]
+
+Actions in progress
+ > service2.start on HOSTNAME,foo (2)
+
+service2 - I am the service 2                                     [    OK   ]
+''')
+
+    def test_interactive_too_large_nodeset(self):
+        '''Test interactive output with too large nodeset is truncated'''
+        class CustomAction(Action):
+            def schedule(self, allow_delay=True):
+                Action.schedule(self, allow_delay)
+                longname = "a" * 100
+                self.pending_target = NodeSet(HOSTNAME + "," + longname)
+
+        # Replace start action with a modified one
+        act = CustomAction('start', target=HOSTNAME, command='sleep 0.8')
+        svc2 = self.manager.entities['service2']
+        svc2.remove_action('start')
+        svc2.add_action(act)
+
+        self._output_check(['start'], RC_OK,
+'''service1 - I am the service 1                                     [    OK   ]
+
+Actions in progress
+ > service2.start on aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa... (2)
 
 service2 - I am the service 2                                     [    OK   ]
 ''')

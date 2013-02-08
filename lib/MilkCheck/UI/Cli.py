@@ -283,19 +283,23 @@ class ConsoleDisplay(object):
 
     def print_manager_status(self, manager):
         ''' Display current ActionManager status'''
-        msg =  self.string_color("\nCurrent running status\n", 'MAGENTA')
+        msg = self.string_color("\nActions in progress\n", 'MAGENTA')
         for act in manager.running_tasks:
             if act.status in (NO_STATUS, WAITING_STATUS):
                 target = str(act.pending_target) or 'localhost'
+                # Display nodeset count if needed (greather than 2)
+                nscount = ''
+                if len(act.pending_target) > 1:
+                    nscount = " (%d)" % len(act.pending_target)
                 # Manage line length (truncate if greater
                 # than the terminal width)
                 name_len = len(" > %s on " % act.fullname())
-                if name_len + len(target) > self._term_width:
-                    tgt_len = self._term_width - name_len - 4
+                if name_len + len(target) + len(nscount) > self._term_width:
+                    tgt_len = self._term_width - name_len - 4 - len(nscount)
                     target = "%s..." % target[:tgt_len]
-                msg += " > %s on %s\n" % (
-                                 self.string_color(act.fullname(), 'CYAN'),
-                                 self.string_color(target, 'YELLOW'))
+                msg += " > %s on %s%s\n" % (
+                                 self.string_color(act.fullname(), 'YELLOW'),
+                                 self.string_color(target, 'CYAN'), nscount)
         self.output(msg)
 
 class InteractiveThread(threading.Thread):
