@@ -10,7 +10,7 @@ License:	CEA-DAM
 Source0:	%{name}-%{version}.tar.gz
 BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 BuildArch:	noarch
-BuildRequires:	python-devel python-setuptools
+BuildRequires:	python-devel python-setuptools asciidoc
 Requires:	clustershell > 1.4
 
 %description
