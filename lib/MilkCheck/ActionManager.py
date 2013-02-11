@@ -65,7 +65,6 @@ class ActionManager(EntityManager):
 
         self._master_task.shell(command, nodes=nodes, timeout=action.timeout,
                                 handler=ActionEventHandler(action))
-        self.run()
 
     def perform_delayed_action(self, action):
         """Perform a delayed action and add it to the running tasks"""
@@ -76,7 +75,6 @@ class ActionManager(EntityManager):
             call_back_self().notify(action, EV_DELAYED)
         self._master_task.timer(handler=ActionEventHandler(action),
                                 fire=action.delay)
-        self.run()
 
     def add_task(self, task):
         """

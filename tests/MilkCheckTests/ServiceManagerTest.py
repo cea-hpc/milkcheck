@@ -7,7 +7,7 @@ RunningTasksManager and the ServiceManager itself
 '''
 
 # Classes
-import socket
+import socket, time
 from unittest import TestCase
 from MilkCheck.Engine.Action import Action
 from MilkCheck.Engine.Service import Service
@@ -341,3 +341,20 @@ node [style=filled];
             self.assertTrue(s1._algo_reversed)
             self.assertTrue(s2._algo_reversed)
 
+    def test_call_services_parallelism(self):
+        '''Test services parallelism'''
+        manager = service_manager_self()
+        s1 = Service('S1')
+        s2 = Service('S2')
+        s1.add_action(Action('wait', command='/bin/sleep 0.5'))
+        s2.add_action(Action('wait', command='/bin/sleep 0.5'))
+        manager.register_services(s1, s2)
+
+        elapsed = time.time()
+        manager.call_services(['S1', 'S2'], 'wait')
+        elapsed = time.time() - elapsed
+        self.assertTrue(elapsed < 0.7, 'Time elapsed too high (%f)' % elapsed)
+        self.assertTrue(manager.source.status not in (ERROR, DEP_ERROR,
+                                                            WARNING))
+        self.assertEqual(s1.status, DONE)
+        self.assertEqual(s2.status, DONE)
