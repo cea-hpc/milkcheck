@@ -2,7 +2,7 @@
 # Contributor: TATIBOUET Jeremie <tatibouetj@ocre.cea.fr>
 
 """
-This modules defines the tests cases targeting the class CommandLineInterface
+This modules defines the tests cases targeting the class CommandLine
 """
 
 # Classes
@@ -12,7 +12,7 @@ from StringIO import StringIO
 from unittest import TestCase
 
 import MilkCheck.UI.Cli
-from MilkCheck.UI.Cli import CommandLineInterface
+from MilkCheck.UI.Cli import CommandLine
 import MilkCheck.ServiceManager
 from MilkCheck.ServiceManager import ServiceManager
 from MilkCheck.ActionManager import ActionManager
@@ -88,7 +88,7 @@ class CLICommon(TestCase):
          - outexpected: expected std output
          - errexpected: optional expected stderr
         """
-        cli = CommandLineInterface()
+        cli = CommandLine()
         cli._console.cleanup = False
         cli._console._term_width = 77
         rc = cli.execute(args)
