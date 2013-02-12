@@ -86,3 +86,15 @@ class McOptionParserTest(TestCase):
         mop = McOptionParser()
         mop.configure_mop()
         self.assertRaises(SystemExit, mop.parse_args, ['--version'])
+
+    def test_option_invalid_nodeset(self):
+        '''Test if nodeset/group source is invalid'''
+        mop = McOptionParser()
+        mop.configure_mop()
+        self.assertRaises(InvalidOptionError, mop.parse_args,
+                                    ['status', '-n', '@bad:group'])
+
+        mop = McOptionParser()
+        mop.configure_mop()
+        self.assertRaises(InvalidOptionError, mop.parse_args,
+                                    ['status', '-n', 'bad_node[set'])

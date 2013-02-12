@@ -9,6 +9,7 @@ from optparse import OptionParser, OptionGroup, Option
 from copy import copy
 from os.path import isdir
 from ClusterShell.NodeSet import NodeSet, NodeSetException
+from ClusterShell.NodeUtils import GroupResolverError
 import MilkCheck
 
 
@@ -22,6 +23,8 @@ def check_nodeset(_option, _opt, _value):
         return NodeSet(_value)
     except NodeSetException:
         raise InvalidOptionError('%s is not a valid nodeset' % _value)
+    except GroupResolverError, msg:
+        raise InvalidOptionError('%s uses a wrong group' % msg)
 
 
 class MilkCheckOption(Option):
