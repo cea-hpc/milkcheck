@@ -124,6 +124,11 @@ class BaseEntityTest(unittest.TestCase):
         self.assertRaises(DependencyAlreadyReferenced,
             ent.add_dep, r_ent)
 
+        #Same with reversed dependency
+        ent.add_dep(ent_dep, CHECK, parent=False)
+        self.assertRaises(DependencyAlreadyReferenced,
+            ent.add_dep, r_ent, parent=False)
+
     def test_remove_dep(self):
         """Test method remove_dep."""
         ent = BaseEntity('foo')
