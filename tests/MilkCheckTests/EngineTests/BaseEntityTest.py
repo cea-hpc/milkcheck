@@ -64,20 +64,6 @@ class BaseEntityTest(unittest.TestCase):
         self.assertEqual(ent._algo_reversed, False)
         self.assertEqual(ent.status, NO_STATUS)
 
-    def test_search_leafs(self):
-        '''Test research of leafs within the graph'''
-        ent1 = BaseEntity('ent1')
-        ent2 = BaseEntity('ent2')
-        ent3 = BaseEntity('ent3')
-        ent4 = BaseEntity('ent4')
-        self.assertTrue(ent1.search_leafs())
-        self.assertTrue(len(ent1.search_leafs()), 1)
-        ent1.add_dep(target=ent2)
-        ent1.add_dep(target=ent3)
-        ent2.add_dep(target=ent4)
-        self.assertTrue(ent1.search_leafs())
-        self.assertTrue(len(ent1.search_leafs()), 2)
-
     def test_add_dep_parents(self):
         """Test method add dependency for parents"""
         ent = BaseEntity('foo')

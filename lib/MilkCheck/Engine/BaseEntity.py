@@ -298,19 +298,6 @@ class BaseEntity(object):
                     return target
         return target
 
-    def search_leafs(self, leafs=set(), reverse=False):
-        '''
-        Search entities which are leafs. Be a leaf means that the current
-        entity has no parents/children (dependending on the reverse flag).
-        This algorithm go through the overall graph.
-        '''
-        if self.children:
-            for dep in self.deps().values():
-                dep.target.search_leafs(leafs, reverse)
-        else:
-            leafs.add(self)
-        return leafs
-
     def add_dep(self, target, sgth=REQUIRE, parent=True):
         '''
         Add a dependency in both direction. This method allow the user to
