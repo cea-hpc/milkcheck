@@ -51,7 +51,7 @@ clean:
 	rm -rf $(RPMTOPDIR)
 
 test:
-	cd $(TESTDIR) ; nosetests --exe --all-modules
+	export PYTHONPATH=$$PWD/lib/ ; cd $(TESTDIR) ; nosetests --exe --all-modules
 
 $(MANPAGE): $(MANSOURCE)
 	a2x -f manpage $<
