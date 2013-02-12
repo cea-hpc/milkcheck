@@ -356,3 +356,16 @@ node [style=filled];
                                                             WARNING))
         self.assertEqual(s1.status, DONE)
         self.assertEqual(s2.status, DONE)
+
+    def test_variable_config_defines_one(self):
+        """Test custom defines in variable_config()"""
+        manager = service_manager_self()
+        manager._variable_config(conf={'defines':['foo=bar']})
+        self.assertEqual(manager.variables['foo'], 'bar')
+
+    def test_variable_config_defines_several(self):
+        """Test custom defines in variable_config() (2 vars)"""
+        manager = service_manager_self()
+        manager._variable_config(conf={'defines':['foo=bar', 'baz=buz']})
+        self.assertEqual(manager.variables['foo'], 'bar')
+        self.assertEqual(manager.variables['baz'], 'buz')

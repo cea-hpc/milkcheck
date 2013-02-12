@@ -125,6 +125,10 @@ class McOptionParser(OptionParser):
                        dest='dryrun', default=False,
                        help='Only simulate command execution')
 
+        eng.add_option('--define', '--var', '-D', action='append',
+                       dest='defines', help='Define custom variables')
+
+
         self.add_option_group(eng)
 
     def error(self, msg):

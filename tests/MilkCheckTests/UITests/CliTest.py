@@ -500,6 +500,8 @@ options:
     -X EXCLUDED_SVC, --exclude-service=EXCLUDED_SVC
                         Skip the specified services
     --dry-run           Only simulate command execution
+    -D DEFINES, --define=DEFINES, --var=DEFINES
+                        Define custom variables
 """)
         else:
             self._output_check([], RC_OK,
@@ -526,6 +528,8 @@ Options:
     -X EXCLUDED_SVC, --exclude-service=EXCLUDED_SVC
                         Skip the specified services
     --dry-run           Only simulate command execution
+    -D DEFINES, --define=DEFINES, --var=DEFINES
+                        Define custom variables
 """)
 
     def test_command_output_checkconfig(self):
@@ -672,6 +676,18 @@ ServiceGroup                                                      [DEP_ERROR]
 """ServiceGroup.service - I am the service                           [    OK   ]
 ServiceGroup                                                      [    OK   ]
 """)
+
+    def test_custom_defines(self):
+        '''Test command line output custom variables'''
+        svc = Service('one')
+        svc.add_action(Action('go', command='/bin/echo %foo'))
+        self.manager.register_service(svc)
+        self._output_check(['one', 'go', '-v', '--define=foo=bar'], RC_OK,
+"""go one on localhost
+ > /bin/echo bar
+one                                                               [    OK   ]
+""")
+
 
 class MockInterTerminal(MilkCheck.UI.Cli.Terminal):
     '''Manage a fake terminal to test interactive mode'''
@@ -872,6 +888,8 @@ Options:
     -X EXCLUDED_SVC, --exclude-service=EXCLUDED_SVC
                         Skip the specified services
     --dry-run           Only simulate command execution
+    -D DEFINES, --define=DEFINES, --var=DEFINES
+                        Define custom variables
 ''',
 '''[00:00:00] CRITICAL - Invalid options: 
 
@@ -903,6 +921,8 @@ options:
     -X EXCLUDED_SVC, --exclude-service=EXCLUDED_SVC
                         Skip the specified services
     --dry-run           Only simulate command execution
+    -D DEFINES, --define=DEFINES, --var=DEFINES
+                        Define custom variables
 ''',
 '''[00:00:00] CRITICAL - Invalid options: 
 

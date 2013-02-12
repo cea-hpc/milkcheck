@@ -62,6 +62,9 @@ Those options allow you to configure the behaviour of the engine
 *--dry-run*::
          Only simulate command execution
 
+*-D DEFINES, --define=DEFINES, --var=DEFINES*::
+         Define custom variables
+
 *--version*::
          Show program's version number and exit
 
@@ -97,20 +100,19 @@ In this directory you can have one or more configuration files describing servic
 
 The syntax of theses files is YAML compliant an looks like :
 ......
-# cat /etc/milkcheck/conf/cron.yaml
+$ cat /etc/milkcheck/conf/cron.yaml
 #
 # Local service
 #
 # This service will run "service crond status" command on specified target when
 # "status" action is called.
 #
-service:
-    name: cron
-    desc: Crond service declaration
-    target: node[1-100]
-    actions:
-        status:
-            cmd: /sbin/service crond status
+services:
+    cron:
+        target: node[1-100]
+        actions:
+            status:
+                cmd: /sbin/service crond status
 ......
 
 The *SERVICE CONFIGURATION* files must have the '.yaml' suffix to be parsed by *milkcheck*.
@@ -137,6 +139,10 @@ EXAMPLES
 
 *milkcheck* -x node1 status::
     Launch the status command on all services described in the *SERVICE CONFIGURATION* directory but not node1.
+
+*milkcheck* --define "foo=bar" start::
+    Launch the start command on all services, and defined, for this run only, the global variable 'foo' to 'bar'.
+
 
 SEE ALSO
 --------

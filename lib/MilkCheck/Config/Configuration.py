@@ -107,7 +107,13 @@ class MilkCheckConfig(object):
                 # Parse variables
                 if elem == 'variables':
                     for (varname, value) in subelems.items():
-                        manager.add_var(varname, value)
+                        # Variables could have been already defined on command
+                        # line through defines, and they have priority.
+                        # If several 'variables' section are defined, the first
+                        # ones will have priority, and it is fine are there is
+                        # no ordering guarantee.
+                        if varname not in manager.variables:
+                            manager.add_var(varname, value)
                 # Parse service
                 elif elem == 'service' and 'actions' in subelems:
                     ser = Service(subelems['name'])

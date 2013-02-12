@@ -94,7 +94,7 @@ class ServiceManager(EntityManager):
         if varname not in self.variables:
             self.variables[varname] = value
         else:
-            raise VariableAlreadyExistError
+            raise VariableAlreadyExistError("'%s' already defined" % varname)
 
     def remove_var(self, varname):
         '''Remove var from the the service manager'''
@@ -152,6 +152,12 @@ class ServiceManager(EntityManager):
             self.add_var('SELECTED_NODES', str(conf.get('only_nodes', '')))
             # -x NODES
             self.add_var('EXCLUDED_NODES', str(conf.get('excluded_nodes', '')))
+
+            # Add command line variable
+            for defines in conf.get('defines', []):
+                for define in defines.split():
+                    key, value = define.split('=', 1)
+                    self.add_var(key, value)
         else:
             for varname in ('selected_node', 'excluded_nodes'):
                 self.add_var(varname.upper(), '')
