@@ -49,6 +49,12 @@ class MilkCheckConfigTest(TestCase):
         config.load_from_dir(directory=dty, recursive=True)
         self.assertTrue(config.data_flow)
 
+    def test_loading_conf_farom_baddir(self):
+        '''Test load in a directory that doesn't exist'''
+        dty = '/nowhere'
+        config = MilkCheckConfig()
+        self.assertRaises(ValueError, config.load_from_dir, directory=dty)
+
     def test_load_from_stream(self):
         '''Test parsing of a single YAML stream'''
         config = MilkCheckConfig()
