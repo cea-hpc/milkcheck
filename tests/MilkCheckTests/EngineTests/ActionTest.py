@@ -23,13 +23,13 @@ class ActionTest(TestCase):
     def test_desc(self):
         """Test action inherits 'desc'"""
         # No service description, no action description
-        action1 = Action('status', HOSTNAME, '/bin/true')
+        action1 = Action('status', command='/bin/true')
         service = Service('TEST')
         service.add_actions(action1)
         self.assertEqual(action1.desc, "")
 
         # Service description, actions inherits the description
-        action2 = Action('status', HOSTNAME, '/bin/true')
+        action2 = Action('status', command='/bin/true')
         service2 = Service('TEST2')
         service2.desc = "Service TEST"
         service2.add_actions(action2)
@@ -41,11 +41,12 @@ class ActionTest(TestCase):
         action = Action('start')
         self.assertNotEqual(action, None)
         self.assertEqual(action.name, 'start')
-        action = Action(name='start', target='fortoy5', command='/bin/true')
-        self.assertEqual(action.target, NodeSet('fortoy5'))
+
+        action = Action(name='start', target=HOSTNAME, command='/bin/true')
+        self.assertEqual(action.target, NodeSet(HOSTNAME))
         self.assertEqual(action.command, '/bin/true')
-        action = Action(name='start', target='fortoy5', command='/bin/true',
-                    timeout=10, delay=5)
+
+        action = Action(name='start', command='/bin/true', timeout=10, delay=5)
         self.assertEqual(action.timeout, 10)
         self.assertEqual(action.delay, 5)
 
@@ -61,7 +62,7 @@ class ActionTest(TestCase):
     def test_reset_action(self):
         '''Test resest values of an action'''
         action = Action(name='start', target='fortoy5', command='/bin/true',
-                    timeout=10, delay=5)
+                        timeout=10, delay=5)
         action.retry = 4
         action._retry_backup = 5
         action.worker = 'test'
@@ -123,13 +124,12 @@ class ActionTest(TestCase):
         service = Service('test_service')
         service.add_action(action)
         service.run('start')
-        self.assertNotEqual(action.nb_timeout(), 0)
+        self.assertEqual(action.nb_timeout(), 1)
         self.assertEqual(action.status, TIMEOUT)
 
     def test_nb_timeout_local(self):
         """Test nb_timeout() method (local)"""
-        action = Action(name='start',
-                        command='sleep 3', timeout=0.5)
+        action = Action(name='start', command='sleep 3', timeout=0.3)
         service = Service('test_service')
         service.add_action(action)
         service.run('start')
@@ -194,20 +194,19 @@ class ActionTest(TestCase):
 
     def test_schedule(self):
         """Test behaviour method schedule"""
-        a1 = Action(name='start', target=HOSTNAME, command='/bin/true')
-        a2 = Action(name='status', target=HOSTNAME,
-                    command='/bin/true', delay=1)
+        a1 = Action(name='start', command='/bin/true')
+        a2 = Action(name='status', command='/bin/true', delay=1)
         ser = Service('TEST')
         ser.add_actions(a1, a2)
         a1.run()
         a2.run()
-        self.assertTrue(0 < a1.duration and a1.duration < 0.5)
-        self.assertTrue(0.8 < a2.duration and a2.duration < 1.5)
+        self.assertTrue(0 < a1.duration and a1.duration < 0.2)
+        self.assertTrue(0.9 < a2.duration and a2.duration < 1.2)
 
     def test_prepare_dep_success(self):
         """Test prepare an action with a single successful dependency"""
-        a1 = Action('start', HOSTNAME, '/bin/true')
-        a2 = Action('status', HOSTNAME, '/bin/true')
+        a1 = Action('start', command='/bin/true')
+        a2 = Action('status', command='/bin/true')
         ser = Service('TEST')
         a1.add_dep(a2)
         ser.add_actions(a1, a2)
@@ -219,8 +218,8 @@ class ActionTest(TestCase):
 
     def test_prepare_dep_failed(self):
         """Test prepare an action with a single failed dependency"""
-        a1 = Action('start', HOSTNAME, '/bin/true')
-        a2 = Action('status', HOSTNAME, '/bin/false')
+        a1 = Action('start', command='/bin/true')
+        a2 = Action('status', command='/bin/false')
         ser = Service('TEST')
         a1.add_dep(a2)
         ser.add_actions(a1, a2)
@@ -232,10 +231,10 @@ class ActionTest(TestCase):
 
     def test_prepare_actions_graph(self):
         """Test prepare an action graph without errors"""
-        a1 = Action('start', HOSTNAME, '/bin/true')
-        a2 = Action('start_engine', HOSTNAME, '/bin/true')
-        a3 = Action('start_gui', HOSTNAME, '/bin/true')
-        a4 = Action('empty_home', HOSTNAME, '/bin/true')
+        a1 = Action('start', command='/bin/true')
+        a2 = Action('start_engine', command='/bin/true')
+        a3 = Action('start_gui', command='/bin/true')
+        a4 = Action('empty_home', command='/bin/true')
         a1.add_dep(a2)
         a1.add_dep(a3)
         a2.add_dep(a4)
@@ -254,10 +253,10 @@ class ActionTest(TestCase):
 
     def test_prepare_actions_graph_with_errors(self):
         """Test prepare an action graph with errors"""
-        a1 = Action('start', HOSTNAME, '/bin/true')
-        a2 = Action('start_engine', HOSTNAME, '/bin/true')
-        a3 = Action('start_gui', HOSTNAME, '/bin/false')
-        a4 = Action('empty_home', HOSTNAME, '/bin/false')
+        a1 = Action('start', command='/bin/true')
+        a2 = Action('start_engine', command='/bin/true')
+        a3 = Action('start_gui', command='/bin/false')
+        a4 = Action('empty_home', command='/bin/false')
         a1.add_dep(a2)
         a1.add_dep(a3)
         a2.add_dep(a4)
@@ -275,7 +274,7 @@ class ActionTest(TestCase):
         self.assertTrue(a4.duration)
 
     def test_action_with_variables(self):
-        action = Action('start', HOSTNAME, 'echo \$([ "%VAR1" != "" ] && echo "-x %VAR1")')
+        action = Action('start', command='echo \$([ "%VAR1" != "" ] && echo "-x %VAR1")')
         service = Service('TEST')
         service.add_actions(action)
         service.add_var('VAR1', 'foo')

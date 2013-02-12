@@ -6,19 +6,16 @@ This modules defines the tests cases demonstrating the right behaviour for
 the MilkCheck's engine
 '''
 
-import socket
 from unittest import TestCase
 
 # Classes
+from MilkCheck.Engine.Action import Action
 from MilkCheck.Engine.ServiceGroup import ServiceGroup
 from MilkCheck.Engine.Service import Service
-from MilkCheck.Engine.Action import Action
 
 # Symbols
 from MilkCheck.Engine.BaseEntity import DEP_ERROR, DONE
 from MilkCheck.Engine.BaseEntity import CHECK, REQUIRE_WEAK
-
-HOSTNAME = socket.gethostname().split('.')[0]
 
 class CoreTest(TestCase):
     '''Define some strong tests cases for the Engine'''
@@ -30,13 +27,10 @@ class CoreTest(TestCase):
         grp1_i1 = Service('I1')
         grp1_i2 = Service('I2')
         grp1_i3 = Service('I3')
-        grp1_i1_act = Action('start', HOSTNAME, '/bin/true')
-        grp1_i2_act = Action('start', HOSTNAME, '/bin/true')
-        grp1_i2_suc = Action('status', HOSTNAME, '/bin/true')
-        grp1_i3_act = Action('start', HOSTNAME, '/bin/true')
-        grp1_i1.add_action(grp1_i1_act)
-        grp1_i2.add_actions(grp1_i2_act, grp1_i2_suc)
-        grp1_i3.add_action(grp1_i3_act)
+        grp1_i1.add_action(Action('start', command='/bin/true'))
+        grp1_i2.add_action(Action('start', command='/bin/true'))
+        grp1_i2.add_action(Action('status', command='/bin/true'))
+        grp1_i3.add_action(Action('start', command='/bin/true'))
         grp1.add_inter_dep(target=grp1_i1)
         grp1.add_inter_dep(base=grp1_i1, target=grp1_i2, sgth=CHECK)
         grp1.add_inter_dep(target=grp1_i3)
@@ -45,40 +39,35 @@ class CoreTest(TestCase):
         grp2 = ServiceGroup('GRP2')
         grp2_i1 = Service('I1')
         grp2_i2 = Service('I2')
-        grp2_i1_act = Action('start', HOSTNAME, '/bin/false')
-        grp2_i2_act = Action('start', HOSTNAME, '/bin/true')
-        grp2_i1.add_action(grp2_i1_act)
-        grp2_i2.add_action(grp2_i2_act)
+        grp2_i1.add_action(Action('start', command='/bin/false'))
+        grp2_i2.add_action(Action('start', command='/bin/true'))
         grp2.add_inter_dep(target=grp2_i1)
         grp2.add_inter_dep(base=grp2_i1, target=grp2_i2)
         
         # Define Group init
-        s1 = Service('S1')
-        s1_act = Action('start', HOSTNAME, '/bin/true')
-        s1.add_action(s1_act)
-        s2 = Service('S2')
-        s2_act = Action('start', HOSTNAME, '/bin/true')
-        s2.add_action(s2_act)
-        s3 = Service('S3')
-        s3_act = Action('start', HOSTNAME, '/bin/true')
-        s3.add_action(s3_act)
+        svc1 = Service('S1')
+        svc1.add_action(Action('start', command='/bin/true'))
+        svc2 = Service('S2')
+        svc2.add_action(Action('start', command='/bin/true'))
+        svc3 = Service('S3')
+        svc3.add_action(Action('start', command='/bin/true'))
         group_init = ServiceGroup('GROUP_INIT')
-        group_init.add_inter_dep(target=s1)
-        group_init.add_inter_dep(base=s1, target=s2, sgth=REQUIRE_WEAK)
-        group_init.add_inter_dep(base=s1, target=grp1)
-        group_init.add_inter_dep(base=s2, target=s3)
-        group_init.add_inter_dep(base=grp1, target=s3, sgth=REQUIRE_WEAK)
-        group_init.add_inter_dep(base=s3, target=grp2)
+        group_init.add_inter_dep(target=svc1)
+        group_init.add_inter_dep(base=svc1, target=svc2, sgth=REQUIRE_WEAK)
+        group_init.add_inter_dep(base=svc1, target=grp1)
+        group_init.add_inter_dep(base=svc2, target=svc3)
+        group_init.add_inter_dep(base=grp1, target=svc3, sgth=REQUIRE_WEAK)
+        group_init.add_inter_dep(base=svc3, target=grp2)
         
         # Solve the graph
         group_init.run('start')
 
         # Assertions
         self.assertEqual(grp2.status, DEP_ERROR)
-        self.assertEqual(s3.status, DEP_ERROR)
-        self.assertEqual(s2.status, DEP_ERROR)
+        self.assertEqual(svc3.status, DEP_ERROR)
+        self.assertEqual(svc2.status, DEP_ERROR)
         self.assertEqual(grp1.status, DONE)
-        self.assertEqual(s1.status, DONE)
+        self.assertEqual(svc1.status, DONE)
         self.assertEqual(group_init.status, DONE)
 
     def test_core_behaviour_reverse(self):
@@ -92,12 +81,9 @@ class CoreTest(TestCase):
         grp1_i2.algo_reversed = True
         grp1_i3 = Service('I3')
         grp1_i3.algo_reversed = True
-        grp1_i1_act = Action('stop', HOSTNAME, '/bin/true')
-        grp1_i2_act = Action('stop', HOSTNAME, '/bin/true')
-        grp1_i3_act = Action('stop', HOSTNAME, '/bin/true')
-        grp1_i1.add_action(grp1_i1_act)
-        grp1_i2.add_actions(grp1_i2_act)
-        grp1_i3.add_action(grp1_i3_act)
+        grp1_i1.add_action(Action('stop', command='/bin/true'))
+        grp1_i2.add_action(Action('stop', command='/bin/true'))
+        grp1_i3.add_action(Action('stop', command='/bin/true'))
         grp1.add_inter_dep(target=grp1_i1)
         grp1.add_inter_dep(base=grp1_i1, target=grp1_i2)
         grp1.add_inter_dep(target=grp1_i3)
@@ -109,42 +95,37 @@ class CoreTest(TestCase):
         grp2_i1.algo_reversed = True
         grp2_i2 = Service('I2')
         grp2_i2.algo_reversed = True
-        grp2_i1_act = Action('stop', HOSTNAME, '/bin/true')
-        grp2_i2_act = Action('stop', HOSTNAME, '/bin/true')
-        grp2_i1.add_action(grp2_i1_act)
-        grp2_i2.add_action(grp2_i2_act)
+        grp2_i1.add_action(Action('stop', command='/bin/true'))
+        grp2_i2.add_action(Action('stop', command='/bin/true'))
         grp2.add_inter_dep(target=grp2_i1)
         grp2.add_inter_dep(base=grp2_i1, target=grp2_i2)
 
         # Define Group init
-        s1 = Service('S1')
-        s1.algo_reversed = True
-        s1_act = Action('stop', HOSTNAME, '/bin/true')
-        s1.add_action(s1_act)
-        s2 = Service('S2')
-        s2.algo_reversed = True
-        s2_act = Action('stop', HOSTNAME, '/bin/true')
-        s2.add_action(s2_act)
-        s3 = Service('S3')
-        s3.algo_reversed = True
-        s3_act = Action('stop', HOSTNAME, '/bin/true')
-        s3.add_action(s3_act)
+        svc1 = Service('S1')
+        svc1.algo_reversed = True
+        svc1.add_action(Action('stop', command='/bin/true'))
+        svc2 = Service('S2')
+        svc2.algo_reversed = True
+        svc2.add_action(Action('stop', command='/bin/true'))
+        svc3 = Service('S3')
+        svc3.algo_reversed = True
+        svc3.add_action(Action('stop', command='/bin/true'))
         group_init = ServiceGroup('GROUP_INIT')
         group_init.algo_reversed = True
-        group_init.add_inter_dep(target=s1)
-        group_init.add_inter_dep(base=s1, target=s2, sgth=REQUIRE_WEAK)
-        group_init.add_inter_dep(base=s1, target=grp1)
-        group_init.add_inter_dep(base=s2, target=s3)
-        group_init.add_inter_dep(base=grp1, target=s3)
-        group_init.add_inter_dep(base=s3, target=grp2)
+        group_init.add_inter_dep(target=svc1)
+        group_init.add_inter_dep(base=svc1, target=svc2, sgth=REQUIRE_WEAK)
+        group_init.add_inter_dep(base=svc1, target=grp1)
+        group_init.add_inter_dep(base=svc2, target=svc3)
+        group_init.add_inter_dep(base=grp1, target=svc3)
+        group_init.add_inter_dep(base=svc3, target=grp2)
 
         # Solve the graph
         group_init.run('stop')
 
         # Assertions
         self.assertEqual(grp2.status, DONE)
-        self.assertEqual(s3.status, DONE)
-        self.assertEqual(s2.status, DONE)
+        self.assertEqual(svc3.status, DONE)
+        self.assertEqual(svc2.status, DONE)
         self.assertEqual(grp1.status, DONE)
-        self.assertEqual(s1.status, DONE)
+        self.assertEqual(svc1.status, DONE)
         self.assertEqual(group_init.status, DONE)

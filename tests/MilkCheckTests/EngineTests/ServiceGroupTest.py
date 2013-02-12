@@ -9,9 +9,9 @@ import socket
 from unittest import TestCase
 
 # Classes
+from MilkCheck.Engine.Action import Action
 from MilkCheck.Engine.ServiceGroup import ServiceGroup
 from MilkCheck.Engine.Service import Service
-from MilkCheck.Engine.Action import Action
 from ClusterShell.NodeSet import NodeSet
 
 # Symbols
@@ -305,7 +305,7 @@ class ServiceGroupTest(TestCase):
         '''Test prepare group with an internal dependency.'''
         group = ServiceGroup('GROUP')
         subserv = Service('SUB1')
-        subserv.add_action(Action('start', HOSTNAME, '/bin/true'))
+        subserv.add_action(Action('start', command='/bin/true'))
         group.add_inter_dep(target=subserv)
         group.run('start')
         self.assertEqual(group.status, DONE)
@@ -317,7 +317,7 @@ class ServiceGroupTest(TestCase):
         group.algo_reversed = True
         subserv = Service('SUB1')
         subserv.algo_reversed = True
-        subserv.add_action(Action('start', HOSTNAME, '/bin/true'))
+        subserv.add_action(Action('start', command='/bin/true'))
         group.add_inter_dep(target=subserv)
         group.run('start')
         self.assertEqual(group.status, DONE)
@@ -326,9 +326,9 @@ class ServiceGroupTest(TestCase):
     def test_prepare_group_subservices(self):
         '''Test prepare group with multiple internal dependencies.'''
         group = ServiceGroup('GROUP')
-        ac_suc1 = Action('start', HOSTNAME, '/bin/true')
-        ac_suc2 = Action('start', HOSTNAME, '/bin/true')
-        ac_suc3 = Action('start', HOSTNAME, '/bin/true')
+        ac_suc1 = Action('start', command='/bin/true')
+        ac_suc2 = Action('start', command='/bin/true')
+        ac_suc3 = Action('start', command='/bin/true')
         
         subserv_a = Service('SUB1')
         subserv_b = Service('SUB2')
@@ -353,7 +353,7 @@ class ServiceGroupTest(TestCase):
         '''Test prepare an empty group with a single external dependency.'''
         group = ServiceGroup('GROUP')
         ext_serv = Service('EXT_SERV')
-        ac_suc = Action('start', HOSTNAME, '/bin/true')
+        ac_suc = Action('start', command='/bin/true')
         ext_serv.add_action(ac_suc)
         group.add_dep(ext_serv)
         group.run('start')
@@ -371,11 +371,11 @@ class ServiceGroupTest(TestCase):
         # External
         ext_serv1 =  Service('EXT_SERV1')
         ext_serv2 = Service('EXT_SERV2')
-        ac_suc1 = Action('start', HOSTNAME, '/bin/true')
-        ac_suc2 = Action('start', HOSTNAME, '/bin/true')
-        ac_suc3 = Action('start', HOSTNAME, '/bin/true')
-        ac_suc4 = Action('start', HOSTNAME, '/bin/true')
-        ac_suc5 = Action('start', HOSTNAME, '/bin/true')
+        ac_suc1 = Action('start', command='/bin/true')
+        ac_suc2 = Action('start', command='/bin/true')
+        ac_suc3 = Action('start', command='/bin/true')
+        ac_suc4 = Action('start', command='/bin/true')
+        ac_suc5 = Action('start', command='/bin/true')
         # Add actions
         inter_serv1.add_action(ac_suc1)
         inter_serv2.add_action(ac_suc2)
@@ -408,11 +408,11 @@ class ServiceGroupTest(TestCase):
         # External
         ext_serv1 =  Service('EXT_SERV1')
         ext_serv2 = Service('EXT_SERV2')
-        ac_suc1 = Action('start', HOSTNAME, '/bin/true')
-        ac_suc2 = Action('start', HOSTNAME, '/bin/true')
-        ac_suc3 = Action('start', HOSTNAME, '/bin/true')
-        ac_err1 = Action('start', HOSTNAME, '/bin/false')
-        ac_err2 = Action('start', HOSTNAME, '/bin/false')
+        ac_suc1 = Action('start', command='/bin/true')
+        ac_suc2 = Action('start', command='/bin/true')
+        ac_suc3 = Action('start', command='/bin/true')
+        ac_err1 = Action('start', command='/bin/false')
+        ac_err2 = Action('start', command='/bin/false')
         # Add actions
         inter_serv1.add_action(ac_suc1)
         inter_serv2.add_action(ac_suc2)
@@ -446,11 +446,11 @@ class ServiceGroupTest(TestCase):
         # External
         ext_serv1 =  Service('EXT_SERV1')
         ext_serv2 = Service('EXT_SERV2')
-        ac_suc1 = Action('start', HOSTNAME, '/bin/true')
-        ac_suc2 = Action('start', HOSTNAME, '/bin/true')
-        ac_suc3 = Action('start', HOSTNAME, '/bin/true')
-        ac_err = Action('start', HOSTNAME, '/bin/false')
-        ac_err_chk = Action('status', HOSTNAME, '/bin/false')
+        ac_suc1 = Action('start', command='/bin/true')
+        ac_suc2 = Action('start', command='/bin/true')
+        ac_suc3 = Action('start', command='/bin/true')
+        ac_err = Action('start', command='/bin/false')
+        ac_err_chk = Action('status', command='/bin/false')
         # Add actions
         inter_serv1.add_action(ac_suc1)
         inter_serv2.add_action(ac_suc2)
@@ -478,8 +478,8 @@ class ServiceGroupTest(TestCase):
         serv_a = ServiceGroup('CALLING_GROUP')
         serv_b = Service('SERV_1')
         serv_c = Service('SERV_2')
-        act_suc1 = Action('start', HOSTNAME, '/bin/true')
-        act_suc2 = Action('start', HOSTNAME, '/bin/true')
+        act_suc1 = Action('start', command='/bin/true')
+        act_suc2 = Action('start', command='/bin/true')
         serv_b.add_action(act_suc1)
         serv_c.add_action(act_suc2)
         serv.add_dep(serv_a)
@@ -495,10 +495,10 @@ class ServiceGroupTest(TestCase):
         '''Test stop algorithm on a group'''
         group = ServiceGroup('G1')
         i1 = Service('I1')
-        i1.add_action(Action('stop', HOSTNAME, '/bin/true'))
+        i1.add_action(Action('stop', command='/bin/true'))
         group.add_inter_dep(target=i1)
         s1 = Service('S1')
-        s1.add_action(Action('stop', HOSTNAME, '/bin/true'))
+        s1.add_action(Action('stop', command='/bin/true'))
         s1.add_dep(target=group)
         s1.algo_reversed = True
         group.algo_reversed = True
@@ -511,10 +511,10 @@ class ServiceGroupTest(TestCase):
         """A group with only SKIPPED services should be SKIPPED"""
         grp = ServiceGroup('group')
         svc1 = Service('svc1')
-        svc1.add_action(Action('stop', HOSTNAME, '/bin/true'))
+        svc1.add_action(Action('stop', command='/bin/true'))
         svc1.status = SKIPPED
         svc2 = Service('svc2')
-        svc2.add_action(Action('stop', HOSTNAME, '/bin/true'))
+        svc2.add_action(Action('stop', command='/bin/true'))
         svc2.status = SKIPPED
         grp.add_inter_dep(target=svc1)
         grp.add_inter_dep(target=svc2)
@@ -524,13 +524,13 @@ class ServiceGroupTest(TestCase):
     def test_skipped_group_dep_error(self):
         """A full SKIPPED service group with DEP_ERROR should be SKIPPED"""
         svc = Service('error')
-        svc.add_action(Action('stop', HOSTNAME, '/bin/false'))
+        svc.add_action(Action('stop', command='/bin/false'))
         grp = ServiceGroup('group')
         svc1 = Service('svc1')
-        svc1.add_action(Action('stop', HOSTNAME, '/bin/true'))
+        svc1.add_action(Action('stop', command='/bin/true'))
         svc1.status = SKIPPED
         svc2 = Service('svc2')
-        svc2.add_action(Action('stop', HOSTNAME, '/bin/true'))
+        svc2.add_action(Action('stop', command='/bin/true'))
         svc2.status = SKIPPED
         grp.add_inter_dep(target=svc1)
         grp.add_inter_dep(target=svc2)
@@ -544,7 +544,7 @@ class ServiceGroupTest(TestCase):
         """A group with only MISSING services should be MISSING"""
         grp = ServiceGroup('group')
         svc1 = Service('svc1')
-        svc1.add_action(Action('stop', HOSTNAME, '/bin/true'))
+        svc1.add_action(Action('stop', command='/bin/true'))
         grp.add_inter_dep(target=svc1)
         grp.run('start')
         self.assertEqual(grp.status, MISSING)

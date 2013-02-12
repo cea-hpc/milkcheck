@@ -6,13 +6,10 @@ This modules defines the tests cases targeting the class ActionManager
 """
 
 # Classes
-import socket
 from unittest import TestCase
 from MilkCheck.Engine.Action import Action
 from MilkCheck.Engine.Service import Service
 from MilkCheck.ActionManager import ActionManager, action_manager_self
-
-HOSTNAME = socket.gethostname().split('.')[0]
 
 class ActionManagerTest(TestCase):
     """Test cases for action_manager_self"""
@@ -134,7 +131,7 @@ class ActionManagerTest(TestCase):
 
     def test_perform_action(self):
         """test perform an action without any delay"""
-        action = Action('start', HOSTNAME, '/bin/true')
+        action = Action('start', command='/bin/true')
         ser = Service('TEST')
         ser.add_action(action)
         ser.run('start')
@@ -168,14 +165,11 @@ class ActionManagerTest(TestCase):
 
     def test_perform_delayed_action(self):
         """test perform an action with a delay"""
-        action = Action('start', HOSTNAME, 'sleep 0.5')
+        action = Action('start', command='sleep 0.3')
         ser = Service('TEST')
         ser.add_action(action)
         ser.run('start')
         task_manager = action_manager_self()
         ActionManager._instance = None
         self.assertEqual(task_manager.tasks_done_count, 1)
-        # SSH could length up to 0.4 sec.
-        # So max is 0.5 + 0.4 = 0.9, min is 0.5
-        # Average is: 0.7 +/- 0.2
-        self.assert_near(0.7, 0.2, action.duration)
+        self.assert_near(0.3, 0.1, action.duration)

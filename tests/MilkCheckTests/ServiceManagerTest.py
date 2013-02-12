@@ -7,7 +7,7 @@ RunningTasksManager and the ServiceManager itself
 '''
 
 # Classes
-import socket, time
+import time
 from unittest import TestCase
 from MilkCheck.Engine.Action import Action
 from MilkCheck.Engine.Service import Service
@@ -19,8 +19,6 @@ from MilkCheck.ServiceManager import ServiceNotFoundError
 # Symbols
 from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, REQUIRE_WEAK
 from MilkCheck.Engine.BaseEntity import DEP_ERROR, ERROR, WARNING
-
-HOSTNAME = socket.gethostname().split('.')[0]
 
 class ServiceManagerTest(TestCase):
     '''Tests cases for the class ServiceManager'''
@@ -78,10 +76,10 @@ class ServiceManagerTest(TestCase):
         s2 = Service('S2')
         s3 = Service('S3')
         s4 = Service('S4')
-        s1.add_action(Action('start', HOSTNAME, '/bin/true'))
-        s2.add_action(Action('start', HOSTNAME, '/bin/true'))
-        s3.add_action(Action('start', HOSTNAME, '/bin/true'))
-        s4.add_action(Action('start', HOSTNAME, '/bin/true'))
+        s1.add_action(Action('start', command='/bin/true'))
+        s2.add_action(Action('start', command='/bin/true'))
+        s3.add_action(Action('start', command='/bin/true'))
+        s4.add_action(Action('start', command='/bin/true'))
         s1.add_dep(target=s2)
         s2.add_dep(target=s3)
         s2.add_dep(target=s4)
@@ -101,10 +99,10 @@ class ServiceManagerTest(TestCase):
         s2 = Service('S2')
         s3 = Service('S3')
         s4 = Service('S4')
-        s1.add_action(Action('start', HOSTNAME, '/bin/true'))
-        s2.add_action(Action('start', HOSTNAME, '/bin/true'))
-        s3.add_action(Action('start', HOSTNAME, '/bin/true'))
-        s4.add_action(Action('start', HOSTNAME, '/bin/true'))
+        s1.add_action(Action('start', command='/bin/true'))
+        s2.add_action(Action('start', command='/bin/true'))
+        s3.add_action(Action('start', command='/bin/true'))
+        s4.add_action(Action('start', command='/bin/true'))
         s1.add_dep(target=s2)
         s2.add_dep(target=s3)
         s2.add_dep(target=s4)
@@ -124,10 +122,10 @@ class ServiceManagerTest(TestCase):
         s2 = Service('S2')
         s3 = Service('S3')
         s4 = Service('S4')
-        s1.add_action(Action('start', HOSTNAME, '/bin/true'))
-        s2.add_action(Action('start', HOSTNAME, '/bin/true'))
-        s3.add_action(Action('start', HOSTNAME, '/bin/true'))
-        s4.add_action(Action('start', HOSTNAME, '/bin/true'))
+        s1.add_action(Action('start', command='/bin/true'))
+        s2.add_action(Action('start', command='/bin/true'))
+        s3.add_action(Action('start', command='/bin/true'))
+        s4.add_action(Action('start', command='/bin/true'))
         s1.add_dep(target=s2)
         s2.add_dep(target=s3)
         s2.add_dep(target=s4)
@@ -147,10 +145,10 @@ class ServiceManagerTest(TestCase):
         s2 = Service('S2')
         s3 = Service('S3')
         s4 = Service('S4')
-        s1.add_action(Action('start', HOSTNAME, '/bin/true'))
-        s2.add_action(Action('start', HOSTNAME, '/bin/true'))
-        s3.add_action(Action('start', HOSTNAME, '/bin/true'))
-        s4.add_action(Action('start', HOSTNAME, '/bin/true'))
+        s1.add_action(Action('start', command='/bin/true'))
+        s2.add_action(Action('start', command='/bin/true'))
+        s3.add_action(Action('start', command='/bin/true'))
+        s4.add_action(Action('start', command='/bin/true'))
         s1.add_dep(target=s2)
         s2.add_dep(target=s3)
         s2.add_dep(target=s4)
@@ -166,10 +164,10 @@ class ServiceManagerTest(TestCase):
         s2 = Service('S2')
         s3 = Service('S3')
         s4 = Service('S4')
-        s1.add_action(Action('start', HOSTNAME, '/bin/true'))
-        s2.add_action(Action('start', HOSTNAME, '/bin/false'))
-        s3.add_action(Action('start', HOSTNAME, '/bin/true'))
-        s4.add_action(Action('start', HOSTNAME, '/bin/true'))
+        s1.add_action(Action('start', command='/bin/true'))
+        s2.add_action(Action('start', command='/bin/false'))
+        s3.add_action(Action('start', command='/bin/true'))
+        s4.add_action(Action('start', command='/bin/true'))
         s1.add_dep(target=s2, sgth=REQUIRE_WEAK)
         s2.add_dep(target=s3)
         s2.add_dep(target=s4)
@@ -184,10 +182,10 @@ class ServiceManagerTest(TestCase):
         s2 = Service('S2')
         s3 = Service('S3')
         s4 = Service('S4')
-        s1.add_action(Action('start', HOSTNAME, '/bin/true'))
-        s2.add_action(Action('start', HOSTNAME, '/bin/false'))
-        s3.add_action(Action('start', HOSTNAME, '/bin/true'))
-        s4.add_action(Action('start', HOSTNAME, '/bin/true'))
+        s1.add_action(Action('start', command='/bin/true'))
+        s2.add_action(Action('start', command='/bin/false'))
+        s3.add_action(Action('start', command='/bin/true'))
+        s4.add_action(Action('start', command='/bin/true'))
         s1.add_dep(target=s2)
         s2.add_dep(target=s3)
         s2.add_dep(target=s4)
@@ -202,10 +200,10 @@ class ServiceManagerTest(TestCase):
         s2 = Service('S2')
         s3 = Service('S3')
         s4 = Service('S4')
-        s1.add_action(Action('start', HOSTNAME, '%TARGET'))
-        s2.add_action(Action('start', HOSTNAME, '/bin/true'))
-        s3.add_action(Action('start', HOSTNAME, '/bin/true'))
-        s4.add_action(Action('start', HOSTNAME, '/bin/true'))
+        s1.add_action(Action('start', command='%TARGET'))
+        s2.add_action(Action('start', command='/bin/true'))
+        s3.add_action(Action('start', command='/bin/true'))
+        s4.add_action(Action('start', command='/bin/true'))
         s1.add_dep(target=s2)
         s2.add_dep(target=s3)
         s2.add_dep(target=s4)
