@@ -81,6 +81,12 @@ class McOptionParserTest(TestCase):
         self.assertFalse('fortoy[8-9]'  in options.only_nodes)
         self.assertTrue('fortoy[8-12]' in options.excluded_nodes)
 
+        mop.parse_args(['robinhood', 'start',
+            '-x', 'fortoy[8-12]', '-n', 'fortoy[8-15]'])
+        self.assertTrue('fortoy[13-15]' in options.only_nodes)
+        self.assertFalse('fortoy[8-9]'  in options.only_nodes)
+        self.assertTrue('fortoy[8-12]' in options.excluded_nodes)
+
     def test_option_version(self):
         '''Test usage of option --version'''
         mop = McOptionParser()
