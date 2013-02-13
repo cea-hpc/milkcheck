@@ -40,22 +40,22 @@ class McOptionParserTest(TestCase):
         '''Test usage of the only-nodes option'''
         mop = McOptionParser()
         mop.configure_mop()
-        (options, args) = mop.parse_args(['-n', 'fortoy8'])
-        self.assertTrue('fortoy8' in options.only_nodes)
+        (options, args) = mop.parse_args(['-n', 'foo8'])
+        self.assertTrue('foo8' in options.only_nodes)
 
         mop = McOptionParser()
         mop.configure_mop()
         (options, args) = \
-            mop.parse_args(['robinhood', 'start', '-n', 'fortoy1,fortoy2'])
+            mop.parse_args(['service', 'start', '-n', 'foo1,foo2'])
         self.assertTrue(isinstance(options.only_nodes, NodeSet))
-        self.assertTrue('fortoy1' in options.only_nodes)
-        self.assertTrue('fortoy2' in options.only_nodes)
-        self.assertTrue('robinhood' in args and 'start' in args)
+        self.assertTrue('foo1' in options.only_nodes)
+        self.assertTrue('foo2' in options.only_nodes)
+        self.assertTrue('service' in args and 'start' in args)
 
         mop = McOptionParser()
         mop.configure_mop()
         self.assertRaises(InvalidOptionError,
-            mop.parse_args, ['robinhood', 'start','-n', '[fortoy5]'])
+            mop.parse_args, ['service', 'start','-n', '[foo5]'])
 
     def test_option_configdir(self):
         '''Test usage of the configdir option'''
@@ -75,17 +75,17 @@ class McOptionParserTest(TestCase):
         mop = McOptionParser()
         mop.configure_mop()
         (options, args) = \
-        mop.parse_args(['robinhood', 'start',
-            '-n', 'fortoy[8-15]', '-x', 'fortoy[8-12]'])
-        self.assertTrue('fortoy[13-15]' in options.only_nodes)
-        self.assertFalse('fortoy[8-9]'  in options.only_nodes)
-        self.assertTrue('fortoy[8-12]' in options.excluded_nodes)
+        mop.parse_args(['service', 'start',
+            '-n', 'foo[8-15]', '-x', 'foo[8-12]'])
+        self.assertTrue('foo[13-15]' in options.only_nodes)
+        self.assertFalse('foo[8-9]'  in options.only_nodes)
+        self.assertTrue('foo[8-12]' in options.excluded_nodes)
 
-        mop.parse_args(['robinhood', 'start',
-            '-x', 'fortoy[8-12]', '-n', 'fortoy[8-15]'])
-        self.assertTrue('fortoy[13-15]' in options.only_nodes)
-        self.assertFalse('fortoy[8-9]'  in options.only_nodes)
-        self.assertTrue('fortoy[8-12]' in options.excluded_nodes)
+        mop.parse_args(['service', 'start',
+            '-x', 'foo[8-12]', '-n', 'foo[8-15]'])
+        self.assertTrue('foo[13-15]' in options.only_nodes)
+        self.assertFalse('foo[8-9]'  in options.only_nodes)
+        self.assertTrue('foo[8-12]' in options.excluded_nodes)
 
     def test_option_version(self):
         '''Test usage of option --version'''
