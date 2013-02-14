@@ -162,23 +162,19 @@ class Service(BaseEntity):
                         call_back_self().notify((self, tgt), EV_TRIGGER_DEP)
                     tgt.prepare()
 
-    def _process_dependencies(self, deps):
-        '''Perform a prepare on each dependency in deps'''
-        if deps:
-            for dep in deps:
-                if dep.is_check():
-                    dep.target.prepare('status')
-                else:
-                    dep.target.prepare(self._last_action)
+    def _launch_action(self, action):
+        """
+        Try to launch the action.
 
+        Service status and deps should be already checked.
+        """
         # Service with missing action is simply skipped
-        elif not self.has_action(self._last_action):
+        if not self.has_action(action):
             self.update_status(MISSING)
-
         else:
             # It's time to be processed
             self.update_status(WAITING_STATUS)
-            self._actions[self._last_action].prepare()
+            self._actions[action].prepare()
 
     def prepare(self, action_name=None):
         """
@@ -190,32 +186,34 @@ class Service(BaseEntity):
         if action_name:
             self._last_action = action_name
 
-        deps_status = self.eval_deps_status()
-        # Tag the service
+        # Add a flag 'i was prepared', used in update_status()
         self._tagged = True
 
-        if self.status is NO_STATUS:
+        # Already in a final state: Nothing to do
+        if self.status is not NO_STATUS:
+            return
 
-            # If dependencies failed the current service will fail
-            # except if the service is SKIPPED
-            if deps_status == DEP_ERROR and not self.skipped():
-                self.update_status(DEP_ERROR)
-            else:
-                if self.skipped():
-                    self.update_status(SKIPPED)
+        deps_status = self.eval_deps_status()
 
-                # Look for uncompleted dependencies 
-                deps = self.search_deps([NO_STATUS])
+        # My target are empty (not None!): skip me and continue
+        if self.skipped():
+            self.update_status(SKIPPED)
+        # Deps on error: propagate and quit
+        elif deps_status == DEP_ERROR:
+            self.update_status(DEP_ERROR)
+            return
 
-                # XXX:
-                # _process_dependencies() does not only take care or deps,
-                # but also launch the service if there is no more deps.
-                # Such action should be done, depending on deps_status.
-                #
-                # As this function does not know yet how to handle this
-                # we check this before calling it.
-                if deps_status is not WAITING_STATUS or deps:
-                    self._process_dependencies(deps)
+        # Deps not yet processed: Launch them!
+        deps = self.search_deps([NO_STATUS])
+        if deps:
+            for dep in deps:
+                if dep.is_check():
+                    dep.target.prepare('status')
+                else:
+                    dep.target.prepare(self._last_action)
+        # No dep still running: Run me
+        elif deps_status is not WAITING_STATUS:
+            self._launch_action(self._last_action)
 
     def run(self, action_name):
         """Run an action over a service"""

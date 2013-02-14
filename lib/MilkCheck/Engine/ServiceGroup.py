@@ -181,16 +181,17 @@ class ServiceGroup(Service):
         In order to be in the dictionnary the dependencies must have a status
         matching to a symbol in symbols.
         '''
-        depmap = {}
-        depmap['internal'] = []
-        depmap['external'] = Service.search_deps(self, symbols)
+        deps = Service.search_deps(self, symbols)
+        if deps:
+            return deps
+
         if self._algo_reversed and self._sink.children and \
             self._sink.status in symbols:
-            depmap['internal'].append(Dependency(self._sink))
+            return [Dependency(self._sink)]
+
         elif not self._algo_reversed and self._source.parents and \
             self._source.status in symbols:
-            depmap['internal'].append(Dependency(self._source))
-        return depmap
+            return [Dependency(self._source)]
 
     def graph_info(self):
         """ Return a tuple to manage dependencies output """
@@ -238,35 +239,23 @@ class ServiceGroup(Service):
         else:
             return intd_status
 
-    def _process_dependencies(self, deps):
-        '''perform a prepare on each dependencies in deps'''
-        assert deps, 'deps cannot be none'
-        if deps['external'] or deps['internal']:
-            # Before to start internal dependencies we have to be sure
-            # that all external dependencies are solve
-            if deps['external']:
-                for external in deps['external']:
-                    if external.is_check():
-                        external.target.prepare('status')
-                    else:
-                        external.target.prepare(self._last_action)
-            elif deps['internal']:
-                for internal in deps['internal']:
-                    if internal.is_check():
-                        internal.target.prepare('status')
-                    else:
-                        internal.target.prepare(self._last_action)
-        else:
-            if self._algo_reversed:
-                intd_status = self._sink.status
-            else:
-                intd_status = self._source.status
+    def _launch_action(self, _action):
+        """
+        ServiceGroup has no real action, just set its group status instead.
 
-            # The group node is a fake we just change his status
-            if intd_status in (SKIPPED, MISSING):
-                self.update_status(intd_status)
-            else:
-                self.update_status(DONE)
+        Internal services and dependencies should be already checked.
+        Group status is based on its internal status. 
+        """
+        if self._algo_reversed:
+            intd_status = self._sink.status
+        else:
+            intd_status = self._source.status
+
+        # The group node is a fake we just change his status
+        if intd_status in (SKIPPED, MISSING):
+            self.update_status(intd_status)
+        else:
+            self.update_status(DONE)
 
     def inherits_from(self, entity):
         '''Inherit properties from entity'''

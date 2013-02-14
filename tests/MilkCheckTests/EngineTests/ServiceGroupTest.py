@@ -224,18 +224,16 @@ class ServiceGroupTest(TestCase):
         serv = Service('SERVICE')
         group_dep =  ServiceGroup('GROUP2')
         deps = group.search_deps([NO_STATUS])
-        self.assertEqual(len(deps['internal']), 0)
+        self.assertTrue(deps is None)
         group.add_inter_dep(target=serv)
         group.add_dep(target=group_dep)
         serva = Service('A')
         serva.status = DONE
         group.add_dep(target=serva)
         deps = group.search_deps([NO_STATUS])
-        self.assertEqual(len(deps['external']), 1)
-        self.assertEqual(len(deps['internal']), 1)
+        self.assertEqual(len(deps), 1)
         deps = group.search_deps([NO_STATUS, DONE])
-        self.assertEqual(len(deps['external']), 2)
-        self.assertEqual(len(deps['internal']), 1)
+        self.assertEqual(len(deps), 2)
         
     def test_eval_deps_status_done(self):
         '''Test the method eval_deps_status NO_STATUS'''
