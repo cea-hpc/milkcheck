@@ -35,10 +35,10 @@ This module contains the Service class definition
 
 # Classes
 from ClusterShell.NodeSet import NodeSet
-from MilkCheck.Engine.BaseService import BaseService
-from MilkCheck.Engine.Action import Action
 from MilkCheck.Engine.BaseEntity import BaseEntity
+from MilkCheck.Engine.Action import Action
 from MilkCheck.Callback import call_back_self
+from MilkCheck.ActionManager import action_manager_self
 
 # Exceptions
 from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
@@ -67,18 +67,26 @@ class ActionAlreadyReferencedError(MilkCheckEngineError):
         msg = "%s already referenced in %s" % (aname, sname) 
         MilkCheckEngineError.__init__(self, msg)
 
-class Service(BaseService):
+class Service(BaseEntity):
     '''
-    This class is a concrete representation of the concept of Service
-    introduced by BaseSevice. A Service contains actions, and those actions
-    are called and executed on nodes.
+    A Service might be a node of graph because it inherits from the properties
+    and methods of BaseEntity.
+    A Service contains actions, and those actions are called and executed on
+    nodes.
     '''
 
-    LOCAL_VARIABLES = BaseService.LOCAL_VARIABLES.copy()
+    LOCAL_VARIABLES = BaseEntity.LOCAL_VARIABLES.copy()
     LOCAL_VARIABLES['SERVICE'] = 'name'
 
     def __init__(self, name, target=None):
-        BaseService.__init__(self, name, target)
+        BaseEntity.__init__(self, name, target)
+
+        # Define a flag allowing us to specify that this service is the
+        # original caller so we do not have to start his children.
+        self.origin = False
+
+        # Used for ghost services or services that you do not want to execute.
+        self.simulate = False
 
         # Actions of the service
         self._actions = {}
@@ -92,7 +100,8 @@ class Service(BaseService):
 
     def reset(self):
         '''Reset values of attributes in order to perform multiple exec'''
-        BaseService.reset(self)
+        BaseEntity.reset(self)
+        self.origin = False
         self._last_action = None
         for action in self._actions.values():
             action.reset()
@@ -173,10 +182,12 @@ class Service(BaseService):
             self._actions[self._last_action].prepare()
 
     def prepare(self, action_name=None):
-        '''
-        Prepare the the current service to be launched as soon
-        as his dependencies are solved. 
-        '''
+        """
+        Recursive method allowing to prepare a service before its execution.
+        The preparation of a service consists in checking that all of the
+        dependencies linked to this service were solved. As soon as possible
+        requested action will be started.
+        """
         if action_name:
             self._last_action = action_name
 
@@ -206,6 +217,15 @@ class Service(BaseService):
                 # we check this before calling it.
                 if deps_status is not WAITING_STATUS or deps:
                     self._process_dependencies(deps)
+
+    def run(self, action_name):
+        """Run an action over a service"""
+        # A service using run become the calling point
+        self.origin = True
+
+        # Prepare the service and start the master task
+        self.prepare(action_name)
+        action_manager_self().run()
 
     def inherits_from(self, entity):
         '''Inherit properties from entity'''

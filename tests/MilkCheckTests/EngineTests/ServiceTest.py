@@ -65,10 +65,12 @@ class ServiceTest(TestCase):
         '''Test resest values of a service'''
         service = Service('brutus')
         action = Action('start')
+        service.origin = True
         action.status = DONE 
         service.add_action(action)
         service._last_action = 'start'
         service.reset()
+        self.assertFalse(service.origin)
         self.assertFalse(service._last_action)
         self.assertEqual(action.status, NO_STATUS)
         self.assertEqual(service.status, NO_STATUS)
@@ -109,6 +111,7 @@ class ServiceTest(TestCase):
         ac_start = Action(name='start', command='/bin/true')
         serv_test.add_action(ac_start)
         serv_test.run('start')
+        self.assertTrue(serv_test.origin)
         self.assertEqual(serv_test.status, DONE)
 
     def test_prepare_one_dependency(self):
