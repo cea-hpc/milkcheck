@@ -36,9 +36,8 @@ This module contains the Service class definition
 # Classes
 from ClusterShell.NodeSet import NodeSet
 from MilkCheck.Engine.BaseEntity import BaseEntity
-from MilkCheck.Engine.Action import Action
+from MilkCheck.Engine.Action import Action, action_manager_self
 from MilkCheck.Callback import call_back_self
-from MilkCheck.ActionManager import action_manager_self
 
 # Exceptions
 from MilkCheck.Engine.BaseEntity import MilkCheckEngineError

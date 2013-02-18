@@ -43,9 +43,8 @@ from signal import SIGINT
 from ClusterShell.NodeSet import NodeSet
 from MilkCheck.Callback import CoreEvent, call_back_self
 from MilkCheck.UI.OptionParser import McOptionParser
-from MilkCheck.Engine.Action import Action
+from MilkCheck.Engine.Action import Action, action_manager_self
 from MilkCheck.Engine.Service import Service
-from MilkCheck.ActionManager import action_manager_self
 from MilkCheck.ServiceManager import service_manager_self
 from MilkCheck.Config.ConfigParser import ConfigParser, ConfigParserError
 

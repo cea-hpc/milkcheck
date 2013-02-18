@@ -14,11 +14,9 @@ from unittest import TestCase
 import MilkCheck.UI.Cli
 from MilkCheck.UI.Cli import CommandLine
 import MilkCheck.ServiceManager
-from MilkCheck.ServiceManager import ServiceManager
-from MilkCheck.ActionManager import ActionManager
-from MilkCheck.ServiceManager import service_manager_self
+from MilkCheck.ServiceManager import ServiceManager, service_manager_self
 from MilkCheck.Engine.Service import Service
-from MilkCheck.Engine.Action import Action
+from MilkCheck.Engine.Action import Action, ActionManager
 from MilkCheck.Engine.ServiceGroup import ServiceGroup
 from MilkCheck.Callback import CallbackHandler
 from MilkCheck.Config.ConfigParser import ConfigParser
