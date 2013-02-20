@@ -22,12 +22,13 @@ actions, all of them based on shell commands.
 %setup -q
 
 %build
-make VERSION=%{version}
+make
 
 %install
 %define vimdatadir %{_datadir}/vim/vimfiles
 rm -rf %{buildroot}
-make install DESTDIR=%{buildroot} PYTHON=%{__python} MANDIR=%{_mandir} SYSCONFIGDIR=%{_sysconfdir} VERSION=%{version} VIMDATADIR=%{vimdatadir}
+make install DESTDIR=%{buildroot} PYTHON=%{__python} MANDIR=%{_mandir} \
+             SYSCONFIGDIR=%{_sysconfdir} VIMDATADIR=%{vimdatadir}
 
 %clean
 rm -rf $RPM_BUILD_ROOT

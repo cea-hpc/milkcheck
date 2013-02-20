@@ -1,6 +1,6 @@
 
 NAME=milkcheck
-VERSION=*
+VERSION=0.10
 TARBALL=$(NAME)-$(VERSION).tar.gz
 SPECFILE=$(NAME).spec
 RPMTOPDIR=$$PWD/RPMBUILD
@@ -29,29 +29,23 @@ install: all
 	install -p -m 0644 doc/vim/ftdetect/milkcheck.vim $(DESTDIR)/$(VIMDATADIR)/ftdetect
 	install -p -m 0644 doc/vim/syntax/milkcheck.vim $(DESTDIR)/$(VIMDATADIR)/syntax
 
-version:
-ifeq ($(VERSION),*)
-	@echo "Please run 'make VERSION=x.y'"
-	@exit 1
-endif
-
 $(RPMTOPDIR):
 	mkdir -p $(RPMTOPDIR)/{BUILD,RPMS,SRPMS,SPECS}
 
-rpm: version $(TARBALL) $(SPECFILE) $(RPMTOPDIR) $(MANPAGE)
+rpm: $(TARBALL) $(SPECFILE) $(RPMTOPDIR) $(MANPAGE)
 	rpmbuild --define "_topdir $(RPMTOPDIR)" --define "_sourcedir $$PWD" -ba $(SPECFILE)
 
-$(TARBALL): version
-	git archive --prefix=$(NAME)-$(VERSION)/ HEAD ChangeLog conf/samples scripts lib doc setup.py Makefile | gzip -9 >$@
+$(TARBALL):
+	git archive --prefix=$(NAME)-$(VERSION)/ HEAD | gzip -9 >$@
 
-.PHONY: rpm clean all version test doc
+.PHONY: rpm clean all test doc
 
 clean:
 	rm -f $(TARBALL)
 	rm -rf $(RPMTOPDIR)
 
 test:
-	export PYTHONPATH=$$PWD/lib/ ; cd $(TESTDIR) ; nosetests --exe --all-modules
+	export PYTHONPATH=$$PWD/lib/ ; nosetests --exe --all-modules -w tests
 
 $(MANPAGE): $(MANSOURCE)
 	a2x -f manpage $<
