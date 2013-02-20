@@ -20,6 +20,7 @@ install: all
 	$(PYTHON) setup.py install -O1 --skip-build --root $(DESTDIR)
 	# config files
 	install -d $(DESTDIR)/$(SYSCONFIGDIR)/$(NAME)/conf/samples
+	install -p -m 0644 conf/milkcheck.conf $(DESTDIR)/$(SYSCONFIGDIR)/$(NAME)
 	install -p -m 0644 conf/samples/*.yaml $(DESTDIR)/$(SYSCONFIGDIR)/$(NAME)/conf/samples
 	install -d $(DESTDIR)/$(MANDIR)/man8/
 	# doc files
