@@ -1,4 +1,6 @@
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
+%define vimdatadir %{_datadir}/vim/vimfiles
+
 
 Name:		milkcheck
 Version:	0.10
@@ -25,7 +27,6 @@ actions, all of them based on shell commands.
 make
 
 %install
-%define vimdatadir %{_datadir}/vim/vimfiles
 rm -rf %{buildroot}
 make install DESTDIR=%{buildroot} PYTHON=%{__python} MANDIR=%{_mandir} \
              SYSCONFIGDIR=%{_sysconfdir} VIMDATADIR=%{vimdatadir}
@@ -42,6 +43,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/milkcheck
 %{_mandir}/man8/*
 %doc AUTHORS
+%doc README.md
 %doc ChangeLog
 %doc Licence_CeCILL_V2-en.txt
 %doc Licence_CeCILL_V2-fr.txt
