@@ -3,7 +3,7 @@
 
 
 Name:		milkcheck
-Version:	0.10
+Version:	0.11
 Release:	1%{?dist}
 Summary:	Distributed cluster command management
 
@@ -51,6 +51,9 @@ rm -rf $RPM_BUILD_ROOT
 %{vimdatadir}/syntax/milkcheck.vim
 
 %changelog
+* Thu Feb 21 2013 Aurelien Degremont <aurelien.degremont@cea.fr> 0.11-1
+- Update to 0.11 release. (--define, custom reverse action, ...)
+
 * Thu Feb  7 2013 Aurelien Degremont <aurelien.degremont@cea.fr> 0.10-1
 - Update to 0.10 release. (--quiet, new syntax, interactive mode, ...)
 

@@ -1,4 +1,7 @@
 2013-02-12 Aurelien Degremont  <aurelien.degremont@cea.fr>
+	* Release: 0.11
+
+2013-02-12 Aurelien Degremont  <aurelien.degremont@cea.fr>
 	* Add --define/--var/-D option for run-specific variables.
 
 2013-02-11 Aurelien Cedeyn  <aurelien.cedeyn@cea.fr>
