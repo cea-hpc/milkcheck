@@ -1,3 +1,6 @@
+2013-02-23 Aurelien Degremont  <aurelien.degremont@cea.fr>
+	* Fix deps issues with service between 2 top services.
+
 2013-02-12 Aurelien Degremont  <aurelien.degremont@cea.fr>
 	* Release: 0.11
 

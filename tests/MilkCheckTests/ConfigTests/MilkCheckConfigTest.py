@@ -197,3 +197,47 @@ services:
         self.assertTrue(manager.entities['foo2'].has_parent_dep('bar'))
         self.assertTrue(manager.entities['bar'].has_action('start'))
         self.assertTrue(manager.entities['compat_grp'].has_parent_dep('compat'))
+
+    def test_deps_between_top_services(self):
+        '''Deps between 2 services in top "services" section are ok'''
+        config = MilkCheckConfig()
+        config.load_from_stream('''
+services:
+    foo:
+        actions:
+            start:
+                cmd: run %NAME
+---
+services:
+    bar:
+        require: [ 'foo' ]
+        actions:
+            start:
+                cmd: run_bar''')
+        config.build_graph()
+        manager = service_manager_self()
+        self.assertTrue('foo' in manager.entities)
+        self.assertTrue('bar' in manager.entities)
+        self.assertTrue(manager.entities['foo'].has_action('start'))
+        self.assertTrue(manager.entities['bar'].has_action('start'))
+        self.assertTrue(manager.entities['bar'].has_parent_dep('foo'))
+
+    def test_before_rule_parsing(self):
+        """'before' is supported in configuration"""
+        config = MilkCheckConfig()
+        config.load_from_stream('''
+services:
+    foo:
+        actions:
+            start:
+                cmd: run %NAME
+    bar:
+        before: [ 'foo' ]
+        actions:
+            start:
+                cmd: run_bar''')
+        config.build_graph()
+        manager = service_manager_self()
+        self.assertTrue('foo' in manager.entities)
+        self.assertTrue('bar' in manager.entities)
+        self.assertTrue(manager.entities['bar'].has_parent_dep('foo'))

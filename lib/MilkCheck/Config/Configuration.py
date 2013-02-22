@@ -39,6 +39,8 @@ from os import listdir
 from os.path import walk, isdir
 from os.path import isfile
 
+from ClusterShell.NodeSet import NodeSet
+
 from MilkCheck.ServiceManager import service_manager_self
 from MilkCheck.Engine.Service import Service
 from MilkCheck.Engine.ServiceGroup import ServiceGroup, DepWrapper
@@ -132,24 +134,20 @@ class MilkCheckConfig(object):
                 # This is a simple mode, for compatibility, with old-style
                 # syntax.
                 elif elem == 'services':
-                    grp = ServiceGroup('ALL')
-                    grp.fromdict({elem: subelems})
-                    for subservice in grp.iter_subservices():
-                        # Dependencies are already handled inside the service
-                        # group.
-                        # This code is only here for compat (see below), to
-                        # list all services which should be registered in
-                        # ServiceManager.  When compat will be dropped, this
-                        # will be simplified.
-                        subservice.parent = None
-                        wrap = DepWrapper()
-                        wrap.source = subservice
-                        dependencies[subservice.name] = wrap
-                    # Services should be untied to its fake service group.
-                    for svc in grp._source.parents.values():
-                        svc.target.remove_dep('source')
-                    for svc in grp._sink.children.values():
-                        svc.target.remove_dep('sink', parent=True)
+                    for names, props in subelems.items():
+                        for svcname in NodeSet(names):
+
+                            service = None
+                            if 'services' in props:
+                                service = ServiceGroup(svcname)
+                            else:
+                                service = Service(svcname)
+
+                            service.fromdict(props)
+                            wrap = self._parse_deps(props)
+                            wrap.source = service
+                            dependencies[service.name] = wrap
+
                 else:
                     # XXX: Raise an exception with a better error handling
                     raise KeyError("Bad declaration of: %s" % elem)
@@ -168,10 +166,11 @@ class MilkCheckConfig(object):
     def _parse_deps(cls, data):
         '''Return a DepWrapper containing the different types of dependencies'''
         wrap = DepWrapper()
-        # This does not support 'before' alias for require_weak.
-        # Only in new style configuration
-        for content in ('require', 'require_weak', 'check'):
+        for content in ('require', 'require_weak', 'check', 'before'):
             if content in data:
+                if content == 'before':
+                    data['require_weak'] = data[content]
+                    content = 'require_weak'
                 if type(data[content]) is str:
                     wrap.deps[content] = [ data[content] ]
                 else:
