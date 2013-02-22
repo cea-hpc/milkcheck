@@ -138,9 +138,9 @@ class ActionTest(TestCase):
 
     def test_mix_errors_timeout(self):
         """Test the result of mixed timeout and error actions."""
-        cmd = 'echo "${SSH_CLIENT%% *}" | egrep "^(127.0.0.1|::1)$" || sleep 1'
+        cmd = 'echo "${SSH_CLIENT%%%% *}" | egrep "^(127.0.0.1|::1)$" ||sleep 1'
         action = Action(name='start', target='badname,%s,localhost' % HOSTNAME,
-                        command=cmd, timeout=0.5)
+                        command=cmd, timeout=0.6)
         action.errors = 1
         service = Service('test_service')
         service.add_action(action)
@@ -273,12 +273,14 @@ class ActionTest(TestCase):
         self.assertTrue(a4.duration)
 
     def test_action_with_variables(self):
-        action = Action('start', command='echo \$([ "%VAR1" != "" ] && echo "-x %VAR1")')
+        """Test variables in action command"""
+        cmd = 'echo %([ "%VAR1" != "" ] && echo "-x %VAR1")'
+        action = Action('start', command=cmd)
         service = Service('TEST')
         service.add_actions(action)
         service.add_var('VAR1', 'foo')
         action.run()
-        self.assertEqual(action.worker.command, 'echo \-x foo')
+        self.assertEqual(action.worker.command, 'echo -x foo')
 
 class ActionFromDictTest(TestCase):
     '''Test cases for Action.fromdict()'''

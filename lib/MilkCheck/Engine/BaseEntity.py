@@ -289,17 +289,17 @@ class BaseEntity(object):
         elif mode is 'INT' and self.target:
             self.target.intersection_update(nodeset)
 
-    def get_target(self):
+    def _get_target(self):
         '''Return self._target'''
         return self._target
 
-    def set_target(self, value):
+    def _set_target(self, value):
         '''Assign nodeset to _target'''
         self._target = None
         if value is not None:
             self._target = NodeSet(self._resolve(value))
 
-    target = property(fset=set_target, fget=get_target)
+    target = property(fset=_set_target, fget=_get_target)
 
     def reset(self):
         '''Reset values of attributes in order to perform multiple exec.'''
@@ -513,7 +513,7 @@ class BaseEntity(object):
             return self.variables[varname]
         elif varname.upper() in self.LOCAL_VARIABLES:
             value = self.LOCAL_VARIABLES[varname.upper()]
-            return self._resolve(getattr(self, value))
+            return self.resolve_property(value)
         elif self.parent:
             return self.parent._lookup_variable(varname)
         elif varname in service_manager_self().variables:
@@ -529,7 +529,7 @@ class BaseEntity(object):
             (?P<escaped>%(delim)s) | # Escape sequence of two delimiters
             (?P<named>%(id)s)      | # delimiter and a Python identifier
             {(?P<braced>%(id)s)}   | # delimiter and a braced identifier
-            \((?P<parenth>.+)\)    | # delimiter and parenthesis
+            \((?P<parenth>.+?)\)   | # delimiter and parenthesis
             (?P<invalid>)            # Other ill-formed delimiter exprs
           )""" % {
                 'delim' : delimiter,
@@ -583,45 +583,25 @@ class BaseEntity(object):
         '''
         This method takes a string containing symbols. Those strings may
         look like to : 
-            + $(nodeset -f epsilon[5-8] -x epsilon7)
-            + %CMD echo $(nodeset -f epsilon[5-8])
+            + %(nodeset -f epsilon[5-8] -x epsilon7)
+            + %CMD echo %(nodeset -f epsilon[5-8])
             + ps -e | grep myprogram
         After computation this method return a string with all the symbols
         resolved.
         The '%' character could be inserted using '%%'.
         '''
-        origvalue = value
-        logger = logging.getLogger('milkcheck')
-
         # For compat: if provided value is not a str, we should not convert
         # it to a str if nothing matches.
-        # XXX: Are we sure we want this behaviour?
-        if len(str(value)) == 0 or \
-          not re.search('[\$%]\(.+\)|%\w+', str(value)):
+        if type(value) is not str:
             return value
 
         # Replace all %xxx patterns
-        value = self._substitute(str(value))
-
-        #
-        # XXX: COMPAT CODE
-        # Command substitution for oldstyle command repl: $(...)
-        # This needs to be keep just the time required for people to migrate
-        # from the old-style escaping.
-        #
-        def repl(pattern):
-            '''Replace a command execution pattern by its result.'''
-            cmd = Popen(pattern.group(1), stdout=PIPE, stderr=PIPE, shell=True)
-            stdout = cmd.communicate()[0]
-            logger.debug("External command exited with %d: '%s'" %
-                         (cmd.returncode, stdout))
-            if cmd.returncode >= 126:
-                raise InvalidVariableError(pattern.group(1))
-            return self._resolve(stdout.rstrip('\n'))
-        value = re.sub('\$\((.+?)\)', repl, str(value))
+        origvalue = value
+        value = self._substitute(value)
 
         # Debugging
         if origvalue != value:
+            logger = logging.getLogger('milkcheck')
             logger.info("Variable content '%s' replaced by '%s'",
                         origvalue, value)
 

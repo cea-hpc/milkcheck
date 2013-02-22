@@ -471,12 +471,10 @@ class VariableBaseEntityTest(unittest.TestCase):
         service = BaseEntity('test_service')
         self.assertRaises(InvalidVariableError, service._resolve, '%(notexist)')
 
-    def test_resolve_compat(self):
-        '''Test resolution of an expression (compat mode $)'''
-        service = BaseEntity('test_service')
-        self.assertEqual(service._resolve('$(echo hello world)'),
-                         'hello world')
-        self.assertRaises(InvalidVariableError, service._resolve, '$(notexist)')
+    def test_resolve_double_exec(self):
+        """Test resolution of 2 successive expressions."""
+        service = BaseEntity('base')
+        self.assertEqual(service._resolve('%(echo foo) %(echo bar)'), 'foo bar')
 
     def test_resolve_property1(self):
         '''Test replacement of symbols within a property'''
@@ -501,14 +499,14 @@ class VariableBaseEntityTest(unittest.TestCase):
     def test_resolve_property3(self):
         '''Test resolution with a property containing a shell variable'''
         service = BaseEntity('test_service')
-        service.target = '$(echo localhost,127.0.0.1)'
+        service.target = '%(echo localhost,127.0.0.1)'
         self.assertEqual(service.resolve_property('target'),
             NodeSet('localhost,127.0.0.1'))
 
     def test_resolve_property4(self):
         '''Command substitution with a non-zero exit code should be ok'''
         service = BaseEntity('test_service')
-        service.add_var('NODES', '$(/bin/false)')
+        service.add_var('NODES', '%(/bin/false)')
         self.assertEqual(service._resolve('%NODES'), '')
 
     def test_resolve_property5(self):
@@ -543,21 +541,17 @@ class VariableBaseEntityTest(unittest.TestCase):
         '''Test command substitution'''
         service = BaseEntity('test_service')
         service.add_var('EXCLUDED_NODES', 'foo')
-        self.assertEqual(
-            service._resolve(
-                 '$([ -n "%EXCLUDED_NODES" ] && echo "-n %EXCLUDED_NODES")'),
-            '-n foo')
+        expr = '%([ -n "%EXCLUDED_NODES" ] && echo "-n %EXCLUDED_NODES")'
+        self.assertEqual(service._resolve(expr), '-n foo')
 
     def test_resolve_2_command_substitutions(self):
         '''Test 2 command substitutions'''
         service = BaseEntity('test_service')
         service.add_var('EXCLUDED_NODES', 'foo')
         service.add_var('SELECTED_NODES', 'bar')
-        self.assertEqual(
-            service._resolve(
-                 '$([ -n "%SELECTED_NODES" ] && echo "-n %SELECTED_NODES")'
-                 + ' $([ -n "%EXCLUDED_NODES" ] && echo "-x %EXCLUDED_NODES")'),
-            '-n bar -x foo')
+        expr = '%([ -n "%SELECTED_NODES" ] && echo "-n %SELECTED_NODES")' + \
+              ' %([ -n "%EXCLUDED_NODES" ] && echo "-x %EXCLUDED_NODES")'
+        self.assertEqual(service._resolve(expr), '-n bar -x foo')
 
 class DependencyTest(unittest.TestCase):
     """Dependency test cases."""

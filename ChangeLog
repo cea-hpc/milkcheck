@@ -1,3 +1,6 @@
+2013-03-13 Aurelien Degremont  <aurelien.degremont@cea.fr>
+	* Remove support for compat code $(...).
+
 2013-02-26 Aurelien Cedeyn  <aurelien.cedeyn@cea.fr>
 	* Fix bad inheritance with empty target list.
 
