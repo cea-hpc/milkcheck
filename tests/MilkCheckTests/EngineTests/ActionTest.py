@@ -25,7 +25,7 @@ class ActionTest(TestCase):
         action1 = Action('status', command='/bin/true')
         service = Service('TEST')
         service.add_actions(action1)
-        self.assertEqual(action1.desc, "")
+        self.assertEqual(action1.desc, None)
 
         # Service description, actions inherits the description
         action2 = Action('status', command='/bin/true')

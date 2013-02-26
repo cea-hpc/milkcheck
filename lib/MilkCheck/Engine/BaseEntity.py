@@ -222,7 +222,7 @@ class BaseEntity(object):
         self.status = NO_STATUS
 
         # Description of an entity
-        self.desc = ''
+        self.desc = None
 
         # Maximum window for parallelism. A None fanout means
         # that the task will be limited by the default value of
@@ -640,16 +640,22 @@ class BaseEntity(object):
 
     def inherits_from(self, entity):
         '''Inheritance of properties between entities'''
+
+        # Beware to check the default value of all of theses properties.
+        # Some of theses have a two possible 'false' value (None or '').
+        # * The init value should always be None
+        # * '' is set by the user
         if self.fanout <= -1 and entity.fanout:
             self.fanout = entity.fanout
         self.errors = self.errors or entity.errors
         if self.timeout is not None and self.timeout <= -1 and \
             entity.timeout >= 0:
             self.timeout = entity.timeout
-        if not self.target:
+        if self.target is None:
             self.target = entity.target
         self.mode = self.mode or entity.mode
-        self.desc = self.desc or entity.desc
+        if self.desc is None:
+            self.desc = entity.desc
 
     def fromdict(self, entdict):
         """Populate entity attributes from dict."""

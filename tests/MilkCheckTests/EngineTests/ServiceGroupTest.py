@@ -833,3 +833,16 @@ class ServiceGroupFromDictTest(TestCase):
         grp.run('stop')
 
         self.assertEqual(grp.status, DONE)
+
+    def test_non_existing_target(self):
+        '''Test expected behaviour on an non-existing target'''
+        sergrp = ServiceGroup('group1')
+        sergrp.fromdict(
+                { 'services':
+                { 'svc1': {
+                    'actions': {
+                        'start': {'cmd': '/bin/True'},
+                    },
+                  'target': '@none',
+                }}})
+        self.assertEqual(sergrp._subservices['svc1'].target, NodeSet())

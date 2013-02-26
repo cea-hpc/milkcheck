@@ -275,6 +275,18 @@ class BaseEntityTest(unittest.TestCase):
         self.assertEqual(ent2.errors, 3)
         self.assertEqual(ent2.timeout, 15)
 
+    def test_inheritance_of_non_existing_target(self):
+        '''
+        Test inheritance between entities with non-existing target/description
+        '''
+        ent1 = BaseEntity(name='parent')
+        ent1.desc = "foo"
+        ent2 = BaseEntity(name='child', target="@none")
+        ent2.desc = ""
+        ent2.inherits_from(ent1)
+        self.assertEqual(ent2.target, NodeSet())
+        self.assertEqual(ent2.desc, "")
+
     def test_clear_parents(self):
         '''Test remove all parents dependencies'''
         ent1 = BaseEntity(name='A')
