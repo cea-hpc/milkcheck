@@ -196,7 +196,9 @@ class ServiceTest(TestCase):
 
         # Distant service with empty target: should be skipped
         svc = Service('test_service', target="tempnode[1-2]")
-        svc.add_action(Action('start', command='/bin/true'))
+        action = Action('start', command='/bin/true')
+        action.inherits_from(svc)
+        svc.add_action(action)
         svc.update_target("tempnode[1-2]", 'DIF')
 
         # A simple dep

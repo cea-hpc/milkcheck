@@ -43,7 +43,7 @@ from MilkCheck.Callback import call_back_self
 from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
 
 # Symbols
-from MilkCheck.Engine.BaseEntity import NO_STATUS, MISSING, SKIPPED, DEP_ERROR
+from MilkCheck.Engine.BaseEntity import NO_STATUS, MISSING, DEP_ERROR
 from MilkCheck.Engine.BaseEntity import WAITING_STATUS
 from MilkCheck.Callback import EV_STATUS_CHANGED, EV_TRIGGER_DEP
 
@@ -136,6 +136,10 @@ class Service(BaseEntity):
         '''Figure out whether the service has the specified action.'''
         return action_name in self._actions
 
+    def to_skip(self, action):
+        """Tell if service should be skipped for provided action name."""
+        return self.has_action(action) and self._actions[action].to_skip()
+
     def update_status(self, status):
         '''
         Update the current service's status and whether all of his parents
@@ -162,7 +166,7 @@ class Service(BaseEntity):
                         call_back_self().notify((self, tgt), EV_TRIGGER_DEP)
                     tgt.prepare()
 
-    def _launch_action(self, action):
+    def _launch_action(self, action, status):
         """
         Try to launch the action.
 
@@ -171,6 +175,11 @@ class Service(BaseEntity):
         # Service with missing action is simply skipped
         if not self.has_action(action):
             self.update_status(MISSING)
+        elif self.to_skip(action):
+            # We are sure the action will be set to SKIPPED
+            self._actions[action].prepare()
+        elif status == DEP_ERROR:
+            self.update_status(DEP_ERROR)
         else:
             # It's time to be processed
             self.update_status(WAITING_STATUS)
@@ -195,14 +204,6 @@ class Service(BaseEntity):
 
         deps_status = self.eval_deps_status()
 
-        # My target are empty (not None!): skip me and continue
-        if self.skipped():
-            self.update_status(SKIPPED)
-        # Deps on error: propagate and quit
-        elif deps_status == DEP_ERROR:
-            self.update_status(DEP_ERROR)
-            return
-
         # Deps not yet processed: Launch them!
         deps = self.search_deps([NO_STATUS])
         if deps:
@@ -213,7 +214,7 @@ class Service(BaseEntity):
                     dep.target.prepare(self._last_action)
         # No dep still running: Run me
         elif deps_status is not WAITING_STATUS:
-            self._launch_action(self._last_action)
+            self._launch_action(self._last_action, deps_status)
 
     def run(self, action_name):
         """Run an action over a service"""

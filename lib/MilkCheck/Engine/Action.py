@@ -77,7 +77,7 @@ class ActionManager(EntityManager):
 
     def perform_action(self, action):
         """Perform an immediate action"""
-        assert not action.skipped(), "Action should be already SKIPPED"
+        assert not action.to_skip(), "Action should be already SKIPPED"
 
         if not action.parent.simulate:
             self.add_task(action)
@@ -335,6 +335,10 @@ class Action(BaseEntity):
         self.prepare()
         action_manager_self().run()
 
+    def to_skip(self):
+        """Tell if action has an empty target list and should be skipped."""
+        return (self.target != None and len(self.target) == 0)
+
     def prepare(self):
         '''
         Prepare is a recursive method allowing the current action to prepare
@@ -345,7 +349,7 @@ class Action(BaseEntity):
         deps_status = self.eval_deps_status()
         # NO_STATUS and not any dep in progress for the current action
         if self.status is NO_STATUS and deps_status is not WAITING_STATUS:
-            if self.skipped():
+            if self.to_skip():
                 self.update_status(SKIPPED)
             elif deps_status is DEP_ERROR or not self.parents:
                 self.update_status(WAITING_STATUS)

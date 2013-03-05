@@ -10,7 +10,8 @@ from unittest import TestCase
 
 from ClusterShell.NodeSet import NodeSet
 
-from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, ERROR, TIMEOUT
+from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, ERROR, TIMEOUT, \
+                                        DEP_ERROR, SKIPPED
 from MilkCheck.Engine.Action import Action, ActionManager, action_manager_self
 from MilkCheck.Engine.Service import Service
 
@@ -34,6 +35,22 @@ class ActionTest(TestCase):
         service2.add_actions(action2)
         action2.inherits_from(service2)
         self.assertEqual(action2.desc, "Service TEST")
+
+    def test_skipped_action_overload(self):
+        """Test action is not skipped if they overload target."""
+        # A dep on ERROR
+        dep = Service('dep')
+        dep.add_action(Action('start', command='/bin/false'))
+        # A service running on empty nodeset...
+        svc = Service('foo', target='@NOTEXIST')
+        # ... with an action overloading the empty nodeset
+        svc.add_action(Action('start', target=HOSTNAME, command=':'))
+
+        svc.add_dep(dep)
+        svc.run('start')
+
+        self.assertEqual(dep.status, ERROR)
+        self.assertEqual(svc.status, DEP_ERROR)
 
     def test_action_instanciation(self):
         """Test instanciation of an action."""

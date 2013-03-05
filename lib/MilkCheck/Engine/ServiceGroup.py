@@ -36,10 +36,11 @@ This module contains the ServiceGroup class definition
 # Classes
 from ClusterShell.NodeSet import NodeSet
 from MilkCheck.Engine.Service import Service, Action
-from MilkCheck.Engine.BaseEntity import BaseEntity, DEP_ORDER, Dependency
+from MilkCheck.Engine.BaseEntity import BaseEntity, DEP_ORDER
 
 # Symbols
-from MilkCheck.Engine.BaseEntity import DONE, SKIPPED, REQUIRE, MISSING
+from MilkCheck.Engine.BaseEntity import DONE, SKIPPED, REQUIRE, MISSING, \
+                                        DEP_ERROR, NO_STATUS
 
 # Exceptions
 from MilkCheck.Engine.BaseEntity import UnknownDependencyError
@@ -107,7 +108,18 @@ class ServiceGroup(Service):
         """
         return self._source.has_action(action_name) and \
                     self._sink.has_action(action_name)
-    
+
+    def to_skip(self, action):
+        """
+        Tell if group should be skipped for provided action name.
+
+        That means that all its subservices should be skipped.
+        """
+        for svc in self._subservices.values():
+            if not svc.to_skip(action):
+                return False
+        return True
+
     def add_inter_dep(self, target, base=None, sgth=REQUIRE):
         """
         Add dependency in the subgraph. Adding a dependency in using this
@@ -177,24 +189,6 @@ class ServiceGroup(Service):
             del self._subservices[dep_name]
             self.__update_edges(True)
             
-    def search_deps(self, symbols=None):
-        '''
-        Return a dictionnary of dependencies both external and internal.
-        In order to be in the dictionnary the dependencies must have a status
-        matching to a symbol in symbols.
-        '''
-        deps = Service.search_deps(self, symbols)
-        if deps:
-            return deps
-
-        if self._algo_reversed and self._sink.children and \
-            self._sink.status in symbols:
-            return [Dependency(self._sink)]
-
-        elif not self._algo_reversed and self._source.parents and \
-            self._source.status in symbols:
-            return [Dependency(self._source)]
-
     def graph_info(self):
         """ Return a tuple to manage dependencies output """
         return ("%s.__hook" % self.fullname(), "cluster_%s" % self.fullname())
@@ -241,23 +235,37 @@ class ServiceGroup(Service):
         else:
             return intd_status
 
-    def _launch_action(self, _action):
+    def _launch_action(self, action, status):
         """
-        ServiceGroup has no real action, just set its group status instead.
+        ServiceGroup does not have real action, but internal services instead.
 
-        Internal services and dependencies should be already checked.
+        Launch internal services if needed or just set group status.
         Group status is based on its internal status. 
         """
-        if self._algo_reversed:
-            intd_status = self._sink.status
-        else:
-            intd_status = self._source.status
 
-        # The group node is a fake we just change his status
-        if intd_status in (SKIPPED, MISSING):
-            self.update_status(intd_status)
+        # Check if the action is MISSING in the whole group.
+        if not self.has_action(action):
+            self.update_status(MISSING)
+        # Check if the whole group is SKIPPED
+        elif self.to_skip(action):
+            self.update_status(SKIPPED)
+        # If there is a dep error, we should not run anything
+        elif status == DEP_ERROR:
+            self.update_status(DEP_ERROR)
+        # No dep error, try to run internal services
+        elif self._algo_reversed and self._sink.children and \
+               self._sink.status is NO_STATUS:
+            self._sink.prepare(action)
+        elif not self._algo_reversed and self._source.parents and \
+               self._source.status is NO_STATUS:
+            self._source.prepare(action)
+        # No service to run, just update status
         else:
-            self.update_status(DONE)
+            if self._algo_reversed:
+                intd_status = self._sink.eval_deps_status()
+            else:
+                intd_status = self._source.eval_deps_status()
+            self.update_status(intd_status)
 
     def inherits_from(self, entity):
         '''Inherit properties from entity'''

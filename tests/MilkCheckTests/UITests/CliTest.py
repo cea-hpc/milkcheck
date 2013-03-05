@@ -459,10 +459,12 @@ class CommandLineOutputTests(CLICommon):
         # Actions
         start_action = Action('start', command='/bin/true')
         stop_action = Action('stop', command='/bin/false')
+        self.timeout_action = Action('timeout', command='sleep 1', timeout=0.1)
         start_action.inherits_from(service)
         stop_action.inherits_from(service)
         service.add_action(start_action)
         service.add_action(stop_action)
+        service.add_action(self.timeout_action)
 
         # Build graph
         group.add_inter_dep(target=service)
@@ -605,8 +607,6 @@ ServiceGroup                                                      [DEP_ERROR]
 
     def test_command_output_timeout(self):
         '''Test command line output with local timeout'''
-        self.service.add_action(Action('timeout', command='/bin/sleep 1',
-                                       timeout=0.1))
         self._output_check(['ServiceGroup', 'timeout'], RC_ERROR,
 """timeout ServiceGroup.service ran in 0.00 s
  > localhost has timeout
@@ -616,10 +616,9 @@ ServiceGroup                                                      [DEP_ERROR]
 
     def test_command_output_dist_timeout(self):
         '''Test command line output with distant timeout'''
-        self.service.add_action(Action('dist_timeout', HOSTNAME,
-                                       command='/bin/sleep 1', timeout=0.1))
-        self._output_check(['ServiceGroup', 'dist_timeout'], RC_ERROR,
-"""dist_timeout ServiceGroup.service ran in 0.00 s
+        self.timeout_action._target_backup = HOSTNAME
+        self._output_check(['ServiceGroup', 'timeout'], RC_ERROR,
+"""timeout ServiceGroup.service ran in 0.00 s
  > HOSTNAME has timeout
 ServiceGroup.service - I am the service                           [ TIMEOUT ]
 ServiceGroup                                                      [DEP_ERROR]
@@ -627,15 +626,14 @@ ServiceGroup                                                      [DEP_ERROR]
 
     def test_command_output_multiple_dist_timeout(self):
         '''Test command line output with timeout and multiple distant nodes'''
-        self.service.add_action(Action('multiple_dist_timeout',
-                                       NodeSet("localhost,%s" % HOSTNAME),
-                                       command='/bin/sleep 1', timeout=0.1))
-        self._output_check(['ServiceGroup', 'multiple_dist_timeout'], RC_ERROR,
-"""multiple_dist_timeout ServiceGroup.service ran in 0.00 s
+        self.timeout_action._target_backup = "localhost,%s" % HOSTNAME
+        self._output_check(['ServiceGroup', 'timeout'], RC_ERROR,
+"""timeout ServiceGroup.service ran in 0.00 s
  > HOSTNAME,localhost has timeout
 ServiceGroup.service - I am the service                           [ TIMEOUT ]
 ServiceGroup                                                      [DEP_ERROR]
 """)
+
     def test_command_output_warning(self):
         '''Test command line output with warning'''
         svc_warn = Service('service_failled')

@@ -1,3 +1,6 @@
+2013-03-15 Aurelien Degremont  <aurelien.degremont@cea.fr>
+	* Fix SKIPPED management for Service and ServiceGroup.
+
 2013-03-13 Aurelien Degremont  <aurelien.degremont@cea.fr>
 	* Remove support for compat code $(...).
 	* Better message when using missing dependency.

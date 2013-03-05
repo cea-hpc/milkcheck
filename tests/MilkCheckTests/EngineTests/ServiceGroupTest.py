@@ -18,7 +18,7 @@ from ClusterShell.NodeSet import NodeSet
 from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, SKIPPED, MISSING
 from MilkCheck.Engine.BaseEntity import WAITING_STATUS, DEP_ERROR
 from MilkCheck.Engine.BaseEntity import WARNING, ERROR
-from MilkCheck.Engine.BaseEntity import CHECK, REQUIRE_WEAK
+from MilkCheck.Engine.BaseEntity import CHECK, REQUIRE_WEAK, REQUIRE
 from MilkCheck.Engine.BaseEntity import UnknownDependencyError
 
 HOSTNAME = socket.gethostname().split('.')[0]
@@ -218,24 +218,6 @@ class ServiceGroupTest(TestCase):
         group.add_inter_dep(target=serv)
         self.assertTrue(group.has_subservice(serv.name))
 
-    
-    def test_search_deps(self):
-        '''Test the method search deps overriden from BaseEntity.'''
-        group = ServiceGroup('GROUP')
-        serv = Service('SERVICE')
-        group_dep =  ServiceGroup('GROUP2')
-        deps = group.search_deps([NO_STATUS])
-        self.assertTrue(deps is None)
-        group.add_inter_dep(target=serv)
-        group.add_dep(target=group_dep)
-        serva = Service('A')
-        serva.status = DONE
-        group.add_dep(target=serva)
-        deps = group.search_deps([NO_STATUS])
-        self.assertEqual(len(deps), 1)
-        deps = group.search_deps([NO_STATUS, DONE])
-        self.assertEqual(len(deps), 2)
-        
     def test_eval_deps_status_done(self):
         '''Test the method eval_deps_status NO_STATUS'''
         group = ServiceGroup('group')
@@ -291,14 +273,14 @@ class ServiceGroupTest(TestCase):
         '''Test method prepare with a single empty ServiceGroup.'''
         group = ServiceGroup('GROUP')
         group.run('start')
-        self.assertEqual(group.status, DONE)
+        self.assertEqual(group.status, MISSING)
 
     def test_prepare_empty_group_reverse(self):
         '''Test method prepare reverse with a single empty ServiceGroup.'''
         group = ServiceGroup('GROUP')
         group.algo_reversed = True
         group.run('start')
-        self.assertEqual(group.status, DONE)
+        self.assertEqual(group.status, MISSING)
 
     def test_prepare_group_subservice(self):
         '''Test prepare group with an internal dependency.'''
@@ -356,8 +338,8 @@ class ServiceGroupTest(TestCase):
         ext_serv.add_action(ac_suc)
         group.add_dep(ext_serv)
         group.run('start')
-        self.assertEqual(group.status, DONE)
         self.assertEqual(ext_serv.status, DONE)
+        self.assertEqual(group.status, MISSING)
     
     def test_prepare_group_internal_external_deps(self):
         '''Test prepare a group with internal and external dependencies'''
@@ -510,32 +492,28 @@ class ServiceGroupTest(TestCase):
         """A group with only SKIPPED services should be SKIPPED"""
         grp = ServiceGroup('group')
         svc1 = Service('svc1')
-        svc1.add_action(Action('stop', command='/bin/true'))
-        svc1.status = SKIPPED
+        svc1.add_action(Action('start', target="@NOTHING", command=':'))
         svc2 = Service('svc2')
-        svc2.add_action(Action('stop', command='/bin/true'))
-        svc2.status = SKIPPED
+        svc2.add_action(Action('start', target="@NOTHING", command=':'))
         grp.add_inter_dep(target=svc1)
         grp.add_inter_dep(target=svc2)
-        grp.run('stop')
+        grp.run('start')
         self.assertEqual(grp.status, SKIPPED)
 
     def test_skipped_group_dep_error(self):
         """A full SKIPPED service group with DEP_ERROR should be SKIPPED"""
         svc = Service('error')
-        svc.add_action(Action('stop', command='/bin/false'))
+        svc.add_action(Action('start', command='/bin/false'))
         grp = ServiceGroup('group')
         svc1 = Service('svc1')
-        svc1.add_action(Action('stop', command='/bin/true'))
-        svc1.status = SKIPPED
+        svc1.add_action(Action('start', target="@NOTHING", command=':'))
         svc2 = Service('svc2')
-        svc2.add_action(Action('stop', command='/bin/true'))
-        svc2.status = SKIPPED
+        svc2.add_action(Action('start', target="@NOTHING", command=':'))
         grp.add_inter_dep(target=svc1)
         grp.add_inter_dep(target=svc2)
-        grp.add_dep(svc, sgth=REQUIRE_WEAK)
+        grp.add_dep(svc, sgth=REQUIRE)
 
-        grp.run('stop')
+        grp.run('start')
         self.assertEqual(svc.status, ERROR)
         self.assertEqual(grp.status, SKIPPED)
 
