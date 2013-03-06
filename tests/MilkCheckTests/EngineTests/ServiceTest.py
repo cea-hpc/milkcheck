@@ -157,6 +157,17 @@ class ServiceTest(TestCase):
         self.assertEqual(serv_depa.status, DONE)
         self.assertEqual(serv_depb.status, DONE)
 
+    def test_run_skipped(self):
+        """Run a service with empty target is SKIPPED"""
+        svc = Service('test_service')
+        action = Action('start', target="TEMPNODE", command=":")
+        svc.add_action(action)
+        action.update_target("TEMPNODE", 'DIF')
+        svc.run('start')
+
+        self.assertEqual(action.status, SKIPPED)
+        self.assertEqual(svc.status, SKIPPED)
+
     def test_run_with_skipped_deps(self):
         """Test run with only SKIPPED dependencies"""
 
