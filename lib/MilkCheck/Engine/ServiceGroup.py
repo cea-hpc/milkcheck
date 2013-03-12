@@ -133,6 +133,7 @@ class ServiceGroup(Service):
             self._sink.add_dep(target=target, sgth=sgth, parent=False)
             self._source.add_dep(target=target, sgth=sgth)
         self._subservices[target.name] = target
+        target.parent = self
         self.__update_edges()
 
     def __update_edges(self, create_links=False):

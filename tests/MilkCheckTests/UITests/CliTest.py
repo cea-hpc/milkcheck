@@ -169,11 +169,11 @@ class CLIBigGraphTests(CLICommon):
     def test_execute_std_verbosity(self):
         '''CLI execute() (no option)'''
         self._output_check(['S3', 'start'], RC_ERROR,
-"""I1 - I am the service I1                                          [    OK   ]
-start I2 ran in 0.00 s
+"""G1.I1 - I am the service I1                                       [    OK   ]
+start G1.I2 ran in 0.00 s
  > BADNODE: ssh: Could not resolve hostname BADNODE: Name or service not known
  > BADNODE exited with 255
-I2 - I am the service I2                                          [  ERROR  ]
+G1.I2 - I am the service I2                                       [  ERROR  ]
 G1                                                                [DEP_ERROR]
 S3 - I am the service S3                                          [DEP_ERROR]
 """)
@@ -181,16 +181,16 @@ S3 - I am the service S3                                          [DEP_ERROR]
     def test_execute_verbosity_1(self):
         '''CLI execute() (-v)'''
         self._output_check(['S3', 'start', '-v'], RC_ERROR,
-"""start I1 on HOSTNAME
+"""start G1.I1 on HOSTNAME
  > echo ok
-I1 - I am the service I1                                          [    OK   ]
-start I2 on BADNODE,HOSTNAME
+G1.I1 - I am the service I1                                       [    OK   ]
+start G1.I2 on BADNODE,HOSTNAME
  > /bin/true
-start I2 ran in 0.00 s
+start G1.I2 ran in 0.00 s
  > BADNODE: ssh: Could not resolve hostname BADNODE: Name or service not known
  > HOSTNAME exited with 0
  > BADNODE exited with 255
-I2 - I am the service I2                                          [  ERROR  ]
+G1.I2 - I am the service I2                                       [  ERROR  ]
 G1                                                                [DEP_ERROR]
 S3 - I am the service S3                                          [DEP_ERROR]
 """)
@@ -198,19 +198,19 @@ S3 - I am the service S3                                          [DEP_ERROR]
     def test_execute_verbosity_2(self):
         '''CLI execute() (-vv)'''
         self._output_check(['S3', 'start', '-vv'], RC_ERROR,
-"""start I1 on HOSTNAME
+"""start G1.I1 on HOSTNAME
  > echo ok
-start I1 ran in 0.00 s
+start G1.I1 ran in 0.00 s
  > HOSTNAME: ok
  > HOSTNAME exited with 0
-I1 - I am the service I1                                          [    OK   ]
-start I2 on BADNODE,HOSTNAME
+G1.I1 - I am the service I1                                       [    OK   ]
+start G1.I2 on BADNODE,HOSTNAME
  > /bin/true
-start I2 ran in 0.00 s
+start G1.I2 ran in 0.00 s
  > BADNODE: ssh: Could not resolve hostname BADNODE: Name or service not known
  > HOSTNAME exited with 0
  > BADNODE exited with 255
-I2 - I am the service I2                                          [  ERROR  ]
+G1.I2 - I am the service I2                                       [  ERROR  ]
 G1                                                                [DEP_ERROR]
 S3 - I am the service S3                                          [DEP_ERROR]
 """)
@@ -218,19 +218,19 @@ S3 - I am the service S3                                          [DEP_ERROR]
     def test_execute_debug(self):
         '''CLI execute() (-d)'''
         self._output_check(['S3', 'start', '-d'], RC_ERROR,
-"""start I1 on HOSTNAME
+"""start G1.I1 on HOSTNAME
  > echo ok
-start I1 ran in 0.00 s
+start G1.I1 ran in 0.00 s
  > HOSTNAME: ok
  > HOSTNAME exited with 0
-I1 - I am the service I1                                          [    OK   ]
-start I2 on BADNODE,HOSTNAME
+G1.I1 - I am the service I1                                       [    OK   ]
+start G1.I2 on BADNODE,HOSTNAME
  > /bin/true
-start I2 ran in 0.00 s
+start G1.I2 ran in 0.00 s
  > BADNODE: ssh: Could not resolve hostname BADNODE: Name or service not known
  > HOSTNAME exited with 0
  > BADNODE exited with 255
-I2 - I am the service I2                                          [  ERROR  ]
+G1.I2 - I am the service I2                                       [  ERROR  ]
 G1                                                                [DEP_ERROR]
 S3 - I am the service S3                                          [DEP_ERROR]
 """,
@@ -263,17 +263,17 @@ S3 - I am the service S3                                          [  ERROR  ]
     def test_selected_node(self):
         '''Execute with a limited node list (-vvv -n ...)'''
         self._output_check(['S3', 'start', '-d', '-n', HOSTNAME], RC_ERROR,
-"""start I1 on HOSTNAME
+"""start G1.I1 on HOSTNAME
  > echo ok
-start I1 ran in 0.00 s
+start G1.I1 ran in 0.00 s
  > HOSTNAME: ok
  > HOSTNAME exited with 0
-I1 - I am the service I1                                          [    OK   ]
-start I2 on HOSTNAME
+G1.I1 - I am the service I1                                       [    OK   ]
+start G1.I2 on HOSTNAME
  > /bin/true
-start I2 ran in 0.00 s
+start G1.I2 ran in 0.00 s
  > HOSTNAME exited with 0
-I2 - I am the service I2                                          [    OK   ]
+G1.I2 - I am the service I2                                       [    OK   ]
 G1                                                                [    OK   ]
 start S3 on HOSTNAME
  > /bin/false
@@ -343,17 +343,17 @@ S1 - I am the service S1                                          [    OK   ]
         """CLI execute() with explicit services (S1 G1 -d)"""
         self._output_check(['S3', 'G1', 'start', '-d', '-x', 'BADNODE'],
                            RC_ERROR,
-"""start I1 on HOSTNAME
+"""start G1.I1 on HOSTNAME
  > echo ok
-start I1 ran in 0.00 s
+start G1.I1 ran in 0.00 s
  > HOSTNAME: ok
  > HOSTNAME exited with 0
-I1 - I am the service I1                                          [    OK   ]
-start I2 on HOSTNAME
+G1.I1 - I am the service I1                                       [    OK   ]
+start G1.I2 on HOSTNAME
  > /bin/true
-start I2 ran in 0.00 s
+start G1.I2 ran in 0.00 s
  > HOSTNAME exited with 0
-I2 - I am the service I2                                          [    OK   ]
+G1.I2 - I am the service I2                                       [    OK   ]
 G1                                                                [    OK   ]
 start S3 on HOSTNAME
  > /bin/false
@@ -404,12 +404,12 @@ config_dir:
         # This could be avoided if the graph is simplified
         self.manager.forget_services(self.svc2)
         self._output_check(['start', '-v', '-x', 'BADNODE'], RC_ERROR,
-"""start I1 on HOSTNAME
+"""start G1.I1 on HOSTNAME
  > echo ok
-I1 - I am the service I1                                          [    OK   ]
-start I2 on HOSTNAME
+G1.I1 - I am the service I1                                       [    OK   ]
+start G1.I2 on HOSTNAME
  > /bin/true
-I2 - I am the service I2                                          [    OK   ]
+G1.I2 - I am the service I2                                       [    OK   ]
 G1                                                                [    OK   ]
 start S3 on HOSTNAME
  > /bin/false
@@ -466,7 +466,6 @@ class CommandLineOutputTests(CLICommon):
 
         # Build graph
         group.add_inter_dep(target=service)
-        service.parent = group
 
         # Register services within the manager
         self.manager.register_services(group, service)

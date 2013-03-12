@@ -572,7 +572,7 @@ class ServiceGroupTest(TestCase):
         grp = ServiceGroup('Group')
         subgrp = ServiceGroup('subGroup')
         grp.add_inter_dep(subgrp)
-        self.assertEqual(grp.graph(), 'subgraph "cluster_Group" {\nlabel="Group";\nstyle=rounded;\nnode [style=filled];\n"Group.__hook" [style=invis];\nsubgraph "cluster_subGroup" {\nlabel="subGroup";\nstyle=rounded;\nnode [style=filled];\n"subGroup.__hook" [style=invis];\n}\n}\n')
+        self.assertEqual(grp.graph(), 'subgraph "cluster_Group" {\nlabel="Group";\nstyle=rounded;\nnode [style=filled];\n"Group.__hook" [style=invis];\nsubgraph "cluster_Group.subGroup" {\nlabel="Group.subGroup";\nstyle=rounded;\nnode [style=filled];\n"Group.subGroup.__hook" [style=invis];\n}\n}\n')
 
 class ServiceGroupFromDictTest(TestCase):
     '''Test cases of ServiceGroup.fromdict()'''
