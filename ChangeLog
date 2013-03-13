@@ -1,3 +1,6 @@
+2013-02-26 Aurelien Cedeyn  <aurelien.cedeyn@cea.fr>
+	* Fix bad inheritance with empty target list.
+
 2013-02-23 Aurelien Degremont  <aurelien.degremont@cea.fr>
 	* Fix deps issues with service between 2 top services.
 
