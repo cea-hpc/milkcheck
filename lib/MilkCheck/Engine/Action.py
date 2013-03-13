@@ -234,11 +234,7 @@ class MilkCheckEventHandler(EventHandler):
         to handle action with a service which is specified as ghost. That means
         it does nothing
         '''
-        if self._action.parent.simulate:
-            self._action.parent.update_status(
-                self._action.parent.eval_deps_status())
-        else:
-            self._action.schedule(allow_delay=False)
+        self._action.schedule(allow_delay=False)
        
         
 class ActionEventHandler(MilkCheckEventHandler):

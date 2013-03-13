@@ -35,7 +35,7 @@ This module contains the ServiceGroup class definition
 
 # Classes
 from ClusterShell.NodeSet import NodeSet
-from MilkCheck.Engine.Service import Service, Action
+from MilkCheck.Engine.Service import Service
 from MilkCheck.Engine.BaseEntity import BaseEntity, DEP_ORDER
 
 # Symbols
@@ -106,8 +106,10 @@ class ServiceGroup(Service):
         A group consider to get an action only if both source and sink
         own the action
         """
-        return self._source.has_action(action_name) and \
-                    self._sink.has_action(action_name)
+        for svc in self.iter_subservices():
+            if svc.has_action(action_name):
+                return True
+        return False
 
     def to_skip(self, action):
         """
@@ -128,12 +130,6 @@ class ServiceGroup(Service):
         """
         if base and not self.has_subservice(base.name):
             raise ServiceNotFoundError()
-        # Generate fake actions
-        for name in target._actions:
-            if name not in self._source._actions:
-                self._source.add_action(Action(name, delay=0.01))
-            if name not in self._sink._actions:
-                self._sink.add_action(Action(name, delay=0.01))
         # A base node is specified so hook target on it
         if base:
             if not target.has_parent_dep('sink'):
@@ -341,17 +337,8 @@ class ServiceGroup(Service):
             for service in self.iter_subservices():
                 if not service.children:
                     service.add_dep(self._source, parent=False)
-                    # Generate fake actions
-                    for action in service._actions:
-                        if action not in self._source._actions:
-                            self._source.add_action(
-                                Action(action, delay=0.01))
                 if not service.parents:
                     service.add_dep(self._sink)
-                    for action in service._actions:
-                        if action not in self._sink._actions:
-                            self._sink.add_action(
-                                Action(action, delay=0.01))
 
         for subser in self.iter_subservices():
             subser.inherits_from(self)
