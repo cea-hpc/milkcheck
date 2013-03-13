@@ -6,7 +6,8 @@
 import logging
 from unittest import TestCase
 from optparse import Values
-from MilkCheck.Config.ConfigParser import ConfigParser
+
+from MilkCheck.Config.ConfigParser import ConfigParser, ConfigParserError
 
 class MockConfigParser(ConfigParser):
     '''Class to overwrite CONFIGPATH and avoid logging setup'''
@@ -34,3 +35,18 @@ class ConfigParserTest(TestCase):
         for key in ConfigParser.DEFAULT_FIELDS.iterkeys():
             self.assertEqual(config[key], ConfigParser.DEFAULT_FIELDS[key]['value'])
 
+    def test_check_data(self):
+        """YAML flow is correctly parsed"""
+        config = MockConfigParser(self._options)
+        config._check_data({'fanout': 27})
+        self.assertEqual(config['fanout'], 27)
+
+    def test_check_data_type(self):
+        """Option type is correctly checked"""
+        config = MockConfigParser(self._options)
+        # Element does not exist
+        self.assertRaises(ConfigParserError,
+                          config._check_data, {'sugar': 'yes'})
+        # Element has a bad type
+        self.assertRaises(ConfigParserError,
+                          config._check_data, {'fanout': [ 27, 28 ]})
