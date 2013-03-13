@@ -98,11 +98,17 @@ class DependencyAlreadyReferenced(MilkCheckEngineError):
     This exception is raised if you try to add two times the same
     depedency to the same entity.
     """
+
 class IllegalDependencyTypeError(MilkCheckEngineError):
     """
     Exception raised when you try to assign another identifier than
     CHECK, REQUIRE OR REQUIRE_WEAK to dep_type
     """
+
+class UnknownDependencyError(MilkCheckEngineError):
+    """Raise when using a dependency name which is not defined."""
+    def __init__(self, dep):
+        MilkCheckEngineError.__init__(self, "Unknown dependency '%s'" % dep)
 
 class VariableAlreadyExistError(MilkCheckEngineError):
     '''

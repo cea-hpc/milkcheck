@@ -42,6 +42,7 @@ from os.path import isfile
 from ClusterShell.NodeSet import NodeSet
 
 from MilkCheck.ServiceManager import service_manager_self
+from MilkCheck.Engine.BaseEntity import UnknownDependencyError
 from MilkCheck.Engine.Service import Service
 from MilkCheck.Engine.ServiceGroup import ServiceGroup, DepWrapper
 
@@ -156,6 +157,8 @@ class MilkCheckConfig(object):
         for wrap in dependencies.values():
             for (dtype, values) in wrap.deps.items():
                 for dep in values:
+                    if dep not in dependencies:
+                        raise UnknownDependencyError(dep)
                     wrap.source.add_dep(
                         target=dependencies[dep].source, sgth=dtype.upper())
         # Populate the manager and set up inheritance

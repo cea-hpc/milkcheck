@@ -42,6 +42,7 @@ from MilkCheck.Engine.BaseEntity import BaseEntity, DEP_ORDER, Dependency
 from MilkCheck.Engine.BaseEntity import DONE, SKIPPED, REQUIRE, MISSING
 
 # Exceptions
+from MilkCheck.Engine.BaseEntity import UnknownDependencyError
 from MilkCheck.ServiceManager import ServiceNotFoundError
 
 class ServiceGroup(Service):
@@ -323,6 +324,8 @@ class ServiceGroup(Service):
                 # Not any dependencies so just attach
                 for dtype in wrap.deps:
                     for dep in wrap.deps[dtype]:
+                        if dep not in self._subservices:
+                            raise UnknownDependencyError(dep)
                         wrap.source.add_dep(self._subservices[dep],
                                                          sgth=dtype.upper())
 

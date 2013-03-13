@@ -19,6 +19,7 @@ from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, SKIPPED, MISSING
 from MilkCheck.Engine.BaseEntity import WAITING_STATUS, DEP_ERROR
 from MilkCheck.Engine.BaseEntity import WARNING, ERROR
 from MilkCheck.Engine.BaseEntity import CHECK, REQUIRE_WEAK
+from MilkCheck.Engine.BaseEntity import UnknownDependencyError
 
 HOSTNAME = socket.gethostname().split('.')[0]
 
@@ -846,3 +847,17 @@ class ServiceGroupFromDictTest(TestCase):
                   'target': '@none',
                 }}})
         self.assertEqual(sergrp._subservices['svc1'].target, NodeSet())
+
+    def test_missing_dep_raises_error(self):
+        """Require a missing deps raises UnknownDependencyError"""
+        grp = ServiceGroup('group')
+        self.assertRaises(UnknownDependencyError, grp.fromdict, {
+            'services': {
+                'svc1': {
+                    'require': [ 'bad' ],
+                    'actions': {
+                        'stop': { 'cmd': "/bin/true" },
+                    }
+                }
+            }
+        })

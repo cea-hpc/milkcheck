@@ -3,6 +3,7 @@
 
 from unittest import TestCase
 from MilkCheck.Config.Configuration import MilkCheckConfig
+from MilkCheck.Config.Configuration import UnknownDependencyError
 from MilkCheck.ServiceManager import service_manager_self
 
 import socket
@@ -197,6 +198,18 @@ services:
         self.assertTrue(manager.entities['foo2'].has_parent_dep('bar'))
         self.assertTrue(manager.entities['bar'].has_action('start'))
         self.assertTrue(manager.entities['compat_grp'].has_parent_dep('compat'))
+
+    def test_missing_dep(self):
+        """Using a missing dep raises UnknownDependencyError"""
+        config = MilkCheckConfig()
+        config.load_from_stream('''
+services:
+    foo:
+        require: [ bad ]
+        actions:
+            start:
+                cmd: /bin/true''')
+        self.assertRaises(UnknownDependencyError, config.build_graph)
 
     def test_deps_between_top_services(self):
         '''Deps between 2 services in top "services" section are ok'''

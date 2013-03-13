@@ -52,6 +52,7 @@ from MilkCheck.Config.ConfigParser import ConfigParser, ConfigParserError
 from yaml.scanner import ScannerError
 from MilkCheck.ServiceManager import ServiceNotFoundError
 from MilkCheck.UI.OptionParser import InvalidOptionError
+from MilkCheck.Engine.BaseEntity import UnknownDependencyError
 from MilkCheck.Engine.BaseEntity import InvalidVariableError
 from MilkCheck.Engine.BaseEntity import UndefinedVariableError
 from MilkCheck.Engine.BaseEntity import VariableAlreadyExistError
@@ -472,6 +473,7 @@ class CommandLine(CoreEvent):
                 UndefinedVariableError,
                 VariableAlreadyExistError,
                 DependencyAlreadyReferenced,
+                UnknownDependencyError,
                 IllegalDependencyTypeError,
                 ConfigParserError,
                 ScannerError), exc:
