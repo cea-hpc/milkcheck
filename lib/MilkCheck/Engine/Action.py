@@ -77,8 +77,7 @@ class ActionManager(EntityManager):
 
     def perform_action(self, action):
         """Perform an immediate action"""
-        assert action, 'You cannot perform a NoneType object'
-        assert isinstance(action, Action), 'Object should be an action'
+        assert not action.skipped(), "Action should be already SKIPPED"
 
         if not action.parent.simulate:
             self.add_task(action)
@@ -86,14 +85,7 @@ class ActionManager(EntityManager):
 
         nodes = None
         if action.mode != 'delegate':
-            nodes = action.resolve_property('target')
-            # XXX: If this never happens, we could remove the previous
-            # resolve property. Resolution alreay happened.
-            # XXX: Also True if action has a specific target?
-            assert (str(nodes) == str(action.target))
-
-        # Action should have been set SKIPPED already.
-        assert (action.target is None or len(action.target) > 0)
+            nodes = action.target
 
         # In dry-run mode, all commands are replaced by a simple ':'
         command = ':'
