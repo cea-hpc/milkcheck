@@ -3,7 +3,7 @@
 
 
 Name:		milkcheck
-Version:	0.11
+Version:	0.11.1
 Release:	1%{?dist}
 Summary:	Distributed cluster command management
 
@@ -37,7 +37,8 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root,-)
-%config %{_sysconfdir}/%{name}
+%config %{_sysconfdir}/%{name}/conf
+%config(noreplace) %{_sysconfdir}/%{name}/milkcheck.conf
 %{python_sitelib}/MilkCheck/
 %{python_sitelib}/MilkCheck-*-py?.?.egg-info
 %{_bindir}/milkcheck
@@ -51,6 +52,10 @@ rm -rf $RPM_BUILD_ROOT
 %{vimdatadir}/syntax/milkcheck.vim
 
 %changelog
+* Thu Mar 18 2013 Aurelien Degremont <aurelien.degremont@cea.fr> 0.11.1-1
+- milkcheck.conf is declared as 'noreplace'.
+- Update to 0.11.1 release. (--nodeps, engine bugfixes, ...)
+
 * Thu Feb 21 2013 Aurelien Degremont <aurelien.degremont@cea.fr> 0.11-1
 - Update to 0.11 release. (--define, custom reverse action, ...)
 
