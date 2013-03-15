@@ -2,7 +2,7 @@
 # Contributor: TATIBOUET Jeremie <tatibouetj@ocre.cea.fr>
 
 from unittest import TestCase
-from MilkCheck.Config.Configuration import MilkCheckConfig
+from MilkCheck.Config.Configuration import MilkCheckConfig, ConfigurationError
 from MilkCheck.Config.Configuration import UnknownDependencyError
 from MilkCheck.ServiceManager import service_manager_self
 
@@ -15,14 +15,12 @@ class MilkCheckConfigTest(TestCase):
     def tearDown(self):
         service_manager_self().reset()
 
-    def test_instanciation(self):
-        '''Try to instanciate an object of the class MilkCheckConfig'''
-        self.assertTrue(MilkCheckConfig())
+    def setUp(self):
+        self.cfg = MilkCheckConfig()
 
     def test_loading_conf_from_stream(self):
         '''Test parsing of a Yaml flow trough a stream'''
-        config = MilkCheckConfig()
-        config.load_from_stream('''services:
+        self.cfg.load_from_stream('''services:
      S1:
             desc: "I'm the service S1"
             variables:
@@ -38,41 +36,36 @@ class MilkCheckConfigTest(TestCase):
                     cmd :  shine status -q -L -f $LUSTRE_FS_LIST
                 check:
                     check: [ status ]''' % HOSTNAME)
-        self.assertTrue(config._flow)
-        self.assertTrue(len(config._flow) == 1)
+        self.assertTrue(self.cfg._flow)
+        self.assertTrue(len(self.cfg._flow) == 1)
 
     def test_loading_conf_from_dir(self):
         '''Test parsing of a Yaml existing in a directory'''
         dty = '../tests/MilkCheckTests/ConfigTests/YamlTestFiles/'
-        config = MilkCheckConfig()
-        config.load_from_dir(directory=dty)
-        self.assertTrue(config.data_flow)
-        config.load_from_dir(directory=dty, recursive=True)
-        self.assertTrue(config.data_flow)
+        self.cfg.load_from_dir(directory=dty)
+        self.assertTrue(self.cfg.data_flow)
+        self.cfg.load_from_dir(directory=dty, recursive=True)
+        self.assertTrue(self.cfg.data_flow)
 
     def test_loading_conf_farom_baddir(self):
         '''Test load in a directory that doesn't exist'''
         dty = '/nowhere'
-        config = MilkCheckConfig()
-        self.assertRaises(ValueError, config.load_from_dir, directory=dty)
+        self.assertRaises(ValueError, self.cfg.load_from_dir, directory=dty)
 
     def test_load_from_stream(self):
         '''Test parsing of a single YAML stream'''
-        config = MilkCheckConfig()
-        fi = open('%s%s'
-            %('../tests/MilkCheckTests/ConfigTests/',
-                'YamlTestFiles/sample_1/sample_1.yaml'), 'r')
-        config.load_from_stream(fi)
-        fi.close()
-        self.assertTrue(config.data_flow)
-        self.assertEqual(len(config.data_flow), 2)
+        flow = open('../tests/MilkCheckTests/ConfigTests/'
+                    'YamlTestFiles/sample_1/sample_1.yaml')
+        self.cfg.load_from_stream(flow)
+        flow.close()
+        self.assertTrue(self.cfg.data_flow)
+        self.assertEqual(len(self.cfg.data_flow), 2)
 
     def test_building_graph(self):
         '''Test graph building from configuration'''
         dty = '../tests/MilkCheckTests/ConfigTests/YamlTestFiles/sample_1/'
-        config = MilkCheckConfig()
-        config.load_from_dir(dty)
-        config._build_services()
+        self.cfg.load_from_dir(dty)
+        self.cfg._build_services()
         # Get back the manager
         manager = service_manager_self()
         self.assertTrue('S1' in manager.entities)
@@ -87,13 +80,12 @@ class MilkCheckConfigTest(TestCase):
 
     def test_parsing_deps(self):
         '''Test parsing of dependencies within a dictionnary'''
-        config = MilkCheckConfig()
-        wrap = config._parse_deps({'require': ['S1'], 'check': ['S2']})
+        wrap = self.cfg._parse_deps({'require': ['S1'], 'check': ['S2']})
         self.assertTrue(wrap)
         self.assertTrue('S1' in wrap.deps['require'])
         self.assertTrue('S2' in wrap.deps['check'])
         self.assertFalse(wrap.deps['require_weak'])
-        wrap = config._parse_deps({})
+        wrap = self.cfg._parse_deps({})
         self.assertTrue(wrap)
         self.assertFalse(wrap.deps['require'])
         self.assertFalse(wrap.deps['check'])
@@ -101,8 +93,8 @@ class MilkCheckConfigTest(TestCase):
 
     def test_load_with_empty_yaml_document(self):
         '''Test loading with empty YAML document in flow.'''
-        config = MilkCheckConfig()
-        config.load_from_stream('''---
+        self.cfg = MilkCheckConfig()
+        self.cfg.load_from_stream('''---
 # This is en empty document.
 ---
 services:
@@ -121,14 +113,13 @@ services:
                     cmd :  shine status -q -L -f $LUSTRE_FS_LIST
                 check:
                     check: [ status ]''' % HOSTNAME)
-        config.build_graph()
-        self.assertTrue(config._flow)
-        self.assertTrue(len(config._flow) == 1)
+        self.cfg.build_graph()
+        self.assertTrue(self.cfg._flow)
+        self.assertTrue(len(self.cfg._flow) == 1)
 
     def test_parse_with_services_syntax(self):
         '''Test loading with empty YAML document in flow.'''
-        config = MilkCheckConfig()
-        config.load_from_stream('''---
+        self.cfg.load_from_stream('''---
 services:
     foo[1-2]:
         desc: "this is desc"
@@ -141,7 +132,7 @@ services:
             start:
                 cmd: run_bar''')
 
-        config.build_graph()
+        self.cfg.build_graph()
         # Get back the manager
         manager = service_manager_self()
         self.assertTrue('foo1' in manager.entities)
@@ -155,8 +146,7 @@ services:
 
     def test_parse_with_compat_syntax(self):
         '''Test loading with empty YAML document in flow.'''
-        config = MilkCheckConfig()
-        config.load_from_stream('''
+        self.cfg.load_from_stream('''
 service:
     name: compat
     actions:
@@ -184,7 +174,7 @@ services:
             start:
                 cmd: run_bar''')
 
-        config.build_graph()
+        self.cfg.build_graph()
         # Get back the manager
         manager = service_manager_self()
         self.assertTrue('compat' in manager.entities)
@@ -201,20 +191,18 @@ services:
 
     def test_missing_dep(self):
         """Using a missing dep raises UnknownDependencyError"""
-        config = MilkCheckConfig()
-        config.load_from_stream('''
+        self.cfg.load_from_stream('''
 services:
     foo:
         require: [ bad ]
         actions:
             start:
                 cmd: /bin/true''')
-        self.assertRaises(UnknownDependencyError, config.build_graph)
+        self.assertRaises(UnknownDependencyError, self.cfg.build_graph)
 
     def test_deps_between_top_services(self):
         '''Deps between 2 services in top "services" section are ok'''
-        config = MilkCheckConfig()
-        config.load_from_stream('''
+        self.cfg.load_from_stream('''
 services:
     foo:
         actions:
@@ -227,7 +215,7 @@ services:
         actions:
             start:
                 cmd: run_bar''')
-        config.build_graph()
+        self.cfg.build_graph()
         manager = service_manager_self()
         self.assertTrue('foo' in manager.entities)
         self.assertTrue('bar' in manager.entities)
@@ -237,8 +225,7 @@ services:
 
     def test_before_rule_parsing(self):
         """'before' is supported in configuration"""
-        config = MilkCheckConfig()
-        config.load_from_stream('''
+        self.cfg.load_from_stream('''
 services:
     foo:
         actions:
@@ -249,8 +236,19 @@ services:
         actions:
             start:
                 cmd: run_bar''')
-        config.build_graph()
+        self.cfg.build_graph()
         manager = service_manager_self()
         self.assertTrue('foo' in manager.entities)
         self.assertTrue('bar' in manager.entities)
         self.assertTrue(manager.entities['bar'].has_parent_dep('foo'))
+
+    def test_bad_rule(self):
+        """Unknown rule raises ConfigurationError"""
+        self.cfg.load_from_stream('''
+services:
+    foo:
+        actions:
+            start:
+                cmd: run %NAME
+badrule: foo''')
+        self.assertRaises(ConfigurationError, self.cfg.build_graph)

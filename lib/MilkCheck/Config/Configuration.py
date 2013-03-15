@@ -46,6 +46,9 @@ from MilkCheck.Engine.BaseEntity import UnknownDependencyError
 from MilkCheck.Engine.Service import Service
 from MilkCheck.Engine.ServiceGroup import ServiceGroup, DepWrapper
 
+class ConfigurationError(Exception):
+    """Generic error for configuration rule file content error."""
+
 class MilkCheckConfig(object):
     '''
     This class load the configuration files located within the specified
@@ -150,8 +153,7 @@ class MilkCheckConfig(object):
                             dependencies[service.name] = wrap
 
                 else:
-                    # XXX: Raise an exception with a better error handling
-                    raise KeyError("Bad declaration of: %s" % elem)
+                    raise ConfigurationError("Bad rule '%s'" % elem)
 
         # Build relations between services
         for wrap in dependencies.values():
