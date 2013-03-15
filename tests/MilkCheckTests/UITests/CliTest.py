@@ -41,6 +41,10 @@ class MyOutput(StringIO):
     def write(self, line):
         ''' Writes a word per line'''
 
+        # Format help usage
+        line = re.sub('^usage: ', 'Usage: ', line)
+        line = re.sub('\noptions:\n', '\nOptions:\n', line)
+
         # Clear secounds elapsed
         line = re.sub(' [0-9]+\.[0-9]+ s', ' 0.00 s', line)
         # All time related to midnight
@@ -235,6 +239,7 @@ G1                                                                [DEP_ERROR]
 S3 - I am the service S3                                          [DEP_ERROR]
 """,
 """[00:00:00] DEBUG    - Configuration
+nodeps: False
 dryrun: False
 verbosity: 5
 summary: False
@@ -282,6 +287,7 @@ start S3 ran in 0.00 s
 S3 - I am the service S3                                          [  ERROR  ]
 """,
 """[00:00:00] DEBUG    - Configuration
+nodeps: False
 dryrun: False
 verbosity: 5
 only_nodes: HOSTNAME
@@ -362,6 +368,7 @@ start S3 ran in 0.00 s
 S3 - I am the service S3                                          [  ERROR  ]
 """,
 """[00:00:00] DEBUG    - Configuration
+nodeps: False
 dryrun: False
 verbosity: 5
 summary: False
@@ -389,6 +396,7 @@ stop S3 ran in 0.00 s
 S3 - I am the service S3                                          [  ERROR  ]
 """,
 """[00:00:00] DEBUG    - Configuration
+nodeps: False
 dryrun: False
 verbosity: 5
 summary: False
@@ -437,6 +445,21 @@ G1                                                                [DEP_ERROR]
 """,
 "")
 
+    def test_nodeps_service(self):
+        """--nodeps option specifying an explicit service"""
+        self._output_check(['S3', 'start', '--nodeps', '-x', 'BADNODE'],
+                           RC_ERROR,
+"""start S3 ran in 0.00 s
+ > HOSTNAME exited with 1
+S3 - I am the service S3                                          [  ERROR  ]
+""", "")
+
+    def test_nodeps_all(self):
+        """--nodeps option without specifying an explicit service list"""
+        self._output_check(['start', '--nodeps', '-x', 'BADNODE'], RC_OK,
+"""S1 - I am the service S1                                          [    OK   ]
+""", "")
+
 class CommandLineOutputTests(CLICommon):
     '''Tests cases of the command line output'''
 
@@ -474,36 +497,7 @@ class CommandLineOutputTests(CLICommon):
 
     def test_command_output_help(self):
         '''Test command line help output'''
-        if sys.version_info[0] == 2 and sys.version_info[1] < 5:
-            self._output_check([], RC_OK,
-"""usage: nosetests [options] [SERVICE...] ACTION
-
-options:
-  --version             show program's version number and exit
-  -h, --help            show this help message and exit
-  -v, --verbose         Increase or decrease verbosity
-  -d, --debug           Set debug mode and maximum verbosity
-  -g, --graph           Output dependencies graph
-  -s, --summary         Display summary of executed actions
-  -c CONFIG_DIR, --config-dir=CONFIG_DIR
-                        Change configuration files directory
-  -q, --quiet           Enable quiet mode
-
-  Engine parameters:
-    Those options allow you to configure the behaviour of the engine
-
-    -n ONLY_NODES, --only-nodes=ONLY_NODES
-                        Use only the specified nodes
-    -x EXCLUDED_NODES, --exclude-nodes=EXCLUDED_NODES
-                        Exclude the cluster's nodes specified
-    -X EXCLUDED_SVC, --exclude-service=EXCLUDED_SVC
-                        Skip the specified services
-    --dry-run           Only simulate command execution
-    -D DEFINES, --define=DEFINES, --var=DEFINES
-                        Define custom variables
-""")
-        else:
-            self._output_check([], RC_OK,
+        self._output_check([], RC_OK,
 """Usage: nosetests [options] [SERVICE...] ACTION
 
 Options:
@@ -529,6 +523,7 @@ Options:
     --dry-run           Only simulate command execution
     -D DEFINES, --define=DEFINES, --var=DEFINES
                         Define custom variables
+    --nodeps            Do not run dependencies
 """)
 
     def test_command_output_checkconfig(self):
@@ -858,8 +853,7 @@ class CommandLineExceptionsOutputTests(CLICommon):
         '''Test command line output on InvalidOption'''
         service_manager_self().call_services = \
                 lambda services, action, conf=None: raiser(InvalidOptionError)
-        if sys.version_info >= (2, 5):
-            self._output_check(['start'], RC_EXCEPTION,
+        self._output_check(['start'], RC_EXCEPTION,
 '''Usage: nosetests [options] [SERVICE...] ACTION
 
 Options:
@@ -885,39 +879,7 @@ Options:
     --dry-run           Only simulate command execution
     -D DEFINES, --define=DEFINES, --var=DEFINES
                         Define custom variables
-''',
-'''[00:00:00] CRITICAL - Invalid options: 
-
-[00:00:00] CRITICAL - Invalid options: 
-
-''')
-        else:
-            self._output_check(['start'], RC_EXCEPTION,
-'''usage: nosetests [options] [SERVICE...] ACTION
-
-options:
-  --version             show program's version number and exit
-  -h, --help            show this help message and exit
-  -v, --verbose         Increase or decrease verbosity
-  -d, --debug           Set debug mode and maximum verbosity
-  -g, --graph           Output dependencies graph
-  -s, --summary         Display summary of executed actions
-  -c CONFIG_DIR, --config-dir=CONFIG_DIR
-                        Change configuration files directory
-  -q, --quiet           Enable quiet mode
-
-  Engine parameters:
-    Those options allow you to configure the behaviour of the engine
-
-    -n ONLY_NODES, --only-nodes=ONLY_NODES
-                        Use only the specified nodes
-    -x EXCLUDED_NODES, --exclude-nodes=EXCLUDED_NODES
-                        Exclude the cluster's nodes specified
-    -X EXCLUDED_SVC, --exclude-service=EXCLUDED_SVC
-                        Skip the specified services
-    --dry-run           Only simulate command execution
-    -D DEFINES, --define=DEFINES, --var=DEFINES
-                        Define custom variables
+    --nodeps            Do not run dependencies
 ''',
 '''[00:00:00] CRITICAL - Invalid options: 
 
@@ -947,6 +909,7 @@ options:
 ZeroDivisionError
 ''',
 '''[00:00:00] DEBUG    - Configuration
+nodeps: False
 dryrun: False
 verbosity: 5
 summary: False

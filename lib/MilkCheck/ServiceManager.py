@@ -195,6 +195,12 @@ class ServiceManager(EntityManager):
             if service in self.entities:
                 self.entities[service].status = LOCKED
 
+    def _lock_services_except(self, services):
+        """Lock all services except those provided."""
+        for service in self.entities:
+            if service not in services:
+                self.entities[service].status = LOCKED
+
     def __update_usable_nodes(self, nodeset, mode=None):
         '''
         Update target value used by the service and the elements linked to
@@ -250,6 +256,10 @@ class ServiceManager(EntityManager):
                 else:
                     raise ServiceNotFoundError('Undefined service [%s]'
                         % service_name)
+
+        if conf and conf.get('nodeps'):
+            self._lock_services_except(self.source.deps().keys())
+
         self.source.run(action)
 
     def output_graph(self, services=None, excluded=None):

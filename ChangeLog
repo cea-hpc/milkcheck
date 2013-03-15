@@ -1,3 +1,6 @@
+2013-03-17 Aurelien Degremont  <aurelien.degremont@cea.fr>
+	* Add --nodeps option.
+
 2013-03-15 Aurelien Degremont  <aurelien.degremont@cea.fr>
 	* Fix SKIPPED management for Service and ServiceGroup.
 

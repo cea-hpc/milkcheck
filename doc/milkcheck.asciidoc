@@ -65,6 +65,9 @@ Those options allow you to configure the behaviour of the engine
 *-D DEFINES, --define=DEFINES, --var=DEFINES*::
          Define custom variables
 
+*--nodeps*::
+         Do not run dependencies
+
 *--version*::
          Show program's version number and exit
 

@@ -128,6 +128,9 @@ class McOptionParser(OptionParser):
         eng.add_option('--define', '--var', '-D', action='append',
                        dest='defines', help='Define custom variables')
 
+        eng.add_option('--nodeps', action='store_true', dest='nodeps',
+                       default=False, help='Do not run dependencies')
+
 
         self.add_option_group(eng)
 
