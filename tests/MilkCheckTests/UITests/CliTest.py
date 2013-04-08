@@ -102,7 +102,7 @@ class CLICommon(TestCase):
         self.assertEqual(outexpected, msg)
 
         # STDERR
-        if errexpected:
+        if errexpected is not None:
             msg = sys.stderr.getvalue()
             for line1, line2 in zip(errexpected.splitlines(), msg.splitlines()):
                 self.assertEqual(line1, line2)
@@ -443,7 +443,7 @@ stop S3 ran in 0.00 s
 S3 - I am the service S3                                          [  ERROR  ]
 G1                                                                [DEP_ERROR]
 """,
-"")
+"\r\r[S1]\r\r\r[S1]\r\r\r[S3]\r\r\r[S3]\r")
 
     def test_nodeps_service(self):
         """--nodeps option specifying an explicit service"""
@@ -452,13 +452,13 @@ G1                                                                [DEP_ERROR]
 """start S3 ran in 0.00 s
  > HOSTNAME exited with 1
 S3 - I am the service S3                                          [  ERROR  ]
-""", "")
+""", "\r\r[S3]\r")
 
     def test_nodeps_all(self):
         """--nodeps option without specifying an explicit service list"""
         self._output_check(['start', '--nodeps', '-x', 'BADNODE'], RC_OK,
 """S1 - I am the service S1                                          [    OK   ]
-""", "")
+""", "\r\r[S1]\r")
 
 class CommandLineOutputTests(CLICommon):
     '''Tests cases of the command line output'''
@@ -539,7 +539,7 @@ Options:
                            RC_OK,
 """ServiceGroup.service - I am the service                           [    OK   ]
 ServiceGroup                                                      [    OK   ]
-""", "")
+""", "\r\r[service]\r")
         self.assertEqual(self.manager.variables['SELECTED_NODES'], 'fo1')
         self.assertEqual(self.manager.variables['EXCLUDED_NODES'], 'fo2')
 
@@ -548,7 +548,7 @@ ServiceGroup                                                      [    OK   ]
         self._output_check(['ServiceGroup', 'start'], RC_OK,
 """ServiceGroup.service - I am the service                           [    OK   ]
 ServiceGroup                                                      [    OK   ]
-""", "")
+""", "\r\r[service]\r")
         self.assertEqual(self.manager.variables['SELECTED_NODES'], '')
         self.assertEqual(self.manager.variables['EXCLUDED_NODES'], '')
 
