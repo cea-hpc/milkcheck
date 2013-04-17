@@ -145,6 +145,7 @@ class ConsoleDisplay(object):
         self._term_width = width
         self._pl_width = 0
         self._color = Terminal.isatty()
+        self._show_running = Terminal.isatty()
         # Cleanup line before printing a message (see output)
         self.cleanup = True
 
@@ -158,22 +159,24 @@ class ConsoleDisplay(object):
     def print_running_tasks(self):
         '''Rewrite the current line and print the current running tasks'''
         rtasks = [t.parent.name for t in action_manager_self().running_tasks]
-        if rtasks:
+        if rtasks and self._show_running:
             tasks_disp = '[%s]' % NodeSet.fromlist(rtasks)
             width = min(self._pl_width, self._term_width)
+            eol = ' ' * (width - len(tasks_disp))
             if not self.cleanup:
-                width = 0
-            sys.stderr.write('\r%s\r%s\r' % (width * ' ', tasks_disp))
+                eol = ''
+
+            sys.stderr.write('%s%s\r' % (tasks_disp, eol))
             sys.stderr.flush()
             self._pl_width = len(tasks_disp)
 
     def output(self, line):
         '''Rewrite the current line and display line and jump to the next one'''
         width = min(self._pl_width, self._term_width)
-        emptyline = '\r%s\r' % (width * ' ')
-        if not self.cleanup:
-            emptyline = ''
-        sys.stdout.write('%s%s\n' % (emptyline, line))
+        eol = ' ' * (width - len(line))
+        if not self._show_running:
+            eol = ''
+        sys.stdout.write('%s%s\n' % (line, eol))
         sys.stdout.flush()
         self._pl_width = len(line)
 

@@ -83,16 +83,19 @@ class CLICommon(TestCase):
         sys.stderr = sys.__stderr__
         CallbackHandler._instance = None
 
-    def _output_check(self, args, retcode, outexpected, errexpected=None):
+    def _output_check(self, args, retcode, outexpected,
+                      errexpected=None, show_running=True):
         """
         Test Milcheck output with:
          - args: command line args for cli.execute
          - outexpected: expected std output
          - errexpected: optional expected stderr
+         - show_running: True if we want to capture the running tasks
         """
         cli = CommandLine()
         cli._console.cleanup = False
         cli._console._term_width = 77
+        cli._console._show_running = show_running
         rc = cli.execute(args)
 
         # STDOUT
@@ -247,7 +250,7 @@ fanout: 64
 reverse_actions: ['stop']
 debug: True
 config_dir: 
-\r\r[I1]\r\r\r[I1]\r\r\r[I2]\r\r\r[I2]\r""")
+[I1]\r[I1]\r[I2]\r[I2]\r""")
 
     def test_excluded_node(self):
         '''Execute with a node exclusion (-vvv -x ...)'''
@@ -296,7 +299,7 @@ fanout: 64
 reverse_actions: ['stop']
 debug: True
 config_dir: 
-\r\r[I1]\r\r\r[I1]\r\r\r[I2]\r\r\r[I2]\r\r\r[S3]\r\r\r[S3]\r""")
+[I1]\r[I1]\r[I2]\r[I2]\r[S3]\r[S3]\r""")
 
     def test_execute_explicit_service(self):
         '''Execute a service from the CLI (-vvv -x ...)'''
@@ -324,7 +327,7 @@ G1                                                                [DEP_ERROR]
 start S2 ran in 0.00 s
  > HOSTNAME exited with 0
 S2 - I am the service S2                                          [    OK   ]
-start S1 will fire in 1 s
+start S1 will fire in 1 s                                                    
 start S1 on HOSTNAME
  > /bin/true
 start S1 ran in 0.00 s
@@ -377,7 +380,7 @@ fanout: 64
 reverse_actions: ['stop']
 debug: True
 config_dir: 
-\r\r[I1]\r\r\r[I1]\r\r\r[I2]\r\r\r[I2]\r\r\r[S3]\r\r\r[S3]\r""")
+[I1]\r[I1]\r[I2]\r[I2]\r[S3]\r[S3]\r""")
 
     def test_multiple_services_reverse(self):
         """CLI reverse execute() with explicit services (S1 S3 -d)"""
@@ -405,7 +408,7 @@ fanout: 64
 reverse_actions: ['stop']
 debug: True
 config_dir: 
-\r\r[S1]\r\r\r[S1]\r\r\r[S1]\r\r\r[S3]\r\r\r[S3]\r""")
+[S1]\r[S1]\r[S1]\r[S3]\r[S3]\r""")
 
     def test_overall_graph(self):
         """CLI execute() with whole graph (-v -x )"""
@@ -426,7 +429,7 @@ start S3 ran in 0.00 s
 S3 - I am the service S3                                          [  ERROR  ]
 S1 - I am the service S1                                          [DEP_ERROR]
 """,
-"""\r\r[I1]\r\r\r[I1]\r\r\r[I2]\r\r\r[I2]\r\r\r[S3]\r\r\r[S3]\r""")
+"""[I1]\r[I1]\r[I2]\r[I2]\r[S3]\r[S3]\r""")
 
     def test_overall_graph_reverse(self):
         """CLI reverse execute() with whole graph (-v -x )"""
@@ -443,7 +446,7 @@ stop S3 ran in 0.00 s
 S3 - I am the service S3                                          [  ERROR  ]
 G1                                                                [DEP_ERROR]
 """,
-"\r\r[S1]\r\r\r[S1]\r\r\r[S3]\r\r\r[S3]\r")
+"[S1]\r[S1]\r[S3]\r[S3]\r")
 
     def test_nodeps_service(self):
         """--nodeps option specifying an explicit service"""
@@ -452,13 +455,19 @@ G1                                                                [DEP_ERROR]
 """start S3 ran in 0.00 s
  > HOSTNAME exited with 1
 S3 - I am the service S3                                          [  ERROR  ]
-""", "\r\r[S3]\r")
+""", "[S3]\r")
 
     def test_nodeps_all(self):
         """--nodeps option without specifying an explicit service list"""
         self._output_check(['start', '--nodeps', '-x', 'BADNODE'], RC_OK,
 """S1 - I am the service S1                                          [    OK   ]
-""", "\r\r[S1]\r")
+""", "[S1]\r")
+
+    def test_no_running_status(self):
+        """Test if we don't have stderr output when terminal is not a tty"""
+        self._output_check(['S2', 'start', '-x', 'BADNODE'], RC_OK,
+"""S2 - I am the service S2                                          [    OK   ]
+""", "", show_running=False)
 
 class CommandLineOutputTests(CLICommon):
     '''Tests cases of the command line output'''
@@ -530,7 +539,7 @@ Options:
         '''Test command line output checking config'''
         self._output_check(['-c', '../conf/samples'], RC_OK,
 """No actions specified, checking configuration...
-../conf/samples seems good
+../conf/samples seems good                     
 """ )
 
     def test_command_line_variables(self):
@@ -539,7 +548,7 @@ Options:
                            RC_OK,
 """ServiceGroup.service - I am the service                           [    OK   ]
 ServiceGroup                                                      [    OK   ]
-""", "\r\r[service]\r")
+""", "[service]\r")
         self.assertEqual(self.manager.variables['SELECTED_NODES'], 'fo1')
         self.assertEqual(self.manager.variables['EXCLUDED_NODES'], 'fo2')
 
@@ -548,7 +557,7 @@ ServiceGroup                                                      [    OK   ]
         self._output_check(['ServiceGroup', 'start'], RC_OK,
 """ServiceGroup.service - I am the service                           [    OK   ]
 ServiceGroup                                                      [    OK   ]
-""", "\r\r[service]\r")
+""", "[service]\r")
         self.assertEqual(self.manager.variables['SELECTED_NODES'], '')
         self.assertEqual(self.manager.variables['EXCLUDED_NODES'], '')
 
@@ -576,7 +585,7 @@ ServiceGroup                                                      [    OK   ]
 """ServiceGroup.service - I am the service                           [    OK   ]
 ServiceGroup                                                      [    OK   ]
 
- SUMMARY - 1 action (0 failed)
+ SUMMARY - 1 action (0 failed)                                              
 """)
 
     def test_command_output_error(self):
