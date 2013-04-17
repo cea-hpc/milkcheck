@@ -178,7 +178,7 @@ class ConsoleDisplay(object):
         self._pl_width = len(line)
 
     def print_status(self, entity):
-        '''Remove current line and print the status of an entity onSTDOUT'''
+        '''Remove current line and print the status of an entity on STDOUT'''
         # On very wide terminal, do not put the status too far away
         msg_width = min(self._term_width, MAXTERMWIDTH) - \
                                                      (self._LARGEST_STATUS + 4)
@@ -554,7 +554,7 @@ class CommandLine(CoreEvent):
         might have changed.
         '''
         if isinstance(obj, Service) and not (obj.status == SKIPPED and \
-                               self._options.verbosity < 3) and \
+                               self._conf['verbosity'] < 3) and \
                                obj.status in (TIMEOUT, ERROR, DEP_ERROR, DONE,
                                WARNING, SKIPPED) and not obj.simulate:
 
