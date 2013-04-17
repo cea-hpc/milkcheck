@@ -1,4 +1,5 @@
 2013-04-17 Aurelien Cedeyn  <aurelien.cedeyn@cea.fr>
+	* Fix action display when list is wider than terminal (ticket #2)
 	* Remove escape characters when output is not a tty (ticket #3).
 
 2013-03-18 Aurelien Degremont  <aurelien.degremont@cea.fr>

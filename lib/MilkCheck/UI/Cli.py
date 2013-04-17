@@ -148,10 +148,13 @@ class ConsoleDisplay(object):
         self._show_running = Terminal.isatty()
         # Cleanup line before printing a message (see output)
         self.cleanup = True
+        # Compute the number of escape characters
+        self.escape = 0
 
     def string_color(self, strg, color):
         '''Return a string formatted with a special color'''
         if self._color:
+            self.escape += len(self._COLORS[color]) - 2
             return '%s' % self._COLORS[color] % strg
         else:
             return '%s' % strg
@@ -162,6 +165,12 @@ class ConsoleDisplay(object):
         if rtasks and self._show_running:
             tasks_disp = '[%s]' % NodeSet.fromlist(rtasks)
             width = min(self._pl_width, self._term_width)
+
+            # truncate display to avoid buggy display when the length on
+            # the displayed tasks is bigger than the screen width
+            if len(tasks_disp) >= self._term_width:
+                tasks_disp = "%s...]" % tasks_disp[:self._term_width - 4]
+
             eol = ' ' * (width - len(tasks_disp))
             if not self.cleanup:
                 eol = ''
@@ -173,12 +182,15 @@ class ConsoleDisplay(object):
     def output(self, line):
         '''Rewrite the current line and display line and jump to the next one'''
         width = min(self._pl_width, self._term_width)
-        eol = ' ' * (width - len(line))
+        # Compute spaces at the end of the line to remove previous garbage
+        # on stderr (escape characters are ignored)
+        eol = ' ' * (width - len(line) + self.escape)
         if not self._show_running:
             eol = ''
         sys.stdout.write('%s%s\n' % (line, eol))
         sys.stdout.flush()
         self._pl_width = len(line)
+        self.escape = 0
 
     def print_status(self, entity):
         '''Remove current line and print the status of an entity on STDOUT'''
@@ -189,6 +201,8 @@ class ConsoleDisplay(object):
 
         # Label w/o description
         label = entity.longname()
+        if len(label) > msg_width:
+            label = "%s..." % label[:msg_width - 3 ]
 
         if entity.status in (TIMEOUT, ERROR, DEP_ERROR):
             line = line % (label,
@@ -322,14 +336,22 @@ class ConsoleDisplay(object):
                 nscount = ''
                 if len(act.pending_target) > 1:
                     nscount = " (%d)" % len(act.pending_target)
-                # Manage line length (truncate if greater
-                # than the terminal width)
-                name_len = len(" > %s on " % act.fullname())
+                # Manage line length
+                label = act.fullname()
+                name_len = len(" > %s on " % label)
+                # Compute the max label name. We want to have at least the
+                # service name and the start of the nodes where it is running.
+                max_len = self._term_width - len (" > service... on node...")
+                if name_len > max_len:
+                    label = "%s..." % label[:max_len]
+                    name_len = len(" > %s on " % label)
+                # Truncate the target if the line is greater than the terminal
+                # width
                 if name_len + len(target) + len(nscount) > self._term_width:
                     tgt_len = self._term_width - name_len - 4 - len(nscount)
                     target = "%s..." % target[:tgt_len]
                 msg += " > %s on %s%s\n" % (
-                                 self.string_color(act.fullname(), 'YELLOW'),
+                                 self.string_color(label, 'YELLOW'),
                                  self.string_color(target, 'CYAN'), nscount)
         self.output(msg)
 

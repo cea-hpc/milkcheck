@@ -12,7 +12,7 @@ from StringIO import StringIO
 from unittest import TestCase
 
 import MilkCheck.UI.Cli
-from MilkCheck.UI.Cli import CommandLine
+from MilkCheck.UI.Cli import CommandLine, ConsoleDisplay, MAXTERMWIDTH
 import MilkCheck.ServiceManager
 from MilkCheck.ServiceManager import ServiceManager, service_manager_self
 from MilkCheck.Engine.Service import Service
@@ -84,7 +84,7 @@ class CLICommon(TestCase):
         CallbackHandler._instance = None
 
     def _output_check(self, args, retcode, outexpected,
-                      errexpected=None, show_running=True):
+                      errexpected=None, show_running=True, term_width=77):
         """
         Test Milcheck output with:
          - args: command line args for cli.execute
@@ -94,7 +94,7 @@ class CLICommon(TestCase):
         """
         cli = CommandLine()
         cli._console.cleanup = False
-        cli._console._term_width = 77
+        cli._console._term_width = term_width
         cli._console._show_running = show_running
         rc = cli.execute(args)
 
@@ -814,6 +814,81 @@ Actions in progress
 service2 - I am the service 2                                     [    OK   ]
 ''')
 
+    def test_too_large_svc_name(self):
+        '''Test output with too large service name is truncated'''
+        # Add a new service
+        self.manager.entities['service1'].name = "S" * 100
+        self.manager.entities['service2'].name = "s" * 100
+        self._output_check(['start'], RC_OK,
+'''SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...  [    OK   ]
+
+Actions in progress
+ > sssssssssssssssssssssssssssssssssssssssssssssssssssss... on localhost
+
+sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss...  [    OK   ]
+''')
+
+class CommandLineStderrOutputTests(CLICommon):
+    '''Tests cases of the command line output on stderr'''
+
+    def setUp(self):
+        '''
+        Set up the graph of services within the service manager
+
+        Graph
+                                _ start
+                   -- service1 /
+                 -'             _ start
+                  '-- service2 /
+        '''
+
+        CLICommon.setUp(self)
+
+        # Service
+        service1 = Service('service1')
+        service1.desc = 'I am the service 1'
+        service2 = Service('service2')
+        service2.desc = 'I am the service 2'
+        # Actions
+        action = Action('start', command='/bin/true')
+        action.inherits_from(service1)
+        service1.add_action(action)
+
+        service2.add_dep(target=service1)
+
+        action = Action('start', command='/bin/true')
+        action.inherits_from(service2)
+        service2.add_action(action)
+
+        # Register services within the manager
+        self.manager.register_services(service1, service2)
+
+    def tearDown(self):
+        '''Restore MilkCheck.UI.Cli.Terminal'''
+        CLICommon.tearDown(self)
+
+    def test_stderr_too_large_svc_name(self):
+        '''Test stderr output with too large service name is truncated'''
+        # Add a new service
+        self.manager.entities['service1'].name = "S" * 100
+        self.manager.entities['service2'].name = "s" * 100
+        self._output_check(['start'], RC_OK,
+'''%s...  [    OK   ]\n%s...  [    OK   ]\n''' % ((61 * 'S'), (61 * 's')),
+'''[%s...]\r[%s...]\r''' % ((72 * 'S'), (72 * 's')))
+
+    def test_too_large_svc_name_wide_terminal(self):
+        '''
+        Test output with too large service name is truncated with wide terminal
+        '''
+        # Add a new service
+        self.manager.entities['service1'].name = "S" * 200
+        self.manager.entities['service2'].name = "s" * 200
+        self._output_check(['start'], RC_OK,
+'''%s...  [    OK   ]  \n%s...  [    OK   ]  
+''' % ((104 * 'S'), (104 * 's')),
+'''[%s...]\r[%s...]\r''' % ((117 * 'S'), (117 * 's')),
+term_width=MAXTERMWIDTH + 2)
+
 def raiser(exception):
     '''Raise exception (used in lambda functions)'''
     raise exception
@@ -927,3 +1002,33 @@ reverse_actions: ['stop']
 debug: True
 config_dir: 
 ''')
+
+class ConsoleOutputTest(TestCase):
+    '''Tests console output'''
+
+    def setUp(self):
+        '''
+        Set up display
+        '''
+        self.display = ConsoleDisplay()
+
+    def tearDown(self):
+        '''Restore'''
+        pass
+
+    def test_len_color(self):
+        '''Test len computation with color'''
+        self.display._color = True
+        test_str = "Test"
+        test_str_colored = self.display.string_color(test_str, 'GREEN')
+        self.assertEqual(len(test_str_colored) - self.display.escape,
+                         len(test_str))
+        self.assertNotEqual(len(test_str_colored), len(test_str),
+                            "String must be longer when colored")
+
+    def test_len_without_color(self):
+        '''Test len computation without color'''
+        self.display._color = False
+        test_str = "Test"
+        test_str_colored = self.display.string_color(test_str, 'GREEN')
+        self.assertEqual(len(test_str_colored), len(test_str))
