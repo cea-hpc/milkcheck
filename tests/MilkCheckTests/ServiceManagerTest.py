@@ -15,6 +15,7 @@ from MilkCheck.Engine.ServiceGroup import ServiceGroup
 from MilkCheck.ServiceManager import ServiceManager, service_manager_self
 from MilkCheck.ServiceManager import ServiceAlreadyReferencedError
 from MilkCheck.ServiceManager import ServiceNotFoundError
+from MilkCheck.ServiceManager import VariableAlreadyExistError
 
 # Symbols
 from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, REQUIRE_WEAK
@@ -369,3 +370,19 @@ node [style=filled];
         manager._variable_config(conf={'defines':['foo=bar', 'baz=buz']})
         self.assertEqual(manager.variables['foo'], 'bar')
         self.assertEqual(manager.variables['baz'], 'buz')
+
+    def test_add_variable_twice(self):
+        '''Add a variable twice raises VariableAlreadyExistError'''
+        manager = service_manager_self()
+        manager.add_var('var', 'foo')
+        self.assertRaises(VariableAlreadyExistError, manager.add_var, 'var', 'foo')
+
+    def test_remove_variable(self):
+        '''Remove a variable, defined or not, is fine.'''
+        manager = service_manager_self()
+        manager.add_var('var', 'foo')
+        self.assertEqual(manager.variables['var'], 'foo')
+
+        # Remove it
+        manager.remove_var('var')
+        self.assertTrue('foo' not in manager.variables)

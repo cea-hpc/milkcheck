@@ -10,7 +10,7 @@ from unittest import TestCase
 
 # Classes
 from MilkCheck.Engine.Action import Action
-from MilkCheck.Engine.ServiceGroup import ServiceGroup
+from MilkCheck.Engine.ServiceGroup import ServiceGroup, ServiceNotFoundError
 from MilkCheck.Engine.Service import Service
 from ClusterShell.NodeSet import NodeSet
 
@@ -32,6 +32,14 @@ class ServiceGroupTest(TestCase):
         self.assertTrue(ser_group)
         self.assertTrue(isinstance(ser_group, ServiceGroup))
         self.assertEqual(ser_group.name, 'GROUP')
+
+    def test_add_bad_inter_dep(self):
+        """Adding a subservice on a bad base raises an Exception"""
+        grp = ServiceGroup('grp')
+        srv1 = Service('foo1')
+        srv2 = Service('foo2')
+        self.assertRaises(ServiceNotFoundError, grp.add_inter_dep,
+                          target=srv2, base=srv1)
 
     def test_inheritance(self):
         '''Test inheritance between on a group'''
@@ -209,7 +217,12 @@ class ServiceGroupTest(TestCase):
         group.remove_inter_dep('beta')
         self.assertFalse(group._source.parents)
         self.assertFalse(group._sink.children)
-        
+
+    def test_remove_inter_bad_dep(self):
+        """Remove a non-existant sub-services raises an Exception"""
+        grp = ServiceGroup('group')
+        self.assertRaises(ServiceNotFoundError, grp.remove_inter_dep, 'foo')
+
     def test_has_subservice(self):
         '''Test whether a service is an internal dependency of a group'''
         group = ServiceGroup('group')

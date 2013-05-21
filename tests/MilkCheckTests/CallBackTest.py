@@ -1,4 +1,4 @@
-# Copyright CEA (2011)
+# Copyright CEA (2011-2013)
 # Contributor: TATIBOUET Jeremie <tatibouetj@ocre.cea.fr>
 
 '''
@@ -36,8 +36,8 @@ class EventTest(CoreEvent):
         self.last_event = EV_STATUS_CHANGED
 
     def ev_delayed(self, obj):
-        '''Event triggered when recieve EV_TRIGGER_DEP'''
-        self.last_event = EV_TRIGGER_DEP
+        '''Event triggered when recieve EV_DELAYED'''
+        self.last_event = EV_DELAYED
 
     def ev_trigger_dep(self, obj_source, obj_triggered):
         '''Event triggered when recieve EV_TRIGGER_DEP'''
@@ -79,7 +79,8 @@ class CallBackHandlerTest(TestCase):
     def test_notify_interface(self):
         '''Test notification on event type'''
         event = EventTest()
-        for evname in (EV_STARTED, EV_COMPLETE, EV_STATUS_CHANGED, EV_FINISHED):
+        for evname in (EV_STARTED, EV_COMPLETE, EV_STATUS_CHANGED,
+                       EV_FINISHED, EV_DELAYED):
             call_back_self().notify(None, evname)
             self.assertEqual(event.last_event, evname)
 

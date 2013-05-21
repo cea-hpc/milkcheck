@@ -41,10 +41,8 @@ class TerminalTests(TestCase):
 
     def test_terminal_size_default(self):
         '''Test default terminal size'''
-        if 'LINES' in os.environ:
-            del os.environ['LINES']
-        if 'COLUMNS' in  os.environ:
-            del os.environ['COLUMNS']
+        self.assertTrue('LINES' not in os.environ)
+        self.assertTrue('COLUMNS' not in os.environ)
         self.assertEqual(MockTerminal.size(), (80, 25))
 
     def test_terminal_tty(self):

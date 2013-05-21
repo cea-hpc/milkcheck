@@ -559,12 +559,10 @@ class BaseEntity(object):
             '''Helper to raise a detail error message'''
             i = mobj.start('invalid')
             lines = template[:i].splitlines(True)
-            if not lines:
-                colno = 1
-                lineno = 1
-            else:
-                colno = i - len(''.join(lines[:-1]))
-                lineno = len(lines)
+            # With the current regexp, it is impossible that lines is empty.
+            assert lines, "invalid pattern as the begining of template"
+            colno = i - len(''.join(lines[:-1]))
+            lineno = len(lines)
             raise ValueError('Invalid placeholder in string: line %d, col %d' %
                              (lineno, colno))
 
