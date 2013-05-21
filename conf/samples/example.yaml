@@ -145,7 +145,7 @@ services:
     # Apply.   service, actions
     # Default. 0
     #
-    # "timeout: <integer>"
+    # "errors: <integer>"
     #
     # Number of command failure before the action is considered on error.
     tolerant:
