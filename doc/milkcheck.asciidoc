@@ -147,6 +147,14 @@ EXAMPLES
     Launch the start command on all services, and defined, for this run only, the global variable 'foo' to 'bar'.
 
 
+EXIT STATUS
+-----------
+*0*:: Everything went as we expected
+*3*:: At least one service status is WARNING and all others status is OK
+*6*:: At least one service status is ERROR
+*9*:: User error (options or configuration)
+*12*:: Internal error (this is probably a bug)
+
 SEE ALSO
 --------
 *clustershell(1)*

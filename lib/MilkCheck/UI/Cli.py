@@ -533,9 +533,14 @@ class CommandLine(CoreEvent):
     def retcode(self):
         '''
         Determine a retcode from a the last point of the graph
-        RETCODE: 0 everything went as we expected
-        RETCODE: 3 means that the status is WARNING
-        RETCODE: 6 means that the status is DEP_ERROR
+            RC_OK = 0: Everything went as we expected
+            RC_WARNING = 3: At least one service status is WARNING
+                            and all others status is OK
+            RC_ERROR = 6: At least one service status is ERROR
+
+        Handled by self.execute :
+            RC_EXCEPTION = 9: User error (options or configuration)
+            RC_UNKNOWN_EXCEPTION = 12: Internal error (this is probably a bug)
         '''
         if service_manager_self().source.status is WARNING:
             return RC_WARNING
