@@ -4,8 +4,6 @@ MILKCHECK(8)
 :man source: milkcheck
 :man version: 1.0
 :man manual: Milkcheck User Documentation
-Aurelien Degremont <aurelien.degremont@cea.fr>
-Aurelien Cedeyn <aurelien.cedeyn@cea.fr>
 
 NAME
 ------
@@ -164,4 +162,6 @@ SEE ALSO
 
 AUTHOR
 ------
-*{author}* - <{email}>
+Aurelien Cedeyn <aurelien.cedeyn@cea.fr>
+
+Aurelien Degremont <aurelien.degremont@cea.fr>
