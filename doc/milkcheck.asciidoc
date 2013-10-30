@@ -11,7 +11,7 @@ NAME
 ------
 milkcheck - Parallel and hierachical service manager
 
-SYNOPSYS
+SYNOPSIS
 --------
 
 *milkcheck* [[--verbose] [--debug] [--quiet] [--summary] [--config-dir=directory] [-n nodes] [-x nodes] [-X service]] [SERVICE...] ACTION
@@ -101,7 +101,7 @@ All *Milkcheck* services and actions are defined in a configuration directory lo
 
 In this directory you can have one or more configuration files describing services, groups and actions to perform.
 
-The syntax of theses files is YAML compliant an looks like :
+The syntax of theses files is YAML compliant and looks like :
 ......
 $ cat /etc/milkcheck/conf/cron.yaml
 #
