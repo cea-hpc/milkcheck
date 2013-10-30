@@ -42,8 +42,8 @@ $(TARBALL):
 .PHONY: rpm clean all test doc
 
 clean:
-	rm -f $(TARBALL)
-	rm -rf $(RPMTOPDIR)
+	rm -f $(TARBALL) $(MANPAGE)
+	rm -rf $(RPMTOPDIR) build/
 
 test:
 	export PYTHONPATH=$$PWD/lib/ ; nosetests --exe --all-modules -w tests
