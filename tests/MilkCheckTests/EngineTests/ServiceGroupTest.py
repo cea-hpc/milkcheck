@@ -609,8 +609,8 @@ class ServiceGroupFromDictTest(TestCase):
         self.assertTrue(
             sergrp._subservices['lustre'].has_child_dep('source'))
 
-    def test_fromdict_before(self):
-        """Test 'before' as an alias of 'require_weak'"""
+    def test_fromdict_after(self):
+        """Test 'after' as an alias of 'require_weak'"""
         grp = ServiceGroup('grp')
         grp.fromdict({
             'services': {
@@ -618,7 +618,7 @@ class ServiceGroupFromDictTest(TestCase):
                     'actions': { 'start': { 'cmd': '/bin/true' } }
                 },
                 'svc2': {
-                    'before': [ 'svc1' ],
+                    'after': [ 'svc1' ],
                     'actions': { 'start': { 'cmd': '/bin/true' } }
                 }
             }

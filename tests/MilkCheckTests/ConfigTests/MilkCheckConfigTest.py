@@ -224,7 +224,7 @@ services:
         self.assertTrue(manager.entities['bar'].has_parent_dep('foo'))
 
     def test_before_rule_parsing(self):
-        """'before' is supported in configuration"""
+        """'before' is supported in configuration (only for compatibility)"""
         self.cfg.load_from_stream('''
 services:
     foo:
@@ -233,6 +233,25 @@ services:
                 cmd: run %NAME
     bar:
         before: [ 'foo' ]
+        actions:
+            start:
+                cmd: run_bar''')
+        self.cfg.build_graph()
+        manager = service_manager_self()
+        self.assertTrue('foo' in manager.entities)
+        self.assertTrue('bar' in manager.entities)
+        self.assertTrue(manager.entities['bar'].has_parent_dep('foo'))
+
+    def test_after_rule_parsing(self):
+        """'after' is supported in configuration"""
+        self.cfg.load_from_stream('''
+services:
+    foo:
+        actions:
+            start:
+                cmd: run %NAME
+    bar:
+        after: [ 'foo' ]
         actions:
             start:
                 cmd: run_bar''')

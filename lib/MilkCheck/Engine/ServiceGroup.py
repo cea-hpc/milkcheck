@@ -300,9 +300,10 @@ class ServiceGroup(Service):
 
                     # Parsing dependencies
                     wrap = DepWrapper()
-                    for prop in ('require', 'require_weak', 'before', 'check'):
+                    for prop in ('require', 'require_weak',
+                                 'before', 'after', 'check'):
                         if prop in props:
-                            if prop == 'before':
+                            if prop in ('before', 'after'):
                                 props['require_weak'] = props[prop]
                                 prop = 'require_weak'
                             wrap.deps[prop] = props[prop]

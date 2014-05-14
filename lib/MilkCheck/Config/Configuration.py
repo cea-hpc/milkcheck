@@ -171,9 +171,9 @@ class MilkCheckConfig(object):
     def _parse_deps(cls, data):
         '''Return a DepWrapper containing the different types of dependencies'''
         wrap = DepWrapper()
-        for content in ('require', 'require_weak', 'check', 'before'):
+        for content in ('require', 'require_weak', 'check', 'before', 'after'):
             if content in data:
-                if content == 'before':
+                if content in ('before', 'after'):
                     data['require_weak'] = data[content]
                     content = 'require_weak'
                 if type(data[content]) is str:

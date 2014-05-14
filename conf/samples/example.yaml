@@ -91,10 +91,14 @@ services:
     # Apply.    service
     # Default.  (no ordering, everything in parallel)
     #
-    # "before: <list>"
+    # "after": <list>"
+    #
+    # Compatibility: "before"
+    # This option was previously named 'before'. The 'before' keyword is still
+    # working but is now deprecated and will be removed soon.
     #
     # By default, all independent services are run in parallel. You can prevent
-    # this and control the order they will be run using 'before' option.
+    # this and control the order they will be run using 'after' option.
     # This is similar to 'require' option except that it does not check the
     # execution status of the pointed services. Whatever their results, the
     # execution will continue.
@@ -103,7 +107,7 @@ services:
            stop:
               cmd: service jobs stop
     power:
-        before: [ jobs ]
+        after: [ jobs ]
         actions:
            stop:
               cmd: halt

@@ -1,3 +1,8 @@
+2014-06-06 Aurelien Cedeyn  <aurelien.cedeyn@cea.fr>
+	* 'before' keyword is no longer supported and is replaced by 'after'
+	  keyword. 'before' is still usable for compatibility but will
+	  be removed in a future release.
+
 2013-05-25 Aurelien Degremont  <aurelien.degremont@cea.fr>
 	* Release: 1.0
 
