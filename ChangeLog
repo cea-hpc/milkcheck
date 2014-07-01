@@ -1,3 +1,7 @@
+2014-07-01 Aurelien Cedeyn  <aurelien.cedeyn@cea.fr>
+	* Fix '-n' option management. If the provided argument was an empty
+	resolved nodeset, milkcheck ran on all the configuration. (ticket #21)
+
 2014-06-06 Aurelien Cedeyn  <aurelien.cedeyn@cea.fr>
 	* 'before' keyword is no longer supported and is replaced by 'after'
 	  keyword. 'before' is still usable for compatibility but will

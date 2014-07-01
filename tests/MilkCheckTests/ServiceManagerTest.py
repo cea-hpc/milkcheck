@@ -1,4 +1,4 @@
-# Copyright CEA (2011) 
+# Copyright CEA (2011-2014)
 # Contributor: TATIBOUET Jeremie <tatibouetj@ocre.cea.fr>
 
 '''
@@ -9,6 +9,7 @@ RunningTasksManager and the ServiceManager itself
 # Classes
 import time
 from unittest import TestCase
+from ClusterShell.NodeSet import NodeSet
 from MilkCheck.Engine.Action import Action
 from MilkCheck.Engine.Service import Service
 from MilkCheck.Engine.ServiceGroup import ServiceGroup
@@ -386,3 +387,23 @@ node [style=filled];
         # Remove it
         manager.remove_var('var')
         self.assertTrue('foo' not in manager.variables)
+
+    def test_empty_only_nodes(self):
+        '''Test_apply_config with empty nodeset in only_nodes'''
+        empty_ns = NodeSet()
+        manager = service_manager_self()
+        s1 = Service('S1', target = NodeSet("localhost"))
+        manager.register_services(s1)
+        conf = {'only_nodes': empty_ns}
+        manager._apply_config(conf)
+        self.assertEqual(s1.target, empty_ns)
+
+    def test_empty_excluded_nodes(self):
+        '''Test _apply_config with empty nodeset in excluded_nodes'''
+        localhost_ns = NodeSet("localhost")
+        manager = service_manager_self()
+        s1 = Service('S1', target = localhost_ns)
+        manager.register_services(s1)
+        conf = {'excluded_nodes': NodeSet()}
+        manager._apply_config(conf)
+        self.assertEqual(s1.target, localhost_ns)

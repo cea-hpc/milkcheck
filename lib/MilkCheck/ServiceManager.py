@@ -1,5 +1,5 @@
 #
-# Copyright CEA (2011-2012)
+# Copyright CEA (2011-2014)
 #
 # This file is part of MilkCheck project.
 #
@@ -179,10 +179,10 @@ class ServiceManager(EntityManager):
             self.__lock_services(conf['excluded_svc'])
 
         # Use just those nodes 
-        if conf.get('only_nodes'):
+        if conf.get('only_nodes') is not None:
             self.__update_usable_nodes(conf['only_nodes'], 'INT')
         # Avoid those nodes
-        elif conf.get('excluded_nodes'):
+        elif conf.get('excluded_nodes') is not None:
             self.__update_usable_nodes(conf['excluded_nodes'], 'DIF')
 
     def __lock_services(self, services):

@@ -1,5 +1,5 @@
 #
-# Copyright CEA (2011-2012)
+# Copyright CEA (2011-2014)
 #
 # This file is part of MilkCheck project.
 #
@@ -287,7 +287,7 @@ class BaseEntity(object):
 
     def update_target(self, nodeset, mode=None):
         '''Update the attribute target of an entity'''
-        assert nodeset, 'The nodeset cannot be None'
+        assert nodeset is not None
         if not mode:
             self.target = NodeSet(nodeset)
         elif mode is 'DIF' and self.target:
