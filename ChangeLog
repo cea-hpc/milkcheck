@@ -1,3 +1,7 @@
+2014-07-04 Aurelien Cedeyn  <aurelien.cedeyn@cea.fr>
+	* Fix inherits from Service to Action for the 'delay' property
+	(ticket #17)
+
 2014-07-01 Aurelien Cedeyn  <aurelien.cedeyn@cea.fr>
 	* Fix '-n' option management. If the provided argument was an empty
 	resolved nodeset, milkcheck ran on all the configuration. (ticket #21)

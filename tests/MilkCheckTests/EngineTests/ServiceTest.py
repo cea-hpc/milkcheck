@@ -805,3 +805,24 @@ class ServiceFromDictTest(TestCase):
                          'service foo %ACTION')
         self.assertEqual(svc._actions['foo2'].command,
                          'service foo %ACTION')
+
+    def test_delay_to_action(self):
+        """
+        test if the delay defined in the service dict is correctly given to
+        the action
+        """
+        svc = Service('foo')
+        svc.fromdict(
+            {
+                'name': 'foo',
+                'delay': 1,
+                'actions':
+                {
+                    'wait':
+                    {
+                        'cmd': 'service wait %ACTION'
+                    },
+                }
+            }
+        )
+        self.assertEqual(svc._actions['wait'].delay, 1)

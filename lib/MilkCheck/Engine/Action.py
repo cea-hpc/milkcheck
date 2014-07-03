@@ -291,13 +291,10 @@ class Action(BaseEntity):
     LOCAL_VARIABLES['ACTION'] = 'name'
     
     def __init__(self, name, target=None, command=None, timeout=-1, delay=0):
-        BaseEntity.__init__(self, name=name, target=target)
+        BaseEntity.__init__(self, name=name, target=target, delay=delay)
         
         # Action's timeout in seconds/milliseconds
         self.timeout = timeout
-        
-        # Action's delay in seconds
-        self.delay = delay
         
         # Number of action's retry
         self._retry = 0
@@ -461,10 +458,6 @@ class Action(BaseEntity):
     def fromdict(self, actdict):
         """Populate action attributes from dict."""
         BaseEntity.fromdict(self, actdict)
-
-        # 'delay' should be set before setting 'retry' (if any)
-        if 'delay' in actdict:
-            self.delay = actdict['delay']
 
         if 'cmd' in actdict:
             self.command = actdict['cmd']

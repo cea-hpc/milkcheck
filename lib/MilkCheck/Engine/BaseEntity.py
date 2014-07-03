@@ -220,7 +220,7 @@ class BaseEntity(object):
         'DESC':    'desc',
     }
 
-    def __init__(self, name, target=None):
+    def __init__(self, name, target=None, delay=0):
         # Entity name
         self.name = name
 
@@ -249,6 +249,9 @@ class BaseEntity(object):
 
         # Max time allowed to compute an entity, -1 means no timeout
         self.timeout = -1
+
+        # Delay to wait before launching an action
+        self.delay = delay
 
         # Parent of the current object. Must be a subclass of BaseEntity
         self.parent = None
@@ -640,6 +643,7 @@ class BaseEntity(object):
         self.mode = self.mode or entity.mode
         if self.desc is None:
             self.desc = entity.desc
+        self.delay = self.delay or entity.delay
 
     def fromdict(self, entdict):
         """Populate entity attributes from dict."""
@@ -654,6 +658,8 @@ class BaseEntity(object):
                 self.fanout = prop
             elif item == 'timeout':
                 self.timeout = prop
+            elif item == 'delay':
+                self.delay = prop
             elif item == 'errors':
                 self.errors = prop
             elif item == 'desc':
