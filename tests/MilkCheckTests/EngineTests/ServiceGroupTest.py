@@ -75,8 +75,8 @@ class ServiceGroupTest(TestCase):
         group = ServiceGroup('GROUP')
         ser1 = Service('I1')
         action = Action(name='start', delay=3)
-        action.retry = 5
-        action.retry = 3
+        action.maxretry = 5
+        action.tries = 3
         action.status = DONE
         ser1.add_action(action)
         ser1.status = ERROR
@@ -86,7 +86,7 @@ class ServiceGroupTest(TestCase):
         self.assertEqual(group.status, NO_STATUS)
         self.assertEqual(ser1.status, NO_STATUS)
         self.assertEqual(action.status, NO_STATUS)
-        self.assertEqual(action.retry, 5)
+        self.assertEqual(action.tries, 0)
         
     def test_search_node_graph(self):
         """Test search node in a graph trough a ServiceGroup"""

@@ -267,8 +267,8 @@ class ActionEventHandler(MilkCheckEventHandler):
         timeouts = self._action.nb_timeout()
 
         # Classic Action was failed
-        if (errors or timeouts) and self._action.retry > 0:
-            self._action.retry -= 1
+        self._action.tries += 1
+        if (errors or timeouts) and self._action.tries <= self._action.maxretry:
             self._action.schedule()
 
         # timeout when more timeouts than permited
@@ -296,9 +296,8 @@ class Action(BaseEntity):
         # Action's timeout in seconds/milliseconds
         self.timeout = timeout
         
-        # Number of action's retry
-        self._retry = 0
-        self._retry_backup = -1
+        # Number of action tries
+        self.tries = 0
         
         # Command lines that we would like to run 
         self.command = command
@@ -321,7 +320,7 @@ class Action(BaseEntity):
         self.start_time = None
         self.stop_time = None
         self.worker = None
-        self._retry = self._retry_backup
+        self.tries = 0
 
     def run(self):
         '''Prepare the current action and set up the master task'''
@@ -407,24 +406,6 @@ class Action(BaseEntity):
                         error_count += len(nds)
         return error_count
                     
-    def set_retry(self, retry):
-        '''
-        Retry is a property which will be modified during the action life
-        cycle. Assigning this property means that the current action has a delay
-        greater than 0
-        '''
-        assert self.delay > 0 , 'No way to specify retry without a delay'
-        assert retry >= 0, 'No way to specify a negative retry'
-        self._retry = retry
-        if self._retry_backup == -1:
-            self._retry_backup = retry
-        
-    def get_retry(self):
-        '''Access the property retry in read only'''
-        return self._retry
-    
-    retry = property(fget=get_retry, fset=set_retry) 
-
     @property
     def duration(self):
         '''
@@ -461,5 +442,3 @@ class Action(BaseEntity):
 
         if 'cmd' in actdict:
             self.command = actdict['cmd']
-        if 'retry' in actdict:
-            self.retry = actdict['retry']

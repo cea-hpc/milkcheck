@@ -1,4 +1,6 @@
 2014-07-04 Aurelien Cedeyn  <aurelien.cedeyn@cea.fr>
+	* Fix inheritance from Service to Action for the 'retry' property and
+	remove 'delay' constraint when using 'retry' (ticket #22).
 	* Fix inherits from Service to Action for the 'delay' property
 	(ticket #17)
 

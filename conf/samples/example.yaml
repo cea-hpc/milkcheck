@@ -184,12 +184,11 @@ services:
     # "retry: <integer>"
     #
     # Re-launch the action if it has failed, up to 'retry value' times.
-    # 'delay' is awaited between each run. A 'delay' is mandatory when
-    # using 'retry'.
+    # 'delay' is awaited between each run. A 'delay' is no more mandatory when
+    # using 'retry' (starting from v1.1).
     again:
         actions:
             restart:
-                delay: 0.5
                 retry: 2
                 cmd: /bin/relaunched
 

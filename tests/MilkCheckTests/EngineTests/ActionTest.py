@@ -79,13 +79,13 @@ class ActionTest(TestCase):
         '''Test resest values of an action'''
         action = Action(name='start', target='fortoy5', command='/bin/true',
                         timeout=10, delay=5)
-        action.retry = 4
-        action._retry_backup = 5
+        action.maxretry = 5
+        action.tries = 4
         action.worker = 'test'
         action.start_time = '00:20:30'
         action.stop_time = '00:20:30'
         action.reset()
-        self.assertEqual(action.retry, 5)
+        self.assertEqual(action.tries, 0)
         self.assertEqual(action.worker, None)
         self.assertEqual(action.start_time, None)
         self.assertEqual(action.stop_time, None)
@@ -173,24 +173,15 @@ class ActionTest(TestCase):
         self.assertEqual(action.nb_timeout(), 1)
         self.assertEqual(action.status, DONE)
 
-    def test_set_retry(self):
-        """Test retry assignement"""
-        action =  Action(name='start', target=HOSTNAME, command='sleep 3')
-        self.assertRaises(AssertionError, action.set_retry, 5)
-        action =  Action(name='start', target=HOSTNAME, command='sleep 3',
-                    delay=3)
-        action.retry = 5
-        self.assertEqual(action.retry, 5)
-
     def test_retry_error(self):
         """Test retry behaviour when errors"""
         action = Action('start', command='/bin/false')
         action.delay = 0.1
-        action.retry = 3
+        action.maxretry = 3
         service = Service('retry')
         service.add_action(action)
         service.run('start')
-        self.assertEqual(action.retry, 0)
+        self.assertEqual(action.tries, 4)
         self.assertEqual(action.status, ERROR)
         self.assertTrue(0.3 < action.duration < 0.5,
                         "%.3f is not between 0.3 and 0.5" % action.duration)
@@ -199,11 +190,11 @@ class ActionTest(TestCase):
         """Test retry behaviour when timeout"""
         action = Action('start', command='/bin/sleep 0.5', timeout=0.1)
         action.delay = 0.1
-        action.retry = 2
+        action.maxretry = 2
         service = Service('retry')
         service.add_action(action)
         service.run('start')
-        self.assertEqual(action.retry, 0)
+        self.assertEqual(action.tries, 3)
         self.assertEqual(action.status, TIMEOUT)
         self.assertTrue(0.6 < action.duration < 0.8,
                         "%.3f is not between 0.6 and 0.8" % action.duration)
@@ -322,7 +313,7 @@ class ActionFromDictTest(TestCase):
         self.assertEqual(act.name, 'start')
         self.assertEqual(act.target, NodeSet('localhost'))
         self.assertEqual(act.fanout, 4)
-        self.assertEqual(act.retry, 5)
+        self.assertEqual(act.maxretry, 5)
         self.assertEqual(act.errors, 3)
         self.assertEqual(act.delay, 2)
         self.assertEqual(act.timeout, 4)

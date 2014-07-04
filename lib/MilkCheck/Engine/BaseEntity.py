@@ -253,6 +253,8 @@ class BaseEntity(object):
         # Delay to wait before launching an action
         self.delay = delay
 
+        self.maxretry = 0
+
         # Parent of the current object. Must be a subclass of BaseEntity
         self.parent = None
 
@@ -644,6 +646,7 @@ class BaseEntity(object):
         if self.desc is None:
             self.desc = entity.desc
         self.delay = self.delay or entity.delay
+        self.maxretry = self.maxretry or entity.maxretry
 
     def fromdict(self, entdict):
         """Populate entity attributes from dict."""
@@ -660,6 +663,8 @@ class BaseEntity(object):
                 self.timeout = prop
             elif item == 'delay':
                 self.delay = prop
+            elif item == 'retry':
+                self.maxretry = prop
             elif item == 'errors':
                 self.errors = prop
             elif item == 'desc':

@@ -826,3 +826,25 @@ class ServiceFromDictTest(TestCase):
             }
         )
         self.assertEqual(svc._actions['wait'].delay, 1)
+
+    def test_retry_to_action(self):
+        """
+        test if the retry defined in the service dict is correctly given to
+        the action
+        """
+        svc = Service('foo')
+        svc.fromdict(
+            {
+                'name': 'foo',
+                'retry': 1,
+                'actions':
+                {
+                    'wait':
+                    {
+                        'cmd': 'service wait %ACTION'
+                    },
+                }
+            }
+        )
+        self.assertEqual(svc._actions['wait'].maxretry, 1)
+        self.assertEqual(svc._actions['wait'].tries, 0)
