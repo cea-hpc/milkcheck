@@ -268,7 +268,6 @@ class ActionEventHandler(MilkCheckEventHandler):
         failed = errors + timeouts
 
         # Classic Action was failed
-        self._action.tries += 1
         if failed and self._action.tries <= self._action.maxretry:
             self._action.schedule()
 
@@ -437,6 +436,7 @@ class Action(BaseEntity):
             action_manager_self().perform_delayed_action(self)
         else:
             # Fire this action
+            self.tries += 1
             action_manager_self().perform_action(self)
 
     def fromdict(self, actdict):

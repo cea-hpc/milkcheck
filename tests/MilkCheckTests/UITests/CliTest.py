@@ -779,6 +779,22 @@ Actions in progress
 service2 - I am the service 2                                     [    OK   ]
 ''')
 
+    def test_command_output_interactive_delayed(self):
+        '''Test command line output in interactive mode with delayed actions'''
+        action = Action('start', command='/bin/sleep 0.1', delay=0.3)
+        srv = Service('service')
+        srv.desc = 'I am the service'
+        action.inherits_from(srv)
+        srv.add_action(action)
+        self.manager.register_services(srv)
+        self._output_check(['service', 'start'], RC_OK,
+'''
+Actions in progress
+ > service.start (delayed for 0.3s) on localhost
+
+service - I am the service                                        [    OK   ]
+''')
+
     def test_interactive_large_nodeset(self):
         '''Test command line output in interactive mode with larget nodeset'''
         class CustomAction(Action):

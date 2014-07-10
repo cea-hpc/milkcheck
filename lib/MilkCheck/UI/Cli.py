@@ -336,6 +336,10 @@ class ConsoleDisplay(object):
                 nscount = ''
                 if len(act.pending_target) > 1:
                     nscount = " (%d)" % len(act.pending_target)
+                # Manage delayed status
+                delayed = ''
+                if act.tries == 0 and act.delay:
+                    delayed = " (delayed for %ss)" % act.delay
                 # Manage line length
                 label = act.fullname()
                 name_len = len(" > %s on " % label)
@@ -347,11 +351,14 @@ class ConsoleDisplay(object):
                     name_len = len(" > %s on " % label)
                 # Truncate the target if the line is greater than the terminal
                 # width
-                if name_len + len(target) + len(nscount) > self._term_width:
-                    tgt_len = self._term_width - name_len - 4 - len(nscount)
+                if name_len + len(target) + len(nscount) + len(delayed) \
+                                                        > self._term_width:
+                    tgt_len = self._term_width - name_len - 4 - len(nscount) \
+                                                        - len(delayed)
                     target = "%s..." % target[:tgt_len]
-                msg += " > %s on %s%s\n" % (
+                msg += " > %s%s on %s%s\n" % (
                                  self.string_color(label, 'YELLOW'),
+                                 self.string_color(delayed, 'YELLOW'),
                                  self.string_color(target, 'CYAN'), nscount)
         self.output(msg)
 
