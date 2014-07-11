@@ -247,6 +247,10 @@ class BaseEntity(object):
         # Maximum error authorized for the entity.
         self.errors = 0
 
+        # Error threshold before reaching the warning status
+        # (should be <= self.errors)
+        self.warnings = 0
+
         # Max time allowed to compute an entity, -1 means no timeout
         self.timeout = -1
 
@@ -637,6 +641,7 @@ class BaseEntity(object):
         if self.fanout <= -1 and entity.fanout:
             self.fanout = entity.fanout
         self.errors = self.errors or entity.errors
+        self.warnings = self.warnings or entity.warnings
         if self.timeout is not None and self.timeout <= -1 and \
             entity.timeout >= 0:
             self.timeout = entity.timeout
@@ -667,6 +672,8 @@ class BaseEntity(object):
                 self.maxretry = prop
             elif item == 'errors':
                 self.errors = prop
+            elif item == 'warnings':
+                self.warnings = prop
             elif item == 'desc':
                 self.desc = prop
             elif item == 'variables':

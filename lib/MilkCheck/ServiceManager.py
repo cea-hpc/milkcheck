@@ -43,7 +43,7 @@ from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
 from MilkCheck.Engine.BaseEntity import VariableAlreadyExistError
 
 # Symbols
-from MilkCheck.Engine.BaseEntity import LOCKED
+from MilkCheck.Engine.BaseEntity import LOCKED, WARNING
 
 class ServiceNotFoundError(MilkCheckEngineError):
     '''
@@ -88,6 +88,13 @@ class ServiceManager(EntityManager):
     def has_service(self, service):
         '''Determine if the service is registered within the manager'''
         return service in self.entities.values()
+
+    def has_warnings(self):
+        '''Determine if the service has one action with the WARNING status'''
+        for ent in self.entities.values():
+            if ent.status is WARNING:
+                return True
+        return False
 
     def add_var(self, varname, value):
         '''Add a symbol within the service manager'''

@@ -160,6 +160,25 @@ services:
                 cmd: service sshd start
 
     #
+    # Warnings
+    #
+    # Apply.   service, actions
+    # Default. 0
+    #
+    # "warnings: <integer>"
+    #
+    # Number of command failure before the action is considered on warning.
+    # When warnings is used it is highly recommended to also set errors.
+    # If the warnings value is higher than the errors value, warnings is ignored.
+    tolerant:
+        errors: 2
+        warnings: 1
+        target: "foo[1-10]"
+        actions:
+            start:
+                cmd: service sshd start
+
+    #
     # Delay
     #
     # Apply.   service, actions

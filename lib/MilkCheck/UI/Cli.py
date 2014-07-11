@@ -542,10 +542,10 @@ class CommandLine(CoreEvent):
             RC_EXCEPTION = 9: User error (options or configuration)
             RC_UNKNOWN_EXCEPTION = 12: Internal error (this is probably a bug)
         '''
-        if service_manager_self().source.status is WARNING:
-            return RC_WARNING
-        elif service_manager_self().source.status in (DEP_ERROR, ERROR):
+        if service_manager_self().source.status in (DEP_ERROR, ERROR):
             return RC_ERROR
+        elif service_manager_self().has_warnings():
+            return RC_WARNING
         else:
             return RC_OK
 

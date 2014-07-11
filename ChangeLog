@@ -1,3 +1,8 @@
+2014-07-11 Aurelien Cedeyn  <aurelien.cedeyn@cea.fr>
+	* Add warning threshold. With the 'warnings' property, milkcheck set a
+	service in WARNING state if 'warnings' < actions in error status < 'errors'
+	(ticket #20)
+
 2014-07-04 Aurelien Cedeyn  <aurelien.cedeyn@cea.fr>
 	* Fix inheritance from Service to Action for the 'retry' property and
 	remove 'delay' constraint when using 'retry' (ticket #22).

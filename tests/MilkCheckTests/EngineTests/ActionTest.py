@@ -11,7 +11,7 @@ from unittest import TestCase
 from ClusterShell.NodeSet import NodeSet
 
 from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, ERROR, TIMEOUT, \
-                                        DEP_ERROR, SKIPPED
+                                        DEP_ERROR, SKIPPED, WARNING
 from MilkCheck.Engine.Action import Action, ActionManager, action_manager_self
 from MilkCheck.Engine.Service import Service
 
@@ -125,10 +125,25 @@ class ActionTest(TestCase):
         act_test.command = '/bin/false'
         service.run('test')
         self.assertEqual(act_test.nb_errors(), 1)
+        self.assertEqual(act_test.status, WARNING)
+
+        service.reset()
+        act_test.errors = 1
+        act_test.warnings = 1
+        act_test.command = '/bin/false'
+        service.run('test')
+        self.assertEqual(act_test.nb_errors(), 1)
         self.assertEqual(act_test.status, DONE)
 
         service.reset()
         act_test.errors = 0
+        service.run('test')
+        self.assertEqual(act_test.nb_errors(), 1)
+        self.assertEqual(act_test.status, ERROR)
+
+        service.reset()
+        act_test.errors = 0
+        act_test.warnings = 1
         service.run('test')
         self.assertEqual(act_test.nb_errors(), 1)
         self.assertEqual(act_test.status, ERROR)
@@ -168,6 +183,14 @@ class ActionTest(TestCase):
 
         service.reset()
         action.errors = 2
+        service.run('start')
+        self.assertEqual(action.nb_errors(), 1)
+        self.assertEqual(action.nb_timeout(), 1)
+        self.assertEqual(action.status, WARNING)
+
+        service.reset()
+        action.errors = 2
+        action.warnings = 2
         service.run('start')
         self.assertEqual(action.nb_errors(), 1)
         self.assertEqual(action.nb_timeout(), 1)

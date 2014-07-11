@@ -47,7 +47,7 @@ from MilkCheck.Callback import call_back_self
 from MilkCheck.EntityManager import EntityManager
 from MilkCheck.Engine.BaseEntity import BaseEntity
 from MilkCheck.Engine.BaseEntity import DONE, TIMEOUT, ERROR, WAITING_STATUS, \
-                                        NO_STATUS, DEP_ERROR, SKIPPED
+                                        NO_STATUS, DEP_ERROR, SKIPPED, WARNING
 from MilkCheck.Callback import EV_COMPLETE, EV_STARTED, EV_TRIGGER_DEP, \
                                EV_STATUS_CHANGED, EV_DELAYED, EV_FINISHED
 
@@ -265,18 +265,23 @@ class ActionEventHandler(MilkCheckEventHandler):
         # Checkout actions issues
         errors = self._action.nb_errors()
         timeouts = self._action.nb_timeout()
+        failed = errors + timeouts
 
         # Classic Action was failed
         self._action.tries += 1
-        if (errors or timeouts) and self._action.tries <= self._action.maxretry:
+        if failed and self._action.tries <= self._action.maxretry:
             self._action.schedule()
 
         # timeout when more timeouts than permited
         elif timeouts > self._action.errors and errors == 0:
             self._action.update_status(TIMEOUT)
+        # _action.errors has a higher priority than _action.warnings
         # failed when too many errors
-        elif (errors + timeouts) > self._action.errors:
+        elif failed > self._action.errors:
             self._action.update_status(ERROR)
+        # Warning if there is more failed actions than the warning threshold
+        elif failed > self._action.warnings:
+            self._action.update_status(WARNING)
         else:
             self._action.update_status(DONE)
 
@@ -362,8 +367,6 @@ class Action(BaseEntity):
         a status meaning that the action is done is specified, the current
         action triggers her direct dependencies.
         '''
-        assert status in (NO_STATUS, WAITING_STATUS, DONE, SKIPPED,
-                               ERROR, TIMEOUT), 'Bad action status'
         self.status = status
         call_back_self().notify(self, EV_STATUS_CHANGED)
         if status not in (NO_STATUS, WAITING_STATUS):

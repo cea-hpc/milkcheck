@@ -24,7 +24,7 @@ from ClusterShell.NodeSet import NodeSet
 
 # Symbols
 from MilkCheck.UI.Cli import RC_OK, RC_ERROR, RC_EXCEPTION, \
-                             RC_UNKNOWN_EXCEPTION
+                             RC_UNKNOWN_EXCEPTION, RC_WARNING
 from MilkCheck.Engine.BaseEntity import REQUIRE_WEAK
 
 # Exceptions
@@ -676,6 +676,16 @@ ServiceGroup                                                      [DEP_ERROR]
 ServiceGroup                                                      [    OK   ]
 """)
 
+    def test_command_output_warning_status(self):
+        '''Test command line output with one action WARNING'''
+        svc = Service('warn')
+        act = Action('go', command='/bin/false')
+        act.errors = 1
+        svc.add_action(act)
+        self.manager.register_service(svc)
+        self._output_check(['warn', 'go', '-q'], RC_WARNING,
+"""warn                                                              [ WARNING ]
+""")
     def test_custom_defines(self):
         '''Test command line output custom variables'''
         svc = Service('one')
