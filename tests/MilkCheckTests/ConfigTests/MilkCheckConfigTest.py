@@ -271,3 +271,49 @@ services:
                 cmd: run %NAME
 badrule: foo''')
         self.assertRaises(ConfigurationError, self.cfg.build_graph)
+
+    def test_loading_variables_after_services(self):
+        '''
+        Test parsing of a Yaml flow with variables referenced before
+        their definition in another file.
+        '''
+        self.cfg.load_from_stream('''
+services:
+     S1:
+            desc: "I'm the service S1"
+            target: "%TARGET_VAR"
+            actions:
+                start:
+                    cmd: echo %LUSTRE_FS_LIST
+---
+variables:
+    TARGET_VAR: foo
+    LUSTRE_FS_LIST: store0,work0''')
+
+        self.cfg.build_graph()
+
+        srv = service_manager_self().entities['S1']
+        self.assertTrue('LUSTRE_FS_LIST' in service_manager_self().variables)
+        self.assertTrue('TARGET_VAR' in service_manager_self().variables)
+        self.assertEqual(str(srv.target), "foo")
+        self.assertEqual(srv._actions['start'].command, "echo %LUSTRE_FS_LIST")
+        self.assertTrue(len(self.cfg._flow) == 2)
+
+    def test_set_variables_before_configuration_parsing(self):
+        '''
+        Test parsing of Yaml flow with variables prevously defined
+        '''
+        manager = service_manager_self()
+        manager.add_var('MY_VAR', 'bar')
+        self.cfg.load_from_stream('''
+variables:
+    MY_VAR: foo
+---
+services:
+     S1:
+            desc: "I'm the service S1"
+            actions:
+                start:
+                    cmd: echo %MY_VAR''')
+        self.cfg.build_graph()
+        self.assertTrue(manager.variables['MY_VAR'] == 'bar')

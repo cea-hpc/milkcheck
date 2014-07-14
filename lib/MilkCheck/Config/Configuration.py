@@ -107,21 +107,20 @@ class MilkCheckConfig(object):
         manager = service_manager_self()
         dependencies = {}
 
+        # We need to parse variables first to be sure that variables used
+        # in services are already parsed (see #15)
+        for data in self._flow:
+            # Parse variables
+            if 'variables' in data:
+                for varname, value in data['variables'].items():
+                    if varname not in manager.variables:
+                        manager.add_var(varname, value)
+
         # Go through data registred within flow
         for data in self._flow:
             for elem, subelems in data.items():
-                # Parse variables
-                if elem == 'variables':
-                    for (varname, value) in subelems.items():
-                        # Variables could have been already defined on command
-                        # line through defines, and they have priority.
-                        # If several 'variables' section are defined, the first
-                        # ones will have priority, and it is fine are there is
-                        # no ordering guarantee.
-                        if varname not in manager.variables:
-                            manager.add_var(varname, value)
                 # Parse service
-                elif elem == 'service' and 'actions' in subelems:
+                if elem == 'service' and 'actions' in subelems:
                     ser = Service(subelems['name'])
                     ser.fromdict(subelems)
                     wrap = self._parse_deps(subelems)
@@ -152,7 +151,7 @@ class MilkCheckConfig(object):
                             wrap.source = service
                             dependencies[service.name] = wrap
 
-                else:
+                elif elem != 'variables':
                     raise ConfigurationError("Bad rule '%s'" % elem)
 
         # Build relations between services
