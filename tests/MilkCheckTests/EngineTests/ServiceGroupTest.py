@@ -42,7 +42,7 @@ class ServiceGroupTest(TestCase):
                           target=srv2, base=srv1)
 
     def test_inheritance(self):
-        '''Test inheritance between on a group'''
+        """Test inheritance between services"""
         ser = Service('parent')
         ser.target = '127.0.0.1'
         ser.timeout = 15
@@ -50,7 +50,7 @@ class ServiceGroupTest(TestCase):
         subser1 = Service('subser1')
         subser1.target = HOSTNAME
         subser2 = Service('subser2')
-        subser2.timeout = None
+        subser2.timeout = 3
         group.add_inter_dep(target=subser1)
         group.add_inter_dep(target=subser2)
         group.inherits_from(ser)
@@ -59,8 +59,8 @@ class ServiceGroupTest(TestCase):
         self.assertEqual(subser1.target, NodeSet(HOSTNAME))
         self.assertEqual(subser1.timeout, 15)
         self.assertEqual(subser2.target, NodeSet('127.0.0.1'))
-        self.assertEqual(subser2.timeout, None)
-        
+        self.assertEqual(subser2.timeout, 3)
+
     def test_update_target(self):
         '''Test update of the target of a group of services'''
         grp = ServiceGroup('G')

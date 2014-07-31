@@ -233,7 +233,7 @@ class BaseEntity(object):
         # Maximum window for parallelism. A None fanout means
         # that the task will be limited by the default value of
         # ClusterShell 64
-        self.fanout = -1
+        self.fanout = None
 
         # Nodes on which the entity is launched
         self._target = None
@@ -251,8 +251,8 @@ class BaseEntity(object):
         # (should be <= self.errors)
         self.warnings = 0
 
-        # Max time allowed to compute an entity, -1 means no timeout
-        self.timeout = -1
+        # Max time allowed to compute an entity, None means no timeout
+        self.timeout = None
 
         # Delay to wait before launching an action
         self.delay = delay
@@ -638,12 +638,11 @@ class BaseEntity(object):
         # Some of theses have a two possible 'false' value (None or '').
         # * The init value should always be None
         # * '' is set by the user
-        if self.fanout <= -1 and entity.fanout:
+        if self.fanout is None:
             self.fanout = entity.fanout
         self.errors = self.errors or entity.errors
         self.warnings = self.warnings or entity.warnings
-        if self.timeout is not None and self.timeout <= -1 and \
-            entity.timeout >= 0:
+        if self.timeout is None:
             self.timeout = entity.timeout
         if self.target is None:
             self.target = entity.target

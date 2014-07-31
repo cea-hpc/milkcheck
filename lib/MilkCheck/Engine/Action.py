@@ -115,10 +115,8 @@ class ActionManager(EntityManager):
         assert task, 'You cannot add a None task to the manager'
         # Task is not already running
         if not self._is_running_task(task):
-            fnt = task.fanout
             # No fanout or invalid value, fanout gets the default value
-            if not fnt or fnt < 1:
-                fnt = self.default_fanout
+            fnt = task.fanout or self.default_fanout
             # Create the category if it does not exist
             if not self.entities.has_key(fnt):
                 self.entities[fnt] = set()
@@ -140,9 +138,7 @@ class ActionManager(EntityManager):
         # Task given as parameter is not already running
         if self._is_running_task(task):
             # Checkout the right value for the fanout
-            fnt = task.fanout
-            if not fnt or fnt < 1:
-                fnt = self.default_fanout
+            fnt = task.fanout or self.default_fanout
             # Remove task
             self.entities[fnt].remove(task)
             call_back_self().notify(task.parent, EV_COMPLETE)
@@ -285,30 +281,30 @@ class ActionEventHandler(MilkCheckEventHandler):
             self._action.update_status(DONE)
 
 class Action(BaseEntity):
-    '''
+    """
     This class models an action. An action is generally hooked to a service
     and contains the code and parameters to execute commands over one or several
     nodes of a cluster. An action might have dependencies with other actions.
-    '''
+    """
 
     LOCAL_VARIABLES = BaseEntity.LOCAL_VARIABLES.copy()
     LOCAL_VARIABLES['ACTION'] = 'name'
-    
-    def __init__(self, name, target=None, command=None, timeout=-1, delay=0):
+
+    def __init__(self, name, target=None, command=None, timeout=None, delay=0):
         BaseEntity.__init__(self, name=name, target=target, delay=delay)
-        
+
         # Action's timeout in seconds/milliseconds
         self.timeout = timeout
-        
+
         # Number of action tries
         self.tries = 0
-        
-        # Command lines that we would like to run 
+
+        # Command lines that we would like to run
         self.command = command
-        
+
         # Results and retcodes
         self.worker = None
-        
+
         # Allow us to determine time used by an action within the master task
         self.start_time = None
         self.stop_time = None
