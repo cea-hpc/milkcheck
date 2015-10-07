@@ -36,7 +36,7 @@ It also contains the definition of a basic event handler and the
 ActionEventHandler and ActionManager.
 """
 
-from datetime import datetime
+import time
 
 from ClusterShell.Worker.Popen import WorkerPopen
 from ClusterShell.Event import EventHandler
@@ -253,7 +253,7 @@ class ActionEventHandler(MilkCheckEventHandler):
         done. It specifies the how the action will be computed.
         '''
         # Assign time duration to the current action
-        self._action.stop_time = datetime.now()
+        self._action.stop_time = time.time()
 
         # Remove the current action from the running task, this will trigger
         # a redefinition of the current fanout
@@ -410,24 +410,21 @@ class Action(BaseEntity):
                     
     @property
     def duration(self):
-        '''
-        Task duration in seconds (10^-6) is readable as soon as the task is done
-        otherwise it returns None.
-        '''
-        if not self.start_time or not self.stop_time:
-            return None
+        """
+        Action duration in seconds and microseconds if done, None otherwise.
+        """
+        if self.start_time and self.stop_time:
+            return self.stop_time - self.start_time
         else:
-            delta = self.stop_time - self.start_time
-            return  delta.seconds + (delta.microseconds/1000000.0)
+            return None
 
-    
     def schedule(self, allow_delay=True):
         '''
         Schedule the current action within the master task. The current action
         could be delayed or fired right now depending of it properties.
         '''
         if not self.start_time:
-            self.start_time = datetime.now()
+            self.start_time = time.time()
 
         self.pending_target.add(self.target)
 

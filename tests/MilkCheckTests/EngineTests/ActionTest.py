@@ -82,8 +82,8 @@ class ActionTest(TestCase):
         action.maxretry = 5
         action.tries = 4
         action.worker = 'test'
-        action.start_time = '00:20:30'
-        action.stop_time = '00:20:30'
+        action.start_time = 1444253681.36017
+        action.stop_time = 1444253681.36017
         action.reset()
         self.assertEqual(action.tries, 0)
         self.assertEqual(action.worker, None)
