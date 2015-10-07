@@ -1,5 +1,6 @@
-# Copyright CEA (2011)
-# Contributor: TATIBOUET Jeremie <tatibouetj@ocre.cea.fr>
+#
+# Copyright CEA (2011-2017)
+#
 
 from unittest import TestCase
 from MilkCheck.Config.Configuration import MilkCheckConfig, ConfigurationError
@@ -85,10 +86,17 @@ class MilkCheckConfigTest(TestCase):
         self.assertTrue('S1' in wrap.deps['require'])
         self.assertTrue('S2' in wrap.deps['check'])
         self.assertFalse(wrap.deps['require_weak'])
+
         wrap = self.cfg._parse_deps({})
         self.assertTrue(wrap)
         self.assertFalse(wrap.deps['require'])
         self.assertFalse(wrap.deps['check'])
+        self.assertFalse(wrap.deps['require_weak'])
+
+        wrap = self.cfg._parse_deps({'require': ['s1'], 'filter': ['s2']})
+        self.assertTrue(wrap)
+        self.assertTrue('s1' in wrap.deps['require'])
+        self.assertTrue('s2' in wrap.deps['filter'])
         self.assertFalse(wrap.deps['require_weak'])
 
     def test_load_with_empty_yaml_document(self):
@@ -252,6 +260,25 @@ services:
                 cmd: run %NAME
     bar:
         after: [ 'foo' ]
+        actions:
+            start:
+                cmd: run_bar''')
+        self.cfg.build_graph()
+        manager = service_manager_self()
+        self.assertTrue('foo' in manager.entities)
+        self.assertTrue('bar' in manager.entities)
+        self.assertTrue(manager.entities['bar'].has_parent_dep('foo'))
+
+    def test_filter_rule_parsing(self):
+        """'filter' is supported in configuration"""
+        self.cfg.load_from_stream('''
+services:
+    foo:
+        actions:
+            start:
+                cmd: run %NAME
+    bar:
+        filter: [ 'foo' ]
         actions:
             start:
                 cmd: run_bar''')

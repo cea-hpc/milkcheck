@@ -1,5 +1,5 @@
 #
-# Copyright CEA (2011-2012)
+# Copyright CEA (2011-2017)
 #
 # This file is part of MilkCheck project.
 #
@@ -161,6 +161,10 @@ class Service(BaseEntity):
 
             for dep in deps.values():
                 tgt = dep.target
+
+                # Propagate this info, even if 'tgt' will not be run right now
+                dep.filter_nodes(self.failed_nodes)
+
                 if tgt.status is NO_STATUS and tgt.is_ready() and tgt._tagged:
                     if not self.simulate:
                         call_back_self().notify((self, tgt), EV_TRIGGER_DEP)

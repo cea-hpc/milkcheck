@@ -1,5 +1,6 @@
-# Copyright CEA (2011) 
-# Contributor: TATIBOUET Jeremie <tatibouetj@ocre.cea.fr>
+#
+# Copyright CEA (2011-2017)
+#
 
 '''
 This modules defines the tests cases targeting the ServiceGroup object
@@ -18,7 +19,7 @@ from ClusterShell.NodeSet import NodeSet
 from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, SKIPPED, MISSING
 from MilkCheck.Engine.BaseEntity import WAITING_STATUS, DEP_ERROR
 from MilkCheck.Engine.BaseEntity import WARNING, ERROR
-from MilkCheck.Engine.BaseEntity import CHECK, REQUIRE_WEAK, REQUIRE
+from MilkCheck.Engine.BaseEntity import CHECK, REQUIRE_WEAK, REQUIRE, FILTER
 from MilkCheck.Engine.BaseEntity import UnknownDependencyError
 
 HOSTNAME = socket.gethostname().split('.')[0]
@@ -553,6 +554,22 @@ class ServiceGroupTest(TestCase):
         grp.run('stop')
 
         self.assertEqual(grp.status, DONE)
+
+    def test_filter(self):
+        """ServiceGroup supports filter dependency"""
+        dep = Service('dep')
+        dep.add_action(Action('stop', command='false', target=HOSTNAME))
+
+        grp = ServiceGroup('group')
+        svc = Service('svc')
+        svc.add_action(Action('stop', command='true', target=HOSTNAME))
+        grp.add_inter_dep(svc)
+        grp.add_dep(dep, sgth=FILTER)
+        grp.run('stop')
+
+        self.assertEqual(dep.status, ERROR)
+        self.assertEqual(svc.status, SKIPPED)
+        self.assertEqual(grp.status, SKIPPED)
 
     def test_graph_entity(self):
         """Test the DOT graph output"""

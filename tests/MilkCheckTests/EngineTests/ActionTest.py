@@ -1,5 +1,6 @@
-# Copyright CEA (2011)
-# Contributor: TATIBOUET Jeremie <tatibouetj@ocre.cea.fr>
+#
+# Copyright CEA (2011-2017)
+#
 
 """
 This modules defines the tests cases targeting the BaseService
@@ -328,6 +329,18 @@ class ActionTest(TestCase):
         service.add_var('VAR1', 'foo')
         action.run()
         self.assertEqual(action.worker.command, 'echo -x foo')
+
+    def test_failed_nodes(self):
+        """failed nodes are backup"""
+        action = Action('start', command='/bin/false', target=HOSTNAME)
+        service = Service('test')
+        service.add_actions(action)
+        action.run()
+        self.assertEqual(action.failed_nodes, NodeSet(HOSTNAME))
+        self.assertEqual(action.status, ERROR)
+        # This is propagated to action service
+        self.assertEqual(service.failed_nodes, action.failed_nodes)
+
 
 class ActionFromDictTest(TestCase):
     '''Test cases for Action.fromdict()'''

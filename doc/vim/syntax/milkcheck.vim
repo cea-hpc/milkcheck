@@ -22,7 +22,7 @@ syn match   yamlKey     '\(\w\|,\|-\)\+\(\s\+\(\w\|,\|-\)\+\)*\ze\s*:' contains=
 
 syn match   mlkKeyDelim  contained ','
 syn keyword mlkKeyword   contained variables services actions
-syn keyword mlkKeyword   contained require before
+syn keyword mlkKeyword   contained require before filter
 syn keyword mlkKeyword   contained desc target mode cmd fanout timeout errors
 syn keyword mlkKeyword   contained delay retry
 syn match   mlkVariable  '%\h\w*'

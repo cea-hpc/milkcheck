@@ -1,5 +1,6 @@
-# Copyright CEA (2011) 
-# Contributor: TATIBOUET Jeremie <tatibouetj@ocre.cea.fr>
+#
+# Copyright CEA (2011-2017)
+#
 
 """
 This modules defines the tests cases targeting the Action and Service objects.
@@ -18,8 +19,12 @@ from MilkCheck.Engine.Service import ActionNotFoundError
 # Symbols
 from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, TIMEOUT, DEP_ERROR
 from MilkCheck.Engine.BaseEntity import ERROR, SKIPPED
-from MilkCheck.Engine.BaseEntity import LOCKED, MISSING, CHECK, REQUIRE_WEAK
-        
+from MilkCheck.Engine.BaseEntity import LOCKED, MISSING, CHECK, REQUIRE_WEAK, \
+                                        FILTER, REQUIRE
+
+import socket
+HOSTNAME = socket.gethostname().split('.')[0]
+
 class ServiceTest(TestCase):
     """Define the unit tests for the object service."""
 
@@ -698,6 +703,152 @@ class ServiceTest(TestCase):
         self.assertEqual(svc2.status, DONE)
         self.assertEqual(svc3.status, DONE)
         self.assertEqual(svc4.status, DONE)
+
+    def test_filter_dep_no_error(self):
+        """test FILTER dependency without error"""
+        svc1 = Service('first')
+        svc1.add_action(Action('start', command='/bin/true', target=HOSTNAME))
+
+        svc2 = Service('second')
+        svc2.add_action(Action('start', command='/bin/true', target=HOSTNAME))
+        svc2.add_dep(svc1, sgth=FILTER)
+
+        svc2.run('start')
+
+        self.assertEqual(svc1.status, DONE)
+        self.assertEqual(svc2.status, DONE)
+
+    def test_filter_dep_one_error(self):
+        """error nodes are propagated along 'filter' dependencies"""
+        svc1 = Service('first')
+        svc1.add_action(Action('start', command='false', target=HOSTNAME))
+
+        svc2 = Service('second')
+        svc2.add_action(Action('start', command='true', target=HOSTNAME))
+        svc2.add_dep(svc1, sgth=FILTER)
+
+        svc2.run('start')
+
+        self.assertEqual(svc1.status, ERROR)
+        self.assertEqual(svc2.status, SKIPPED)
+
+    def test_filter_dep_timeout(self):
+        """timeout nodes are propagated along 'filter' dependencies"""
+        svc1 = Service('first')
+        svc1.add_action(Action('start', command='sleep 1', target=HOSTNAME,
+                               timeout=0.1))
+
+        svc2 = Service('second')
+        svc2.add_action(Action('start', command='true', target=HOSTNAME))
+        svc2.add_dep(svc1, sgth=FILTER)
+
+        svc2.run('start')
+
+        self.assertEqual(svc1.status, TIMEOUT)
+        self.assertEqual(svc2.status, SKIPPED)
+
+    def test_filter_dep_error_propagation(self):
+        """error nodes are propagated along 'filter' dependencies (one node)"""
+        svc1 = Service('first')
+        tgt = '%s,fakenode' % HOSTNAME
+        svc1.add_action(Action('start', command='true', target=tgt))
+
+        svc2 = Service('second')
+        svc2.add_action(Action('start', command='true', target=HOSTNAME))
+        svc2.add_dep(svc1, sgth=FILTER)
+
+        svc2.run('start')
+
+        self.assertEqual(svc1.status, ERROR)
+        self.assertEqual(svc2.status, DONE)
+
+    def test_filter_error_no_action(self):
+        """
+        propagation along 'filter' dependencies works if action names mismatch
+        """
+        svc1 = Service('first')
+        svc1.add_action(Action('start', command='false', target=HOSTNAME))
+
+        svc2 = Service('second')
+        svc2.add_action(Action('other', command='true', target=HOSTNAME))
+        svc2.add_dep(svc1, sgth=FILTER)
+
+        svc2.run('start')
+
+        self.assertEqual(svc1.status, ERROR)
+        self.assertEqual(svc2.status, MISSING)
+
+    def test_filter_two_deps(self):
+        """error nodes are send even with multiple filter deps"""
+        svc1 = Service('top')
+        tgt = '%s,fakenode' % HOSTNAME
+        svc1.add_action(Action('start', command='true', target=tgt))
+
+        svc2 = Service('bottom1')
+        svc2.add_action(Action('start', command='true', target=HOSTNAME))
+        svc2.add_dep(svc1, sgth=FILTER)
+
+        svc3 = Service('bottom2')
+        svc3.add_action(Action('start', command='true', target='fakenode'))
+        svc3.add_dep(svc1, sgth=FILTER)
+
+        svc4 = Service('src')
+        svc4.add_dep(svc2)
+        svc4.add_dep(svc3)
+        svc4.run('start')
+
+        self.assertEqual(svc1.status, ERROR)
+        self.assertEqual(svc2.status, DONE)
+        self.assertEqual(svc3.status, SKIPPED)
+        self.assertEqual(svc4.status, MISSING)
+
+    def test_filter_mixed(self):
+        """test filter and regular deps works fine together"""
+        svc1 = Service('top1')
+        tgt = '%s,fakenode' % HOSTNAME
+        svc1.add_action(Action('start', command='true', target=tgt))
+
+        svc2 = Service('top2')
+        svc2.add_action(Action('start', command='true', target=HOSTNAME))
+
+        svc3 = Service('bottom')
+        svc3.add_action(Action('start', command='true', target='fakenode'))
+        svc3.add_dep(svc1, sgth=REQUIRE)
+        svc3.add_dep(svc2, sgth=FILTER)
+
+        svc3.run('start')
+
+        self.assertEqual(svc1.status, ERROR)
+        self.assertEqual(svc2.status, DONE)
+        self.assertEqual(svc3.status, DEP_ERROR)
+
+    def test_filter_no_target(self):
+        """service without target are not filtered"""
+        svc1 = Service('top')
+        svc1.add_action(Action('start', command='false'))
+
+        svc2 = Service('bottom')
+        svc2.add_action(Action('start', command='true'))
+        svc2.add_dep(svc1, sgth=FILTER)
+
+        svc2.run('start')
+
+        self.assertEqual(svc1.status, ERROR)
+        self.assertEqual(svc2.status, DONE)
+
+    def test_filter_mix_no_target(self):
+        """service without target do not filter service with target"""
+        svc1 = Service('top')
+        svc1.add_action(Action('start', command='false'))
+
+        svc2 = Service('bottom')
+        svc2.add_action(Action('start', command='true', target='localhost'))
+        svc2.add_dep(svc1, sgth=FILTER)
+
+        svc2.run('start')
+
+        self.assertEqual(svc1.status, ERROR)
+        self.assertEqual(svc2.status, DONE)
 
 
 class ServiceFromDictTest(TestCase):

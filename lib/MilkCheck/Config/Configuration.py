@@ -1,5 +1,5 @@
 #
-# Copyright CEA (2011-2012)
+# Copyright CEA (2011-2017)
 #
 # This file is part of MilkCheck project.
 #
@@ -170,11 +170,16 @@ class MilkCheckConfig(object):
     def _parse_deps(cls, data):
         '''Return a DepWrapper containing the different types of dependencies'''
         wrap = DepWrapper()
-        for content in ('require', 'require_weak', 'check', 'before', 'after'):
+        for content in ('require', 'require_weak', 'require_filter', 'filter',
+                        'check', 'before', 'after'):
             if content in data:
                 if content in ('before', 'after'):
                     data['require_weak'] = data[content]
                     content = 'require_weak'
+                # Only for compat with v1.1beta versions
+                if content == 'require_filter':
+                    data['filter'] = data[content]
+                    content = 'filter'
                 if type(data[content]) is str:
                     wrap.deps[content] = [ data[content] ]
                 else:

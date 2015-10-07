@@ -1,5 +1,5 @@
 #
-# Copyright CEA (2011-2014)
+# Copyright CEA (2011-2017)
 #
 # This file is part of MilkCheck project.
 #
@@ -88,6 +88,7 @@ DEP_ORDER = {
 CHECK = "CHECK"
 REQUIRE = "REQUIRE"
 REQUIRE_WEAK = "REQUIRE_WEAK"
+FILTER = "FILTER"
 
 
 class MilkCheckEngineError(Exception):
@@ -102,7 +103,7 @@ class DependencyAlreadyReferenced(MilkCheckEngineError):
 class IllegalDependencyTypeError(MilkCheckEngineError):
     """
     Exception raised when you try to assign another identifier than
-    CHECK, REQUIRE OR REQUIRE_WEAK to dep_type
+    CHECK, REQUIRE, REQUIRE_WEAK or FILTER to dep_type
     """
     def __init__(self, deptype):
         msg = "Unknown dependency type: %s" % deptype
@@ -151,7 +152,7 @@ class Dependency(object):
         self.target = target
 
         # Define the type of the dependency
-        assert dtype in (CHECK, REQUIRE, REQUIRE_WEAK), \
+        assert dtype in (CHECK, REQUIRE, REQUIRE_WEAK, FILTER), \
             "Invalid dependency identifier"
         self.dep_type = dtype
 
@@ -159,9 +160,14 @@ class Dependency(object):
         # environment (e.g ServiceGroup)
         self._internal = intr
 
+    def filter_nodes(self, nodes):
+        """Filter provided nodes to dependency target."""
+        if self.dep_type == FILTER:
+            self.target.filter_nodes(nodes)
+
     def is_weak(self):
         '''Return True if the dependency is weak.'''
-        return (self.dep_type == REQUIRE_WEAK)
+        return (self.dep_type in (REQUIRE_WEAK, FILTER))
 
     def is_strong(self):
         '''Return True if the dependency is strong'''
@@ -262,6 +268,8 @@ class BaseEntity(object):
 
         self.maxretry = 0
 
+        self.failed_nodes = NodeSet()
+
         # Parent of the current object. Must be a subclass of BaseEntity
         self.parent = None
 
@@ -284,6 +292,14 @@ class BaseEntity(object):
 
         # Variables
         self.variables = {}
+
+    def filter_nodes(self, nodes):
+        """
+        Add error nodes to skip list.
+
+        Nodes in this list will not be used when launching actions.
+        """
+        self.failed_nodes.add(nodes)
 
     def add_var(self, varname, value):
         '''Add a new variable within the entity context'''
@@ -324,6 +340,7 @@ class BaseEntity(object):
         self._tagged = False
         self.target = self._target_backup
         self.status = NO_STATUS
+        self.failed_nodes = NodeSet()
         self.algo_reversed = False
 
     def search(self, name, reverse=False):
@@ -351,7 +368,7 @@ class BaseEntity(object):
         the target is the parent or the child of the current entity.
         '''
         assert target, "target must not be None"
-        if sgth in (CHECK, REQUIRE, REQUIRE_WEAK):
+        if sgth in (CHECK, REQUIRE, REQUIRE_WEAK, FILTER):
             if parent:
                 if target.name in self.parents:
                     raise DependencyAlreadyReferenced()

@@ -1,5 +1,5 @@
 #
-# Copyright CEA (2011-2012)
+# Copyright CEA (2011-2017)
 #
 # This file is part of MilkCheck project.
 #
@@ -266,9 +266,16 @@ class ActionEventHandler(MilkCheckEventHandler):
         # Classic Action was failed
         if failed and self._action.tries <= self._action.maxretry:
             self._action.schedule()
+            return
+
+        # There will be no more schedule(), save error node list for later
+        # propagation if required. Local action does not filter.
+        if self._action.target is not None:
+            nodes = self._action.nodes_error() | self._action.nodes_timeout()
+            self._action.filter_nodes(nodes)
 
         # timeout when more timeouts than permited
-        elif timeouts > self._action.errors and errors == 0:
+        if timeouts > self._action.errors and errors == 0:
             self._action.update_status(TIMEOUT)
         # _action.errors has a higher priority than _action.warnings
         # failed when too many errors
@@ -341,6 +348,11 @@ class Action(BaseEntity):
         deps_status = self.eval_deps_status()
         # NO_STATUS and not any dep in progress for the current action
         if self.status is NO_STATUS and deps_status is not WAITING_STATUS:
+
+            # Remove nodes marked on error by our filter dependencies
+            if self.target:
+                self.target -= self.parent.failed_nodes
+
             if self.to_skip():
                 self.update_status(SKIPPED)
             elif deps_status is DEP_ERROR or not self.parents:
@@ -355,7 +367,7 @@ class Action(BaseEntity):
                 # For each existing deps just prepare it
                 for dep in deps:
                     dep.target.prepare()
-                    
+
     def update_status(self, status):
         '''
         This method update the current status of an action. Whether the
@@ -369,12 +381,15 @@ class Action(BaseEntity):
                 call_back_self().notify(self, EV_COMPLETE)
             if self.children:
                 for dep in self.children.values():
+                    dep.filter_nodes(self.failed_nodes)
+
                     if dep.target.is_ready():
                         if not self.parent.simulate:
                             call_back_self().notify(
                             (self, dep.target), EV_TRIGGER_DEP)
                         dep.target.prepare()
             else:
+                self.parent.filter_nodes(self.failed_nodes)
                 self.parent.update_status(self.status)
 
     def nodes_timeout(self):

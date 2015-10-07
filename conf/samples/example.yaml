@@ -86,6 +86,34 @@ services:
               cmd: service svc2 start
 
     #
+    # Filtered service dependency
+    #
+    # Apply.    service
+    # Default.  (no dependency)
+    #
+    # "filter: <list>"
+    #
+    # Same as 'require' dependency type except for error management. Nodes
+    # where the service failed will be filtered (ignored) for services using
+    # this dependency.
+    # Graph execution is stopped only if all nodes failed for this service.
+    #
+    # In the example below, service 'svc2' will be launched after 'svc1'
+    # because it requires it. If service 'svc1' fails on node[1-2], svc2 will
+    # be only launched on the remaining nodes node[3-8].
+    svc1:
+        target: node[1-10]
+        actions:
+           run:
+              cmd: service svc1 start
+    svc2:
+        filter: [ svc1 ]
+        target: node[1-10]
+        actions:
+           run:
+              cmd: service svc2 start
+
+    #
     # Service ordering
     #
     # Apply.    service

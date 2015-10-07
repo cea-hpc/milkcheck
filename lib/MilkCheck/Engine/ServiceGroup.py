@@ -1,5 +1,5 @@
 #
-# Copyright CEA (2011-2012)
+# Copyright CEA (2011-2017)
 #
 # This file is part of MilkCheck project.
 #
@@ -70,6 +70,16 @@ class ServiceGroup(Service):
         BaseEntity.update_target(self, nodeset, mode)
         for service in self._subservices.values():
             service.update_target(nodeset, mode)
+
+    def filter_nodes(self, nodes):
+        """
+        Add error nodes to skip list.
+
+        Nodes in this list will not be used when launching actions.
+        """
+        BaseEntity.filter_nodes(self, nodes)
+        for service in self._subservices.values():
+            service.filter_nodes(nodes)
 
     def iter_subservices(self):
         '''Return an iterator over the subservices'''
@@ -300,12 +310,16 @@ class ServiceGroup(Service):
 
                     # Parsing dependencies
                     wrap = DepWrapper()
-                    for prop in ('require', 'require_weak',
-                                 'before', 'after', 'check'):
+                    for prop in ('require', 'require_weak', 'require_filter',
+                                 'filter', 'before', 'after', 'check'):
                         if prop in props:
                             if prop in ('before', 'after'):
                                 props['require_weak'] = props[prop]
                                 prop = 'require_weak'
+                            # Only for compat with v1.1beta versions
+                            if prop == 'require_filter':
+                                props['filter'] = props[prop]
+                                prop = 'filter'
                             wrap.deps[prop] = props[prop]
 
                     # Get subservices which might be Service or ServiceGroup
@@ -354,4 +368,5 @@ class DepWrapper(object):
 
     def __init__(self):
         self.source = None
-        self.deps = {'require': [], 'require_weak': [], 'check': []}
+        self.deps = {'require': [], 'require_weak': [], 'check': [],
+                     'filter': []}
