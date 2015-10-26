@@ -227,20 +227,41 @@ class ConsoleDisplay(object):
             line = line % (label, '[%s]' % entity.status)
         self.output(line)
 
-    def print_summary(self, actions):
-        '''Print the errors summary of the array actions'''
+    def print_summary(self, actions, report='default'):
+        """Print the errors summary of the array actions"""
         lines = []
 
         errors = 0
         others = 0
         to_spell = 'action'
+        error_nodes = NodeSet()
+        all_error_nodes = NodeSet()
+        all_nodes = NodeSet()
 
         for ent in actions:
+            error_nodes.clear()
+            errs = NodeSet(ent.nodes_error())
+            timeouts = NodeSet(ent.nodes_timeout())
+            all_nodes.add(ent.target)
+
             if ent.status in (TIMEOUT, ERROR, DEP_ERROR):
-                lines.append(" + %s" % self.string_color(ent.longname(), 'RED'))
+                error_nodes.add(errs)
+                error_nodes.add(timeouts)
+                lines.append(" + %s" % self.string_color(
+                                                ent.longname().strip(), 'RED'))
+                if report == 'full':
+                    msg = "    %s: %s\n" % (self.string_color("Target",
+                                                              'YELLOW'),
+                                          error_nodes)
+                    msg += "    %s: %s" % (self.string_color("Command",
+                                                             'YELLOW'),
+                                          ent.worker.command)
+                    lines.append(msg)
+
                 errors += 1
             elif ent.status not in (SKIPPED, LOCKED):
                 others += 1
+            all_error_nodes.add(error_nodes)
 
         # manage 'action(s)' spelling
         if (errors + others) > 1:
@@ -252,6 +273,11 @@ class ConsoleDisplay(object):
                        to_spell,
                        self.string_color(errors, (errors and 'RED' or 'GREEN')))
         lines.insert(0, header)
+        good_nodes = all_nodes - all_error_nodes
+        if report == 'full' and good_nodes:
+            lines.append(" + %s" % self.string_color('Success on all services',
+                                                     'GREEN'))
+            lines.append("    %s" % good_nodes)
         self.output("\n".join(lines), raw=True)
 
     def print_action_command(self, action):
@@ -491,8 +517,10 @@ class CommandLine(CoreEvent):
                 manager.call_services(services, action, conf=self._conf)
                 retcode = self.retcode()
 
-                if self._conf.get('summary', False):
-                    self._console.print_summary(self.actions)
+                if self._conf.get('report', 'no').lower() != 'no':
+                    r_type = self._conf.get('report','default')
+                    self._console.print_summary(self.actions, report=r_type)
+
             # Case 2 : Check configuration
             elif self._conf.get('config_dir', False):
                 self._console.output("No actions specified, "

@@ -254,9 +254,9 @@ nodeps: False
 dryrun: False
 tags: set([])
 verbosity: 5
-summary: False
 fanout: 64
 reverse_actions: ['stop']
+report: no
 config_dir: 
 [I1]\r[I1]\r[I2]\r[I2]\r""")
 
@@ -303,9 +303,9 @@ dryrun: False
 tags: set([])
 verbosity: 5
 only_nodes: HOSTNAME
-summary: False
 fanout: 64
 reverse_actions: ['stop']
+report: no
 config_dir: 
 [I1]\r[I1]\r[I2]\r[I2]\r[S3]\r[S3]\r""")
 
@@ -383,10 +383,10 @@ nodeps: False
 dryrun: False
 tags: set([])
 verbosity: 5
-summary: False
 excluded_nodes: BADNODE
 fanout: 64
 reverse_actions: ['stop']
+report: no
 config_dir: 
 [I1]\r[I1]\r[I2]\r[I2]\r[S3]\r[S3]\r""")
 
@@ -411,10 +411,10 @@ nodeps: False
 dryrun: False
 tags: set([])
 verbosity: 5
-summary: False
 excluded_nodes: BADNODE
 fanout: 64
 reverse_actions: ['stop']
+report: no
 config_dir: 
 [S1]\r[S1]\r[S1]\r[S3]\r[S3]\r""")
 
@@ -497,13 +497,13 @@ class CommandLineOutputTests(CLICommon):
         self.service = service = Service('service')
         service.desc = 'I am the service'
         # Actions
-        start_action = Action('start', command='/bin/true')
-        stop_action = Action('stop', command='/bin/false')
+        self.start_action = Action('start', command='/bin/true')
+        self.stop_action = Action('stop', command='/bin/false')
         self.timeout_action = Action('timeout', command='sleep 1', timeout=0.1)
-        start_action.inherits_from(service)
-        stop_action.inherits_from(service)
-        service.add_action(start_action)
-        service.add_action(stop_action)
+        self.start_action.inherits_from(service)
+        self.stop_action.inherits_from(service)
+        service.add_action(self.start_action)
+        service.add_action(self.stop_action)
         service.add_action(self.timeout_action)
 
         # Build graph
@@ -523,7 +523,9 @@ Options:
   -v, --verbose         Increase or decrease verbosity
   -d, --debug           Set debug mode and maximum verbosity
   -g, --graph           Output dependencies graph
-  -s, --summary         Display summary of executed actions
+  -s, --summary         --summary is an alias for --report=default
+  -r REPORT, --report=REPORT
+                        Display a report of executed actions
   -c CONFIG_DIR, --config-dir=CONFIG_DIR
                         Change configuration files directory
   -q, --quiet           Enable quiet mode
@@ -598,6 +600,15 @@ ServiceGroup                                                      [    OK   ]
  SUMMARY - 1 action (0 failed)
 """)
 
+    def test_command_output_full_report_ok(self):
+        """Test command line output with full report and all actions OK"""
+        self._output_check(['ServiceGroup', 'start', '--report=full'], RC_OK,
+"""ServiceGroup.service - I am the service                           [    OK   ]
+ServiceGroup                                                      [    OK   ]
+
+ SUMMARY - 1 action (0 failed)
+""")
+
     def test_command_output_error(self):
         '''Test command line output with all actions FAILED'''
         self._output_check(['ServiceGroup', 'stop'], RC_ERROR,
@@ -617,6 +628,97 @@ ServiceGroup                                                      [DEP_ERROR]
 
  SUMMARY - 1 action (1 failed)
  + ServiceGroup.service.stop - I am the service
+""")
+
+    def test_command_output_dist_summary_error(self):
+        """
+        Test command line output with summary and all actions FAILED
+        on distant nodes.
+        """
+        self.stop_action._target_backup = "localhost,%s" % HOSTNAME
+        nodestring = re.sub(HOSTNAME, 'HOSTNAME', "%s" %
+                            NodeSet(self.stop_action._target_backup))
+        self._output_check(['ServiceGroup', 'stop', '-s'], RC_ERROR,
+"""stop ServiceGroup.service ran in 0.00 s
+ > %s exited with 1
+ServiceGroup.service - I am the service                           [  ERROR  ]
+ServiceGroup                                                      [DEP_ERROR]
+
+ SUMMARY - 1 action (1 failed)
+ + ServiceGroup.service.stop - I am the service
+""" % nodestring)
+
+    def test_command_output_dist_report_full_error(self):
+        """
+        Test command line output with full report and all actions FAILED
+        on distant nodes.
+        """
+        self.stop_action._target_backup = "localhost,%s" % HOSTNAME
+        nodestring = re.sub(HOSTNAME, 'HOSTNAME', "%s" %
+                            NodeSet(self.stop_action._target_backup))
+        self._output_check(['ServiceGroup', 'stop', '--report=full'], RC_ERROR,
+"""stop ServiceGroup.service ran in 0.00 s
+ > %s exited with 1
+ServiceGroup.service - I am the service                           [  ERROR  ]
+ServiceGroup                                                      [DEP_ERROR]
+
+ SUMMARY - 1 action (1 failed)
+ + ServiceGroup.service.stop - I am the service
+    Target: %s
+    Command: /bin/false
+""" % (nodestring, nodestring))
+
+    def test_command_output_dist_report_full_ok(self):
+        """
+        Test command line output with full report and all actions OK
+        on distant nodes.
+        """
+        self.start_action._target_backup = "localhost,%s" % HOSTNAME
+        nodestring = re.sub(HOSTNAME, 'HOSTNAME', "%s" %
+                            NodeSet(self.start_action._target_backup))
+        self._output_check(['ServiceGroup', 'start', '--report=full'], RC_OK,
+"""ServiceGroup.service - I am the service                           [    OK   ]
+ServiceGroup                                                      [    OK   ]
+
+ SUMMARY - 1 action (0 failed)
+ + Success on all services
+    %s
+""" % nodestring)
+
+    def test_command_output_dist_report_full_error_and_ok(self):
+        """
+        Test command line output with full report, FAILED actions and OK
+        actions on distant nodes.
+        """
+        # Service
+        svc = Service('service_ok')
+        svc.desc = 'I am the ok service'
+        svc2 = Service('service_fail')
+        svc2.desc = 'I am the fail service'
+        svc.add_dep(svc2, sgth=REQUIRE_WEAK)
+        # Actions
+        false_action = Action('stop', command='/bin/false', target=NodeSet(HOSTNAME))
+        false_action.inherits_from(svc)
+        svc.add_action(false_action)
+
+        true_action = Action('stop', command='/bin/true', target=NodeSet(HOSTNAME))
+        true_action.inherits_from(svc2)
+        svc2.add_action(true_action)
+
+        # Register services within the manager
+        self.manager.register_services(svc, svc2)
+
+        # FIXME: must return RC_OK
+        self._output_check(['service_fail', 'stop', '--report=full'], RC_OK,
+"""stop service_ok ran in 0.00 s
+ > HOSTNAME exited with 1
+service_ok - I am the ok service                                  [  ERROR  ]
+service_fail - I am the fail service                              [    OK   ]
+
+ SUMMARY - 2 actions (1 failed)
+ + service_ok.stop - I am the ok service
+    Target: HOSTNAME
+    Command: /bin/false
 """)
 
     def test_command_output_timeout(self):
@@ -647,6 +749,45 @@ ServiceGroup                                                      [DEP_ERROR]
 ServiceGroup.service - I am the service                           [ TIMEOUT ]
 ServiceGroup                                                      [DEP_ERROR]
 """)
+
+    def test_command_output_summary_multiple_dist_timeout(self):
+        """
+        Test command line output with timeout, multiple distant nodes
+        and summary
+        """
+        self.timeout_action._target_backup = "localhost,%s" % HOSTNAME
+        nodestring = re.sub(HOSTNAME, 'HOSTNAME', "%s" %
+                            NodeSet(self.timeout_action._target_backup))
+        self._output_check(['ServiceGroup', 'timeout', '-s'], RC_ERROR,
+"""timeout ServiceGroup.service ran in 0.00 s
+ > HOSTNAME,localhost has timeout
+ServiceGroup.service - I am the service                           [ TIMEOUT ]
+ServiceGroup                                                      [DEP_ERROR]
+
+ SUMMARY - 1 action (1 failed)
+ + ServiceGroup.service.timeout
+""")
+
+    def test_command_output_summary_multiple_dist_timeout_full_report(self):
+        """
+        Test command line output with timeout, multiple distant nodes
+        and summary with full report.
+        """
+        self.timeout_action._target_backup = "localhost,%s" % HOSTNAME
+        nodestring = re.sub(HOSTNAME, 'HOSTNAME', "%s" %
+                            NodeSet(self.timeout_action._target_backup))
+        self._output_check(['ServiceGroup', 'timeout', '--report=full'],
+                           RC_ERROR,
+"""timeout ServiceGroup.service ran in 0.00 s
+ > HOSTNAME,localhost has timeout
+ServiceGroup.service - I am the service                           [ TIMEOUT ]
+ServiceGroup                                                      [DEP_ERROR]
+
+ SUMMARY - 1 action (1 failed)
+ + ServiceGroup.service.timeout
+    Target: %s
+    Command: sleep 1
+""" % nodestring)
 
     def test_command_output_warning(self):
         '''Test command line output with warning'''
@@ -982,7 +1123,9 @@ Options:
   -v, --verbose         Increase or decrease verbosity
   -d, --debug           Set debug mode and maximum verbosity
   -g, --graph           Output dependencies graph
-  -s, --summary         Display summary of executed actions
+  -s, --summary         --summary is an alias for --report=default
+  -r REPORT, --report=REPORT
+                        Display a report of executed actions
   -c CONFIG_DIR, --config-dir=CONFIG_DIR
                         Change configuration files directory
   -q, --quiet           Enable quiet mode
@@ -1046,9 +1189,9 @@ nodeps: False
 dryrun: False
 tags: set([])
 verbosity: 5
-summary: False
 fanout: 64
 reverse_actions: ['stop']
+report: no
 config_dir: 
 ''')
 

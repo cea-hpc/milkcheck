@@ -91,9 +91,13 @@ class McOptionParser(OptionParser):
                         dest='graph',
                         help='Output dependencies graph')
 
-        self.add_option('-s', '--summary', action='store_true',
-                        dest='summary',
-                        help='Display summary of executed actions')
+        self.add_option('-s', '--summary', action='store_const',
+                        dest='report', const='default',
+                        help='--summary is an alias for --report=default')
+
+        self.add_option('-r', '--report', action='callback', dest='report',
+                        callback=self._check_report, type='string',
+                        help='Display a report of executed actions')
 
         # Configuration options
         self.add_option('-c', '--config-dir', action='callback',
@@ -163,3 +167,9 @@ class McOptionParser(OptionParser):
             setattr(self.values, _option.dest, tagslist)
         else:
             getattr(self.values, _option.dest).update(tagslist)
+
+    def _check_report(self, _option, _opt, _value, _parser):
+        if _value in ('no', 'default', 'full'):
+            setattr(self.values, _option.dest, _value)
+        else:
+            self.error('-r/--report should be "no", "default" or "full"')

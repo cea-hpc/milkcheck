@@ -12,9 +12,9 @@ milkcheck - Parallel and hierachical service manager
 SYNOPSIS
 --------
 
-*milkcheck* [[--verbose] [--debug] [--quiet] [--summary] [--config-dir=directory] [-n nodes] [--tags=TAGS] [-x nodes] [-X service]] [SERVICE...] ACTION
+*milkcheck* [[--verbose] [--debug] [--quiet] [--summary|--report] [--config-dir=directory] [-n nodes] [--tags=TAGS] [-x nodes] [-X service]] [SERVICE...] ACTION
 
-*milkcheck* [[-v] [-d] [-q] [-s] [-c directory] [-n nodes] [-x nodes] [-X service] [-t tags]] [SERVICE...] ACTION
+*milkcheck* [[-v] [-d] [-q] [-s|-r report_type] [-c directory] [-n nodes] [-x nodes] [-X service] [-t tags]] [SERVICE...] ACTION
 
 *milkcheck* -g [-X service]
 
@@ -37,7 +37,11 @@ DESCRIPTION
          Output dependencies graph
 
 *-s, --summary*::
-         Display summary of executed actions
+         Display summary of executed actions. This is an alias to --report=default.
+
+*-r REPORT_TYPE, --report=REPORT_TYPE*::
+         Display a detailed report of executed action. +
+         REPORT_TYPE must be either "no", "default" or "full".
 
 *-c CONFIG_DIR, --config-dir=CONFIG_DIR*::
          Change configuration files directory
@@ -131,6 +135,9 @@ EXAMPLES
 
 *milkcheck* -s cron status::
     Do the same as above but give a summary at the end of the execution.
+
+*milkcheck* -r full cron status::
+    Do the same as above but give a full report at the end of the execution.
 
 *milkcheck* -v status::
     Increase verbosity.

@@ -111,3 +111,25 @@ class McOptionParserTest(TestCase):
 
         (options, args) = mop.parse_args(['-t', 'tag1,tag2', '-t', 'tag3'])
         self.assertEqual(options.tags, set(['tag1', 'tag2', 'tag3']))
+
+    def test_option_report_full(self):
+        """Check report configuration option"""
+        mop = McOptionParser()
+        mop.configure_mop()
+        (options, args) = mop.parse_args(['--report=full'])
+        self.assertTrue(options.report == 'full')
+
+    def test_option_report_inval(self):
+        """Check if Custom is a valid report type"""
+        mop = McOptionParser()
+        mop.configure_mop()
+        self.assertRaises(InvalidOptionError, mop.parse_args,
+                          ['--report=xxxx'])
+
+    def test_option_summary_translation(self):
+        """Check summary translation"""
+        mop = McOptionParser()
+        mop.configure_mop()
+        (options, args) = mop.parse_args(['-s'])
+        self.assertEqual(options.report, 'default')
+

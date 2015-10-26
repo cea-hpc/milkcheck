@@ -54,7 +54,8 @@ class ConfigParser(object):
          'config_dir':      { 'value': '/etc/milkcheck/conf', 'type': str },
          'fanout':          { 'value': 64, 'type': int },
          'reverse_actions': { 'value': ['stop'], 'type': list },
-         'summary':         { 'value': False, 'type': bool },
+         'report':          { 'value': 'no', 'type': str,
+                              'allowed_values': ('no', 'default', 'full') },
          }
 
     def __init__(self, options):
@@ -83,11 +84,20 @@ class ConfigParser(object):
         self.logger.debug("Configuration\n%s" % self)
 
     def update_options(self, options):
-        '''
+        """
         Update current configuration with the given options
-        '''
+        """
+        # Compat code to translate 'summary' to 'report':
+        # If 'summary' is present, 'report' will be set to 'default'
+        # unless it was previously defined with a different value.
+        opt_dict = vars(options)
+        if opt_dict.get('summary') and not opt_dict.get('report'):
+            self['report'] = 'default'
+            del opt_dict['summary']
+        # End of compat.
+
         # Apply options overrides:
-        for opt, value in vars(options).items():
+        for opt, value in opt_dict.items():
             if value is not None:
                 self[opt] = value
 
@@ -103,6 +113,13 @@ class ConfigParser(object):
                 if type(value) is not self.fields[element]['type']:
                     raise ConfigParserError("Wrong value '%s' for '%s'"
                                             % (value, element))
+                if self.fields[element].get('allowed_values') and \
+                       value not in self.fields[element]['allowed_values']:
+                    raise ConfigParserError("Value for '%s' should be one of %s"
+                                        " (found '%s')" % (
+                                        element,
+                                        self.fields[element]['allowed_values'],
+                                        value))
                 self[element] = value
 
     def __getitem__(self, key):

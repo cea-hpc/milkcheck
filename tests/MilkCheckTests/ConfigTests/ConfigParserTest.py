@@ -51,3 +51,30 @@ class ConfigParserTest(TestCase):
         # Element has a bad type
         self.assertRaises(ConfigParserError,
                           config._check_data, {'fanout': [ 27, 28 ]})
+
+    def test_check_data_allowed_values(self):
+        """Option value is correctly checked"""
+        config = MockConfigParser(self._options)
+        # Value is not allowed
+        self.assertRaises(ConfigParserError,
+                          config._check_data, {'report': 'invalid'})
+        # Allowed value for report
+        for value in ('full', 'no', 'default'):
+            config._check_data({'report': value})
+            self.assertEqual(config['report'], value)
+
+    def test_check_summary_compat(self):
+        """Check compat with summary"""
+        setattr(self._options, 'summary', True)
+        config = MockConfigParser(self._options)
+        self.assertEqual(config['report'], 'default')
+
+        setattr(self._options, 'summary', False)
+        config = MockConfigParser(self._options)
+        self.assertEqual(config['report'],
+                         ConfigParser.DEFAULT_FIELDS['report']['value'])
+
+        setattr(self._options, 'summary', True)
+        setattr(self._options, 'report', 'full')
+        config = MockConfigParser(self._options)
+        self.assertEqual(config['report'], 'full')
