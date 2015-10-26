@@ -93,12 +93,13 @@ class ActionTest(TestCase):
 
     def test_nb_errors_remote(self):
         """Test the method nb_errors() (remote)."""
-        action = Action(name='start', target='aury[12,13,21]',
+        action = Action(name='start', target='badname[12,13,21]',
                         command='/bin/false')
         action.errors = 2
         service = Service('test_service')
         service.add_action(action)
         service.run('start')
+        self.assertEqual(action.nodes_error(), NodeSet("badname[12,13,21]"))
         self.assertEqual(action.nb_errors(), 3)
         self.assertEqual(action.status, ERROR)
 
@@ -108,6 +109,7 @@ class ActionTest(TestCase):
         service = Service('test_service')
         service.add_action(action)
         service.run('test')
+        self.assertEqual(action.nodes_error(), NodeSet())
         self.assertEqual(action.nb_errors(), 0)
         self.assertEqual(action.status, DONE)
 
@@ -117,6 +119,7 @@ class ActionTest(TestCase):
         act_test = Action(name='test', command='/bin/true')
         service.add_action(act_test)
         service.run('test')
+        self.assertEqual(act_test.nodes_error(), NodeSet())
         self.assertEqual(act_test.nb_errors(), 0)
         self.assertEqual(act_test.status, DONE)
 
@@ -124,6 +127,7 @@ class ActionTest(TestCase):
         act_test.errors = 1
         act_test.command = '/bin/false'
         service.run('test')
+        self.assertEqual(act_test.nodes_error(), NodeSet("localhost"))
         self.assertEqual(act_test.nb_errors(), 1)
         self.assertEqual(act_test.status, WARNING)
 
@@ -132,12 +136,14 @@ class ActionTest(TestCase):
         act_test.warnings = 1
         act_test.command = '/bin/false'
         service.run('test')
+        self.assertEqual(act_test.nodes_error(), NodeSet("localhost"))
         self.assertEqual(act_test.nb_errors(), 1)
         self.assertEqual(act_test.status, DONE)
 
         service.reset()
         act_test.errors = 0
         service.run('test')
+        self.assertEqual(act_test.nodes_error(), NodeSet("localhost"))
         self.assertEqual(act_test.nb_errors(), 1)
         self.assertEqual(act_test.status, ERROR)
 
@@ -145,6 +151,7 @@ class ActionTest(TestCase):
         act_test.errors = 0
         act_test.warnings = 1
         service.run('test')
+        self.assertEqual(act_test.nodes_error(), NodeSet("localhost"))
         self.assertEqual(act_test.nb_errors(), 1)
         self.assertEqual(act_test.status, ERROR)
 
@@ -155,6 +162,7 @@ class ActionTest(TestCase):
         service = Service('test_service')
         service.add_action(action)
         service.run('start')
+        self.assertEqual(action.nodes_timeout(), NodeSet(HOSTNAME))
         self.assertEqual(action.nb_timeout(), 1)
         self.assertEqual(action.status, TIMEOUT)
 
@@ -164,7 +172,9 @@ class ActionTest(TestCase):
         service = Service('test_service')
         service.add_action(action)
         service.run('start')
+        self.assertEqual(action.nodes_error(), NodeSet())
         self.assertEqual(action.nb_errors(), 0)
+        self.assertEqual(action.nodes_timeout(), NodeSet("localhost"))
         self.assertEqual(action.nb_timeout(), 1)
         self.assertEqual(action.status, TIMEOUT)
 
@@ -177,14 +187,18 @@ class ActionTest(TestCase):
         service = Service('test_service')
         service.add_action(action)
         service.run('start')
+        self.assertEqual(action.nodes_error(), NodeSet("badname"))
         self.assertEqual(action.nb_errors(), 1)
+        self.assertEqual(action.nodes_timeout(), NodeSet(HOSTNAME))
         self.assertEqual(action.nb_timeout(), 1)
         self.assertEqual(action.status, ERROR)
 
         service.reset()
         action.errors = 2
         service.run('start')
+        self.assertEqual(action.nodes_error(), NodeSet("badname"))
         self.assertEqual(action.nb_errors(), 1)
+        self.assertEqual(action.nodes_timeout(), NodeSet(HOSTNAME))
         self.assertEqual(action.nb_timeout(), 1)
         self.assertEqual(action.status, WARNING)
 
@@ -192,7 +206,9 @@ class ActionTest(TestCase):
         action.errors = 2
         action.warnings = 2
         service.run('start')
+        self.assertEqual(action.nodes_error(), NodeSet("badname"))
         self.assertEqual(action.nb_errors(), 1)
+        self.assertEqual(action.nodes_timeout(), NodeSet(HOSTNAME))
         self.assertEqual(action.nb_timeout(), 1)
         self.assertEqual(action.status, DONE)
 

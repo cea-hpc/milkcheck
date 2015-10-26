@@ -376,34 +376,40 @@ class Action(BaseEntity):
                         dep.target.prepare()
             else:
                 self.parent.update_status(self.status)
-        
-    def nb_timeout(self):
-        '''Return the number of timeout runs.'''
+
+    def nodes_timeout(self):
+        """Get nodeset of timeout nodes for this action."""
         if self.worker:
             if isinstance(self.worker, WorkerPopen):
                 if self.worker.did_timeout():
-                    return 1
+                    return NodeSet("localhost")
             else:
-                return len(list(self.worker.iter_keys_timeout()))
-        return 0
-        
-    def nb_errors(self):
-        '''
-        Return the amount of error in the worker.
-        '''
-        error_count = 0
+                return NodeSet.fromlist(list(self.worker.iter_keys_timeout()))
+        return NodeSet()
+
+    def nb_timeout(self):
+        """Get timeout node count."""
+        return len(self.nodes_timeout())
+
+    def nodes_error(self):
+        """Get nodeset of error nodes for this action."""
+        error_nodes = NodeSet()
         if self.worker:
             if isinstance(self.worker, WorkerPopen):
                 retcode = self.worker.retcode()
                 # We don't count timeout (retcode=None)
                 if retcode not in (None, 0):
-                    error_count = 1
+                    error_nodes = NodeSet("localhost")
             else:
                 for retcode, nds in self.worker.iter_retcodes():
                     if retcode != 0:
-                        error_count += len(nds)
-        return error_count
-                    
+                        error_nodes.add(nds)
+        return error_nodes
+
+    def nb_errors(self):
+        """Get error node count."""
+        return len(self.nodes_error())
+
     @property
     def duration(self):
         """
