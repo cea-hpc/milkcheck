@@ -13,7 +13,7 @@ Source0:	%{name}-%{version}.tar.gz
 BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 BuildArch:	noarch
 BuildRequires:	python-devel python-setuptools asciidoc
-Requires:	clustershell > 1.4
+Requires:	clustershell >= 1.7
 
 %description
 Manage a cluster-wide system through configuration based commands. It offers a

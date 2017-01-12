@@ -527,6 +527,11 @@ class CommandLine(CoreEvent):
         except ScannerError, exc:
             self._logger.error('Bad syntax in config file :\n%s' % exc)
             retcode = RC_EXCEPTION
+        except ImportError, exc:
+            self._logger.error('Missing python dependency: %s' % exc)
+            for line in traceback.format_exc().splitlines()[-3:-1]:
+                self._logger.error(line)
+            retcode = RC_EXCEPTION
         except Exception, exc:
             # In debug mode, propagate the error
             if (not self._conf or self._conf.get('debug')):

@@ -579,3 +579,16 @@ class ActionManagerTest(TestCase):
         svc.run('start')
         buff = action.worker.node_buffer('node1')
         self.assertEqual(buff, HOSTNAME)
+
+    def test_exec_mode(self):
+        """Test exec mode"""
+        action = Action(name='start', command='echo %%h %%rank',
+                        target='%s,localhost' % HOSTNAME)
+        action.mode = 'exec'
+        svc = Service('test')
+        svc.add_action(action)
+        svc.run('start')
+        self.assertEqual(action.worker.node_buffer(HOSTNAME),
+                         "%s 0" % HOSTNAME)
+        self.assertEqual(action.worker.node_buffer('localhost'),
+                         'localhost 1')

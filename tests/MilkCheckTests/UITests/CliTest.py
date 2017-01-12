@@ -1004,6 +1004,17 @@ Options:
 [00:00:00] CRITICAL - Invalid options: 
 
 ''')
+
+    def test_ImportException_output(self):
+        """Test command line output on ImportError"""
+        service_manager_self().call_services = \
+                lambda services, action, conf=None: raiser(ImportError)
+        self._output_check(['start'], RC_EXCEPTION, "",
+"""[00:00:00] ERROR    - Missing python dependency: 
+[00:00:00] ERROR    -   File "source.py", line 000, in raiser
+[00:00:00] ERROR    -     raise exception
+""")
+
     def test_UnhandledException_output(self):
         '''Test command line output on UnhandledException'''
         service_manager_self().call_services = \

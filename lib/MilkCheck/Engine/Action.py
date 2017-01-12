@@ -42,6 +42,7 @@ from ClusterShell.Worker.Popen import WorkerPopen
 from ClusterShell.Event import EventHandler
 from ClusterShell.NodeSet import NodeSet
 from ClusterShell.Task import task_self
+from ClusterShell.Worker.Exec import ExecWorker
 
 from MilkCheck.Callback import call_back_self
 from MilkCheck.EntityManager import EntityManager
@@ -92,9 +93,16 @@ class ActionManager(EntityManager):
         if not self.dryrun:
             command = action.resolve_property('command')
 
-        self._master_task.shell(command, nodes=nodes, timeout=action.timeout,
-                                handler=ActionEventHandler(action),
-                                remote=action.remote)
+        if action.mode == 'exec':
+            wkr = ExecWorker(nodes=nodes, handler=ActionEventHandler(action),
+                             timeout=action.timeout, command=command,
+                             remote=action.remote)
+            self._master_task.schedule(wkr)
+        else:
+            self._master_task.shell(command, nodes=nodes,
+                                    timeout=action.timeout,
+                                    handler=ActionEventHandler(action),
+                                    remote=action.remote)
 
     def perform_delayed_action(self, action):
         """Perform a delayed action and add it to the running tasks"""

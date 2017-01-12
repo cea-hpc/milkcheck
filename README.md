@@ -7,7 +7,7 @@ Requirements
 ------------
 
 * Python 2.4+
-* ClusterShell 1.6+
+* ClusterShell 1.7+
 
 Installation
 ------------

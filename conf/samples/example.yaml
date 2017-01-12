@@ -25,18 +25,24 @@ services:
                 cmd: service sshd status
 
     #
-    # Delegated mode
+    # Execution mode
     # Apply.   service, actions
     # Default. standard
     #
-    # "mode: [standard, delegate]"
+    # "mode: [standard, delegate, exec]"
     #
-    # This mode uses a service with target, but command is run locally.
-    # Milkcheck will manage the target like a distant service and so
+    # The "standard" mode run command remotely to the specified target nodes.
+    #
+    # The "delegate" mode uses a service with target, but command is run
+    # locally. Milkcheck will manage the target like a distant service and so
     # all command line argument like -w or -x will be applied to target.
     # If this results into an empty target, no command will be run.
     # This is intended for commands which handle their own connection.
     #
+    # The "exec" mode will run locally as the delegate mode but launch one
+    # command per target and gather the result as the standard mode.
+    # (See 'man clush' for more informations)
+
     ping:
         desc: Ping all needed servers
         mode: delegate
@@ -46,6 +52,12 @@ services:
                 cmd: nodeset -S "\n" -e %TARGET | fping -r1 -u
             power:
                 cmd: ipmipower -h %TARGET --stat
+    pong:
+        desc: Ping all needed servers (without fping)
+        mode: exec
+        actions:
+            status:
+                cmd: ping %%h
 
     #
     # Service group
