@@ -1,4 +1,4 @@
-# Copyright CEA (2011) 
+# Copyright CEA (2011-2017)
 # Contributor: TATIBOUET Jeremie <tatibouetj@ocre.cea.fr>
 
 """
@@ -334,13 +334,13 @@ class BaseEntityTest(unittest.TestCase):
         ent2.desc = "another description"
         ent2.parent = ent1
         self.assertEqual(ent2.longname(), "alpha.beta - another description")
-    
+
     def test_excluded(self):
         """Test the excluded mecanism"""
         ent1 = BaseEntity('E1')
         ent2 = BaseEntity('E2')
         ent3 = BaseEntity('E3')
-        
+
         ent3.add_dep(ent2)
 
         self.assertFalse(ent1.excluded())
@@ -351,6 +351,15 @@ class BaseEntityTest(unittest.TestCase):
         """Test the DOT graph output for an entity"""
         ent1 = BaseEntity('E1')
         self.assertEqual(ent1.graph(), '"E1";\n')
+
+    def test_remote(self):
+        """Test the remote property"""
+        ent1 = BaseEntity('father')
+        self.assertTrue(ent1.remote)
+        ent1.remote = False
+        ent2 = BaseEntity('child')
+        ent2.inherits_from(ent1)
+        self.assertFalse(ent2.remote)
 
 class VariableBaseEntityTest(unittest.TestCase):
     """Tests cases for the class variable management methods for BaseEntity."""

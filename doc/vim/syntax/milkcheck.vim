@@ -25,6 +25,7 @@ syn keyword mlkKeyword   contained variables services actions
 syn keyword mlkKeyword   contained require before filter
 syn keyword mlkKeyword   contained desc target mode cmd fanout timeout errors
 syn keyword mlkKeyword   contained delay retry
+syn keyword mlkKeyword   contained remote
 syn match   mlkVariable  '%\h\w*'
 syn match   mlkNodeGroup '@\w\+'
 

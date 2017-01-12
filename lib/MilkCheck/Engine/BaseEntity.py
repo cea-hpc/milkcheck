@@ -253,6 +253,8 @@ class BaseEntity(object):
         # 'delegate' means manage targets but run localy.
         self.mode = None
 
+        self.remote = True
+
         # Maximum error authorized for the entity.
         self.errors = 0
 
@@ -667,6 +669,7 @@ class BaseEntity(object):
         if self.target is None:
             self.target = entity.target
         self.mode = self.mode or entity.mode
+        self.remote = self.remote and entity.remote
         if self.desc is None:
             self.desc = entity.desc
         self.delay = self.delay or entity.delay
@@ -681,6 +684,8 @@ class BaseEntity(object):
                 self._target_backup = prop
             elif item == 'mode':
                 self.mode = prop
+            elif item == 'remote':
+                self.remote = prop
             elif item == 'fanout':
                 self.fanout = prop
             elif item == 'timeout':

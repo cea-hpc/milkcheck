@@ -93,7 +93,8 @@ class ActionManager(EntityManager):
             command = action.resolve_property('command')
 
         self._master_task.shell(command, nodes=nodes, timeout=action.timeout,
-                                handler=ActionEventHandler(action))
+                                handler=ActionEventHandler(action),
+                                remote=action.remote)
 
     def perform_delayed_action(self, action):
         """Perform a delayed action and add it to the running tasks"""

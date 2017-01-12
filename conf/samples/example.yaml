@@ -298,3 +298,19 @@ services:
                 actions:
                     start:
                         cmd: service %SERVICE %ACTION
+
+    #
+    # Remote (Advanced option)
+    #
+    # Apply.   service, actions
+    # Default. True
+    #
+    # "remote: <boolean>"
+    #
+    # Run an action on gateway nodes if configured in ClusterShell. By
+    # default, launch the action on remote nodes.
+    gateway:
+        actions:
+            on_gateway:
+                remote: False
+                cmd: /bin/gw_action

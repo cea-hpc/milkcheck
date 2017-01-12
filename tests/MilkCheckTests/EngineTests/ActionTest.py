@@ -7,9 +7,11 @@ This modules defines the tests cases targeting the BaseService
 """
 
 import socket
+import tempfile
 from unittest import TestCase
 
 from ClusterShell.NodeSet import NodeSet
+from ClusterShell.Task import task_self
 
 from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, ERROR, TIMEOUT, \
                                         DEP_ERROR, SKIPPED, WARNING
@@ -404,6 +406,7 @@ class ActionManagerTest(TestCase):
 
     def tearDown(self):
         ActionManager._instance = None
+        task_self().topology = None
 
     def assert_near(self, target, delta, value):
         """Like self.assertTrue(target - delta < value < target + delta)"""
@@ -558,3 +561,21 @@ class ActionManagerTest(TestCase):
         ActionManager._instance = None
         self.assertEqual(task_manager.tasks_done_count, 1)
         self.assert_near(0.3, 0.1, action.duration)
+
+    def test_perform_remote_false_action(self):
+        """Test perform an action in remote mode=False"""
+
+        action = Action('start', command='hostname -s', target='node1')
+        action.remote = False
+        svc = Service('Local')
+        svc.add_action(action)
+
+        mytopo = tempfile.NamedTemporaryFile('w')
+        mytopo.write(u"[routes]\n%s: node1\n" % HOSTNAME)
+        mytopo.flush()
+        task_self().load_topology(mytopo.name)
+        mytopo.close()
+
+        svc.run('start')
+        buff = action.worker.node_buffer('node1')
+        self.assertEqual(buff, HOSTNAME)
