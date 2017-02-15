@@ -34,6 +34,7 @@ class ConfigParserTest(TestCase):
         config = MockConfigParser(self._options)
         for key in ConfigParser.DEFAULT_FIELDS.iterkeys():
             self.assertEqual(config[key], ConfigParser.DEFAULT_FIELDS[key]['value'])
+            self.assertEqual(type(config[key]), ConfigParser.DEFAULT_FIELDS[key]['type'])
 
     def test_check_data(self):
         """YAML flow is correctly parsed"""
