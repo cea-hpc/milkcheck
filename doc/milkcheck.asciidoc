@@ -12,9 +12,9 @@ milkcheck - Parallel and hierachical service manager
 SYNOPSIS
 --------
 
-*milkcheck* [[--verbose] [--debug] [--quiet] [--summary] [--config-dir=directory] [-n nodes] [-x nodes] [-X service]] [SERVICE...] ACTION
+*milkcheck* [[--verbose] [--debug] [--quiet] [--summary] [--config-dir=directory] [-n nodes] [--tags=TAGS] [-x nodes] [-X service]] [SERVICE...] ACTION
 
-*milkcheck* [[-v] [-d] [-q] [-s] [-c directory] [-n nodes] [-x nodes] [-X service]] [SERVICE...] ACTION
+*milkcheck* [[-v] [-d] [-q] [-s] [-c directory] [-n nodes] [-x nodes] [-X service] [-t tags]] [SERVICE...] ACTION
 
 *milkcheck* -g [-X service]
 
@@ -65,6 +65,9 @@ Those options allow you to configure the behaviour of the engine
 
 *--nodeps*::
          Do not run dependencies
+
+*-t TAGS, --tags=TAGS*::
+         Only run services with matching tags
 
 *--version*::
          Show program's version number and exit
@@ -144,6 +147,8 @@ EXAMPLES
 *milkcheck* --define "foo=bar" start::
     Launch the start command on all services, and defined, for this run only, the global variable 'foo' to 'bar'.
 
+*milkcheck* --tags "foo,bar" start::
+    Launch the start command on all services matching tags 'foo' and 'bar'.
 
 EXIT STATUS
 -----------

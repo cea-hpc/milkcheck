@@ -136,6 +136,11 @@ class Service(BaseEntity):
         '''Figure out whether the service has the specified action.'''
         return action_name in self._actions
 
+    def skip(self):
+        """Skip this service"""
+        for action in self.iter_actions():
+            action.skip()
+
     def to_skip(self, action):
         """Tell if service should be skipped for provided action name."""
         return self.has_action(action) and self._actions[action].to_skip()

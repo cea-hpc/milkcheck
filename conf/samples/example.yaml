@@ -25,6 +25,24 @@ services:
                 cmd: service sshd status
 
     #
+    # Tagged service
+    # Apply.   group, service, actions
+    # Default. none
+    #
+    # "tags: [foo, bar, pub]"
+    #
+    # We can tag services to restrict milkcheck execution. The following
+    # service will be run if no tags are specified or when the tag "foo" is
+    # specified on the command line.
+    #
+    tagged:
+        desc: Tagged service declaration
+        tags: [ foo ]
+        actions:
+            status:
+                cmd: service tagged status
+
+    #
     # Execution mode
     # Apply.   service, actions
     # Default. standard

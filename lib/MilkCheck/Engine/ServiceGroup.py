@@ -121,6 +121,11 @@ class ServiceGroup(Service):
                 return True
         return False
 
+    def skip(self):
+        """Skip all services from this group"""
+        for svc in self.iter_subservices():
+            svc.skip()
+
     def to_skip(self, action):
         """
         Tell if group should be skipped for provided action name.

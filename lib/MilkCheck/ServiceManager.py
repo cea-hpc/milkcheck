@@ -185,7 +185,12 @@ class ServiceManager(EntityManager):
         if conf.get('excluded_svc'):
             self.__lock_services(conf['excluded_svc'])
 
-        # Use just those nodes 
+        if conf.get('tags'):
+            for svc in self.entities.values():
+                if not svc.match_tags(conf['tags']):
+                    svc.skip()
+
+        # Use just those nodes
         if conf.get('only_nodes') is not None:
             self.__update_usable_nodes(conf['only_nodes'], 'INT')
         # Avoid those nodes

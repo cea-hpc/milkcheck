@@ -850,6 +850,14 @@ class ServiceTest(TestCase):
         self.assertEqual(svc1.status, ERROR)
         self.assertEqual(svc2.status, DONE)
 
+    def test_skip(self):
+        """Test skip method for services"""
+        srv = Service('skipped')
+        srv.add_action(Action('start', target=NodeSet('foo'),
+                              command='/bin/true'))
+        srv.skip()
+        self.assertTrue(srv._actions['start'].to_skip())
+
 
 class ServiceFromDictTest(TestCase):
     '''This class tests Service.fromdict()'''

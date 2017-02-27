@@ -252,6 +252,7 @@ S3 - I am the service S3                                          [DEP_ERROR]
 """[00:00:00] DEBUG    - Configuration
 nodeps: False
 dryrun: False
+tags: set([])
 verbosity: 5
 summary: False
 fanout: 64
@@ -299,6 +300,7 @@ S3 - I am the service S3                                          [  ERROR  ]
 """[00:00:00] DEBUG    - Configuration
 nodeps: False
 dryrun: False
+tags: set([])
 verbosity: 5
 only_nodes: HOSTNAME
 summary: False
@@ -379,6 +381,7 @@ S3 - I am the service S3                                          [  ERROR  ]
 """[00:00:00] DEBUG    - Configuration
 nodeps: False
 dryrun: False
+tags: set([])
 verbosity: 5
 summary: False
 excluded_nodes: BADNODE
@@ -406,6 +409,7 @@ S3 - I am the service S3                                          [  ERROR  ]
 """[00:00:00] DEBUG    - Configuration
 nodeps: False
 dryrun: False
+tags: set([])
 verbosity: 5
 summary: False
 excluded_nodes: BADNODE
@@ -537,6 +541,8 @@ Options:
     -D DEFINES, --define=DEFINES, --var=DEFINES
                         Define custom variables
     --nodeps            Do not run dependencies
+    -t TAGS, --tags=TAGS
+                        Run services matching these tags
 """)
 
     def test_command_output_checkconfig(self):
@@ -994,6 +1000,8 @@ Options:
     -D DEFINES, --define=DEFINES, --var=DEFINES
                         Define custom variables
     --nodeps            Do not run dependencies
+    -t TAGS, --tags=TAGS
+                        Run services matching these tags
 ''',
 '''[00:00:00] CRITICAL - Invalid options: 
 
@@ -1036,6 +1044,7 @@ ZeroDivisionError
 '''[00:00:00] DEBUG    - Configuration
 nodeps: False
 dryrun: False
+tags: set([])
 verbosity: 5
 summary: False
 fanout: 64

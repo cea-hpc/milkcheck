@@ -412,6 +412,12 @@ class ActionFromDictTest(TestCase):
         self.assertEqual(act.desc, "Start action")
         self.assertEqual(act.command, "service foo start")
 
+    def test_action_skip(self):
+        """Test skip method for actions"""
+        action = Action(name='start', target=HOSTNAME, command='/bin/true')
+        action.skip()
+        self.assertTrue(action.to_skip())
+
 
 class ActionManagerTest(TestCase):
     """Test cases for action_manager_self"""

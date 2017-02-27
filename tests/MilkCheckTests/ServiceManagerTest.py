@@ -407,3 +407,19 @@ node [style=filled];
         conf = {'excluded_nodes': NodeSet()}
         manager._apply_config(conf)
         self.assertEqual(s1.target, localhost_ns)
+
+    def test_tagged_run(self):
+        """Test that services without the configuration tags are skipped"""
+        manager = service_manager_self()
+        srv = Service('service')
+        srv.fromdict({
+                      'target': 'localhost',
+                      'tags': ['foo'],
+                      'desc': "I'm a service",
+                      'actions': {'start': {'cmd': '/bin/true'}},
+                     })
+        manager.register_services(srv)
+        manager._apply_config({'tags': set(['foo'])})
+        self.assertFalse(srv.to_skip('start'))
+        manager._apply_config({'tags': set(['bar'])})
+        self.assertTrue(srv.to_skip('start'))

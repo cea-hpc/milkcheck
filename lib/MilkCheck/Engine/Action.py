@@ -343,6 +343,11 @@ class Action(BaseEntity):
         self.prepare()
         action_manager_self().run()
 
+    def skip(self):
+        """Skip this action"""
+        # XXX AD: This should use a dedicated flag, should not hack self.target
+        self.target = NodeSet()
+
     def to_skip(self):
         """Tell if action has an empty target list and should be skipped."""
         return (self.target != None and len(self.target) == 0)

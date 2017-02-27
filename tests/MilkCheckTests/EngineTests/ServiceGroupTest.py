@@ -26,7 +26,7 @@ HOSTNAME = socket.gethostname().split('.')[0]
 
 class ServiceGroupTest(TestCase):
     '''Define the test cases of a ServiceGroup.'''
-    
+
     def test_instanciation_service_group(self):
         '''Test instanciation of a ServiceGroup.'''
         ser_group = ServiceGroup('GROUP')
@@ -70,7 +70,7 @@ class ServiceGroupTest(TestCase):
         grp.update_target('fortoy[5-10]')
         self.assertTrue(grp.target == NodeSet('fortoy[5-10]'))
         self.assertTrue(srva.target == NodeSet('fortoy[5-10]'))
-        
+
     def test_reset_service_group(self):
         '''Test the ability to reset values of a service group'''
         group = ServiceGroup('GROUP')
@@ -88,7 +88,7 @@ class ServiceGroupTest(TestCase):
         self.assertEqual(ser1.status, NO_STATUS)
         self.assertEqual(action.status, NO_STATUS)
         self.assertEqual(action.tries, 0)
-        
+
     def test_search_node_graph(self):
         """Test search node in a graph trough a ServiceGroup"""
         group = ServiceGroup('GROUP')
@@ -107,7 +107,7 @@ class ServiceGroupTest(TestCase):
         self.assertTrue(eser1.search('I1'))
         self.assertTrue(eser1.search('E3'))
         self.assertFalse(group.search('E0'))
-        
+
     def test_add_dep_service_group(self):
         '''Test ability to add dependencies to a ServiceGroup'''
         ser_group = ServiceGroup('GROUP')
@@ -232,6 +232,17 @@ class ServiceGroupTest(TestCase):
         group.add_inter_dep(target=serv)
         self.assertTrue(group.has_subservice(serv.name))
 
+    def test_skip(self):
+        """Test skip method for ServiceGroup"""
+        grp = ServiceGroup('group')
+        srv = Service('skipped')
+        srv.add_action(Action('start', target=NodeSet('foo'),
+                              command='/bin/true'))
+        grp.add_inter_dep(target=srv)
+        self.assertFalse(grp.to_skip('start'))
+        grp.skip()
+        self.assertTrue(grp.to_skip('start'))
+
     def test_eval_deps_status_done(self):
         '''Test the method eval_deps_status NO_STATUS'''
         group = ServiceGroup('group')
@@ -317,18 +328,18 @@ class ServiceGroupTest(TestCase):
         group.run('start')
         self.assertEqual(group.status, DONE)
         self.assertEqual(subserv.status, DONE)
-    
+
     def test_prepare_group_subservices(self):
         '''Test prepare group with multiple internal dependencies.'''
         group = ServiceGroup('GROUP')
         ac_suc1 = Action('start', command='/bin/true')
         ac_suc2 = Action('start', command='/bin/true')
         ac_suc3 = Action('start', command='/bin/true')
-        
+
         subserv_a = Service('SUB1')
         subserv_b = Service('SUB2')
         subserv_c = Service('SUB3')
-        
+
         subserv_a.add_action(ac_suc1)
         subserv_b.add_action(ac_suc2)
         subserv_c.add_action(ac_suc3)
@@ -343,7 +354,7 @@ class ServiceGroupTest(TestCase):
         self.assertEqual(subserv_a.status, DONE)
         self.assertEqual(subserv_b.status, DONE)
         self.assertEqual(subserv_c.status, DONE)
-        
+
     def test_prepare_empty_group_external_deps(self):
         '''Test prepare an empty group with a single external dependency.'''
         group = ServiceGroup('GROUP')
@@ -354,7 +365,7 @@ class ServiceGroupTest(TestCase):
         group.run('start')
         self.assertEqual(ext_serv.status, DONE)
         self.assertEqual(group.status, MISSING)
-    
+
     def test_prepare_group_internal_external_deps(self):
         '''Test prepare a group with internal and external dependencies'''
         # Group
@@ -466,7 +477,7 @@ class ServiceGroupTest(TestCase):
         self.assertEqual(inter_serv1.status, DONE)
         self.assertEqual(inter_serv2.status, DEP_ERROR)
         self.assertEqual(inter_serv3.status, ERROR)
-        
+
     def test_run_partial_deps(self):
         '''Test start algorithm as soon as the calling point is done.'''
         serv = Service('NOT_CALLED')

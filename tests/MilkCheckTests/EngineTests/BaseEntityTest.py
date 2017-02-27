@@ -44,6 +44,7 @@ class BaseEntityTest(unittest.TestCase):
         self.assertTrue(NodeSet('fortoy[8-15]') == ent.target)
         self.assertRaises(NodeSetException, BaseEntity, name='foo',
                             target='[fortoy]')
+        self.assertEqual(ent.tags, set())
 
     def test_update_target(self):
         '''Test update of the target of an entity'''
@@ -360,6 +361,30 @@ class BaseEntityTest(unittest.TestCase):
         ent2 = BaseEntity('child')
         ent2.inherits_from(ent1)
         self.assertFalse(ent2.remote)
+
+    def test_tags(self):
+        """Test tags property"""
+        ent1 = BaseEntity(name='parent')
+        self.assertEqual(ent1.tags, set())
+        ent1.tags.add('foo')
+
+        ent2 = BaseEntity(name='child')
+        ent2.inherits_from(ent1)
+        self.assertEqual(ent2.tags, set(['foo']))
+        ent2.tags = set(['bar'])
+        self.assertEqual(ent2.tags, set(['bar']))
+
+    def test_match_tags(self):
+        """Test if various tags match the entity tags"""
+        ent = BaseEntity('foo')
+        self.assertTrue(ent.match_tags(set()))
+        ent.tags.add('bar')
+        self.assertTrue(ent.match_tags(set(['bar', 'pub'])))
+        self.assertFalse(ent.match_tags(set(['pub'])))
+        ent.tags.add('buz')
+        self.assertTrue(ent.match_tags(set(['buz'])))
+        self.assertFalse(ent.match_tags(set(['pub'])))
+
 
 class VariableBaseEntityTest(unittest.TestCase):
     """Tests cases for the class variable management methods for BaseEntity."""

@@ -1,3 +1,6 @@
+2017-09-29 Aurelien Cedeyn  <aurelien.cedeyn@cea.fr>
+	* Add 'tags' feature
+
 2017-09-28 Aurelien Cedeyn  <aurelien.cedeyn@cea.fr>
 	* Variables could be used in all properties (ticket #28)
 

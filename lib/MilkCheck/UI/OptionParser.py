@@ -131,6 +131,9 @@ class McOptionParser(OptionParser):
         eng.add_option('--nodeps', action='store_true', dest='nodeps',
                        default=False, help='Do not run dependencies')
 
+        eng.add_option('-t', '--tags', action='callback', dest='tags',
+                       callback=self._config_tags, type='string', default=set(),
+                       help='Run services matching these tags')
 
         self.add_option_group(eng)
 
@@ -152,3 +155,11 @@ class McOptionParser(OptionParser):
         elif self.values.excluded_nodes and _option.dest is 'only_nodes':
             _value.difference_update(self.values.excluded_nodes)
         setattr(self.values, _option.dest, _value)
+
+    def _config_tags(self, _option, _opt, _value, _parser):
+        """Configure tags list"""
+        tagslist = set(_value.split(","))
+        if not getattr(self.values, _option.dest):
+            setattr(self.values, _option.dest, tagslist)
+        else:
+            getattr(self.values, _option.dest).update(tagslist)

@@ -227,6 +227,7 @@ class BaseEntity(object):
         'TIMEOUT': 'timeout',
         'TARGET':  'target',
         'DESC':    'desc',
+        'TAGS':    'tags',
     }
 
     def __init__(self, name, target=None, delay=0):
@@ -294,6 +295,9 @@ class BaseEntity(object):
 
         # Variables
         self.variables = {}
+
+        # Tags the entity. The tags set define if the entity should run
+        self.tags = set()
 
     def filter_nodes(self, nodes):
         """
@@ -454,7 +458,19 @@ class BaseEntity(object):
         for dep in self.deps().values():
             if dep.target.status in (NO_STATUS, WAITING_STATUS):
                 return False
-        return True 
+        return True
+
+    def match_tags(self, tags):
+        """
+        Check if at least one provided tag matches entity tags.
+
+        Return True if both lists are empty.
+        """
+        if not self.tags and not tags:
+            return True
+        else:
+            assert type(tags) is set
+            return bool(self.tags & tags)
 
     def search_deps(self, symbols=None):
         '''
@@ -508,7 +524,7 @@ class BaseEntity(object):
 
     def eval_deps_status(self):
         '''
-        Evaluate the result of the dependencies in order to check to establish
+        Evaluate the result of the dependencies in order to establish
         a status.
         '''
         if len(self.deps()):
@@ -686,10 +702,10 @@ class BaseEntity(object):
             self.desc = entity.desc
         self.delay = self.delay or entity.delay
         self.maxretry = self.maxretry or entity.maxretry
+        self.tags = self.tags or entity.tags
 
     def fromdict(self, entdict):
         """Populate entity attributes from dict."""
-
         for item, prop in entdict.items():
             if item == 'target':
                 self.target = prop
@@ -712,6 +728,8 @@ class BaseEntity(object):
                 self.warnings = prop
             elif item == 'desc':
                 self.desc = prop
+            elif item == 'tags':
+                self.tags = set(prop)
             elif item == 'variables':
                 for varname, value in prop.items():
                     self.add_var(varname, value)

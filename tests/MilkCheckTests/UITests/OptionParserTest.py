@@ -101,3 +101,13 @@ class McOptionParserTest(TestCase):
         mop.configure_mop()
         self.assertRaises(InvalidOptionError, mop.parse_args,
                                     ['status', '-n', 'bad_node[set'])
+
+    def test_option_tags(self):
+        """Test --tags option"""
+        mop = McOptionParser()
+        mop.configure_mop()
+        (options, args) = mop.parse_args(['-t', 'tag1'])
+        self.assertEqual(options.tags, set(['tag1']))
+
+        (options, args) = mop.parse_args(['-t', 'tag1,tag2', '-t', 'tag3'])
+        self.assertEqual(options.tags, set(['tag1', 'tag2', 'tag3']))
