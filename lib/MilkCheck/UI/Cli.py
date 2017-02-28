@@ -179,8 +179,12 @@ class ConsoleDisplay(object):
             sys.stderr.flush()
             self._pl_width = len(tasks_disp)
 
-    def output(self, line):
+    def output(self, line, raw=False):
         '''Rewrite the current line and display line and jump to the next one'''
+        if raw:
+            sys.stdout.write('%s\n' % line)
+            sys.stdout.flush()
+            return
         width = min(self._pl_width, self._term_width)
         # Compute spaces at the end of the line to remove previous garbage
         # on stderr (escape characters are ignored)
@@ -248,7 +252,7 @@ class ConsoleDisplay(object):
                        to_spell,
                        self.string_color(errors, (errors and 'RED' or 'GREEN')))
         lines.insert(0, header)
-        self.output("\n".join(lines))
+        self.output("\n".join(lines), raw=True)
 
     def print_action_command(self, action):
         '''Remove the current line and write informations about the command'''

@@ -593,7 +593,7 @@ ServiceGroup                                                      [    OK   ]
 """ServiceGroup.service - I am the service                           [    OK   ]
 ServiceGroup                                                      [    OK   ]
 
- SUMMARY - 1 action (0 failed)                                              
+ SUMMARY - 1 action (0 failed)
 """)
 
     def test_command_output_error(self):
