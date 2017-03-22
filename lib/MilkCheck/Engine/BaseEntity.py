@@ -104,6 +104,9 @@ class IllegalDependencyTypeError(MilkCheckEngineError):
     Exception raised when you try to assign another identifier than
     CHECK, REQUIRE OR REQUIRE_WEAK to dep_type
     """
+    def __init__(self, deptype):
+        msg = "Unknown dependency type: %s" % deptype
+        MilkCheckEngineError.__init__(self, msg)
 
 class UnknownDependencyError(MilkCheckEngineError):
     """Raise when using a dependency name which is not defined."""
@@ -364,7 +367,7 @@ class BaseEntity(object):
                     self.children[target.name] = Dependency(target, sgth, False)
                     target.parents[self.name] = Dependency(self, sgth, False)
         else:
-            raise IllegalDependencyTypeError()
+            raise IllegalDependencyTypeError(sgth)
 
     def remove_dep(self, dep_name, parent=True):
         '''
