@@ -7,6 +7,7 @@ from MilkCheck.Config.Configuration import MilkCheckConfig, ConfigurationError
 from MilkCheck.Config.Configuration import UnknownDependencyError
 from MilkCheck.ServiceManager import service_manager_self
 
+import textwrap
 import socket
 HOSTNAME = socket.gethostname().split('.')[0]
 
@@ -323,7 +324,7 @@ variables:
         self.assertTrue('LUSTRE_FS_LIST' in service_manager_self().variables)
         self.assertTrue('TARGET_VAR' in service_manager_self().variables)
         self.assertEqual(str(srv.target), "foo")
-        self.assertEqual(srv._actions['start'].command, "echo %LUSTRE_FS_LIST")
+        self.assertEqual(srv._actions['start'].command, "echo store0,work0")
         self.assertTrue(len(self.cfg._flow) == 2)
 
     def test_set_variables_before_configuration_parsing(self):
@@ -344,3 +345,40 @@ services:
                     cmd: echo %MY_VAR''')
         self.cfg.build_graph()
         self.assertTrue(manager.variables['MY_VAR'] == 'bar')
+
+    def test_variables_with_dependency(self):
+        """
+        Test instantiate a service from a dictionnary with variables in dependency
+        """
+        self.cfg.load_from_stream(textwrap.dedent("""
+            variables:
+                DEPS: [ s2, s3 ]
+            ---
+            services:
+                s2:
+                    actions:
+                        start:
+                            cmd: /bin/true
+                s3:
+                    actions:
+                        start:
+                            cmd: /bin/true
+                s1:
+                    variables:
+                        limit: 1
+                    require: "%DEPS"
+                    timeout: "%limit"
+                    desc: "Service %SERVICE with timeout %limit"
+                    actions:
+                        start:
+                            cmd: service %SERVICE start"""))
+        self.cfg.build_graph()
+        s1 = service_manager_self().entities['s1']
+        wrap = self.cfg._parse_deps({'require': "%DEPS"}, s1)
+        self.assertTrue('s2' in wrap.deps['require'])
+        self.assertTrue('s3' in wrap.deps['require'])
+        self.assertEqual(s1.desc, "Service s1 with timeout 1")
+        self.assertEqual(s1.timeout, 1)
+        self.assertEqual(s1._actions['start'].command, "service s1 start")
+        self.assertEqual(s1._actions['start'].desc, "Service s1 with timeout 1")
+        self.assertEqual(s1._actions['start'].timeout, 1)

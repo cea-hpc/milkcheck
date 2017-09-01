@@ -258,3 +258,9 @@ class Service(BaseEntity):
         # Inherits properies between service and actions
         for action in self.iter_actions():
             action.inherits_from(self)
+
+    def resolve_all(self):
+        """Resolve all variables in Service properties"""
+        BaseEntity.resolve_all(self)
+        for action in self.iter_actions():
+            action.resolve_all()

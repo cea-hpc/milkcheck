@@ -569,6 +569,47 @@ class VariableBaseEntityTest(unittest.TestCase):
               ' %([ -n "%EXCLUDED_NODES" ] && echo "-x %EXCLUDED_NODES")'
         self.assertEqual(service._resolve(expr), '-n bar -x foo')
 
+    def test_resolve_all(self):
+        """resolve_all() resolves all BaseEntity properties"""
+        entity = BaseEntity('entity')
+        entity.add_var('TGT', 'localhost')
+        entity.add_var('NBR1', 1)
+        entity.add_var('NBR2', 2)
+        entity.add_var('NBR3', 3)
+        entity.add_var('NBR4', 4)
+        entity.add_var('NBR5', 5)
+        entity.add_var('NBR6', 6)
+        entity.add_var('KEYWORD', 'delegate')
+        entity.add_var('TXT', 'I am the entity')
+        entity.fromdict({
+                         'target': "%TGT",
+                         'timeout': "%NBR1",
+                         'retry': "%NBR2",
+                         'fanout': "%NBR3",
+                         'delay': "%NBR4",
+                         'warnings': "%NBR5",
+                         'errors': "%NBR6",
+                         'desc': "%TXT",
+                         'mode': "%KEYWORD"
+                        })
+        entity.resolve_all()
+        self.assertEqual(entity.desc, "I am the entity")
+        self.assertEqual(entity.target, NodeSet('localhost'))
+        self.assertEqual(entity.timeout, 1)
+        self.assertEqual(entity.maxretry, 2)
+        self.assertEqual(entity.fanout, 3)
+        self.assertEqual(entity.delay, 4)
+        self.assertEqual(entity.errors, 6)
+        self.assertEqual(entity.warnings, 5)
+        self.assertEqual(entity.mode, 'delegate')
+
+    def test_resolve_list_value(self):
+        """resolve a variable with a non-string value (list)"""
+        service = BaseEntity('test_service')
+        service.add_var('list', ['a', 'b'])
+        self.assertEqual(service._resolve("%list"), ['a', 'b'])
+
+
 class DependencyTest(unittest.TestCase):
     """Dependency test cases."""
 

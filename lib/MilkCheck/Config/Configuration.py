@@ -123,14 +123,14 @@ class MilkCheckConfig(object):
                 if elem == 'service' and 'actions' in subelems:
                     ser = Service(subelems['name'])
                     ser.fromdict(subelems)
-                    wrap = self._parse_deps(subelems)
+                    wrap = self._parse_deps(subelems, ser)
                     wrap.source = ser
                     dependencies[ser.name] = wrap
                 # Parse service group
                 elif elem == 'service' and 'services' in subelems:
                     ser = ServiceGroup(subelems['name'])
                     ser.fromdict(subelems)
-                    wrap = self._parse_deps(subelems)
+                    wrap = self._parse_deps(subelems, ser)
                     wrap.source = ser
                     dependencies[ser.name] = wrap
                 # Support for new style syntax to declare services
@@ -147,7 +147,7 @@ class MilkCheckConfig(object):
                                 service = Service(svcname)
 
                             service.fromdict(props)
-                            wrap = self._parse_deps(props)
+                            wrap = self._parse_deps(props, service)
                             wrap.source = service
                             dependencies[service.name] = wrap
 
@@ -165,14 +165,17 @@ class MilkCheckConfig(object):
         # Populate the manager and set up inheritance
         for wrap in dependencies.values():
             manager.register_service(wrap.source)
+            wrap.source.resolve_all()
 
     @classmethod
-    def _parse_deps(cls, data):
+    def _parse_deps(cls, data, service=None):
         '''Return a DepWrapper containing the different types of dependencies'''
         wrap = DepWrapper()
         for content in ('require', 'require_weak', 'require_filter', 'filter',
                         'check', 'before', 'after'):
             if content in data:
+                if service is not None:
+                    data[content] = service._resolve(data[content])
                 if content in ('before', 'after'):
                     data['require_weak'] = data[content]
                     content = 'require_weak'

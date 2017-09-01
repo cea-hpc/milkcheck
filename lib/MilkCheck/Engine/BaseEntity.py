@@ -615,7 +615,16 @@ class BaseEntity(object):
             if mobj.group('invalid') is not None:
                 _invalid(mobj, template)
             raise ValueError('Unrecognized named group in pattern', pattern)
-        return pattern.sub(_convert, template)
+
+        # Check if content is only a variable pattern
+        mobj = re.match(pattern, template)
+        name = mobj and (mobj.group('named') or mobj.group('braced'))
+        if name is not None and template == mobj.group(0):
+            # In this case, simply replace it by variable content
+            # (useful for list and dict)
+            return self._resolve(self._lookup_variable(name))
+        else:
+            return pattern.sub(_convert, template)
 
     def _resolve(self, value):
         '''
@@ -706,3 +715,13 @@ class BaseEntity(object):
             elif item == 'variables':
                 for varname, value in prop.items():
                     self.add_var(varname, value)
+
+    def resolve_all(self):
+        """Resolve all properties from the entity"""
+
+        properties = ['fanout', 'maxretry', 'errors', 'warnings', 'timeout',
+                      'delay', 'target', '_target_backup', 'mode', 'desc']
+        for item in properties:
+            setattr(self, item, self._resolve(getattr(self, item)))
+            if item == 'target':
+                self._target_backup = self.resolve_property('target')

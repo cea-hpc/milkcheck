@@ -238,6 +238,10 @@ class ServiceManager(EntityManager):
         if conf:
             self._apply_config(conf)
 
+        # Ensure all variables have been resolved
+        for service in self.entities.values():
+            service.resolve_all()
+
         self.source.reset()
         # Enable reverse mode if needed
         self._reverse_mod(reverse)

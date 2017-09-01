@@ -91,7 +91,7 @@ class ActionManager(EntityManager):
         # In dry-run mode, all commands are replaced by a simple ':'
         command = ':'
         if not self.dryrun:
-            command = action.resolve_property('command')
+            command = action.command
 
         if action.mode == 'exec':
             wkr = ExecWorker(nodes=nodes, handler=ActionEventHandler(action),
@@ -468,3 +468,8 @@ class Action(BaseEntity):
 
         if 'cmd' in actdict:
             self.command = actdict['cmd']
+
+    def resolve_all(self):
+        """Resolve all properties from the entity"""
+        BaseEntity.resolve_all(self)
+        self.command = self.resolve_property('command')

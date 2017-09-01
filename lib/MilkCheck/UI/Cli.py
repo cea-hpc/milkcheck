@@ -256,13 +256,11 @@ class ConsoleDisplay(object):
 
     def print_action_command(self, action):
         '''Remove the current line and write informations about the command'''
-        target = action.resolve_property('target') or 'localhost'
         line = '%s %s %s %s\n > %s' % \
             (self.string_color(action.name, 'MAGENTA'),
              action.parent.fullname(),
-             self.string_color('on', 'MAGENTA'), target,
-             self.string_color(
-                action.resolve_property('command'), 'CYAN'))
+             self.string_color('on', 'MAGENTA'), action.target or 'localhost',
+             self.string_color(action.command, 'CYAN'))
         self.output(line)
 
     def __gen_action_output(self, iterbuf, iterrc, timeouts, error_only):

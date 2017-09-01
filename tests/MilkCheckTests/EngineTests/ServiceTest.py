@@ -999,3 +999,19 @@ class ServiceFromDictTest(TestCase):
         )
         self.assertEqual(svc._actions['wait'].maxretry, 1)
         self.assertEqual(svc._actions['wait'].tries, 0)
+
+    def test_resolve_all(self):
+        """Test variable resolution in resolve_all()"""
+        srv = Service('svc1')
+        srv.add_var('label', "I am a service")
+        srv.fromdict({
+                      'desc': "%label",
+                      'actions': {
+                           'start': {
+                               'cmd': 'service foo %ACTION'
+                           },
+                      }
+                    })
+        srv.resolve_all()
+        self.assertEqual(srv.desc, "I am a service")
+        self.assertEqual(srv._actions['start'].command, "service foo start")

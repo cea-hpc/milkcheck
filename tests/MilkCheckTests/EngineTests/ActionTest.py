@@ -183,7 +183,7 @@ class ActionTest(TestCase):
 
     def test_mix_errors_timeout(self):
         """Test the result of mixed timeout and error actions."""
-        cmd = 'echo "${SSH_CLIENT%%%% *}" | egrep "^(127.0.0.1|::1)$" ||sleep 1'
+        cmd = 'echo "${SSH_CLIENT%% *}" | egrep "^(127.0.0.1|::1)$" || sleep 1'
         action = Action(name='start', target='badname,%s,localhost' % HOSTNAME,
                         command=cmd, timeout=0.6)
         action.errors = 1
@@ -329,6 +329,7 @@ class ActionTest(TestCase):
         service = Service('TEST')
         service.add_actions(action)
         service.add_var('VAR1', 'foo')
+        service.resolve_all()
         action.run()
         self.assertEqual(action.worker.command, 'echo -x foo')
 
@@ -396,6 +397,20 @@ class ActionFromDictTest(TestCase):
         self.assertTrue(len(act.variables) == 2)
         self.assertTrue('var1' in act.variables)
         self.assertTrue('var2' in act.variables)
+
+    def test_resolve_all(self):
+        """resolve_all() resolves in all Action properties"""
+        act = Action('start')
+        act.fromdict({
+                        'variables': {
+                            'label': 'Start action',
+                         },
+                        'desc': "%label",
+                        'cmd': 'service foo %ACTION'
+                     })
+        act.resolve_all()
+        self.assertEqual(act.desc, "Start action")
+        self.assertEqual(act.command, "service foo start")
 
 
 class ActionManagerTest(TestCase):
@@ -587,6 +602,7 @@ class ActionManagerTest(TestCase):
         action.mode = 'exec'
         svc = Service('test')
         svc.add_action(action)
+        svc.resolve_all()
         svc.run('start')
         self.assertEqual(action.worker.node_buffer(HOSTNAME),
                          "%s 0" % HOSTNAME)

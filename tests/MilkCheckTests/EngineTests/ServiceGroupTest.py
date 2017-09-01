@@ -689,6 +689,78 @@ class ServiceGroupFromDictTest(TestCase):
         self.assertTrue(
             sergrp._subservices['test'].has_parent_dep('sink'))
 
+    def test_resolve_all_local_variable(self):
+        """Variable resolution in 'require' with a local variable."""
+        svcgrp = ServiceGroup('group')
+        svcgrp.fromdict({
+                        'services': {
+                            'dep1': {
+                                     'actions': {'start': {'cmd': '/bin/True'}}
+                            },
+                            'dep2': {
+                                     'variables': {'foo': ['dep1']},
+                                     'require': "%foo",
+                                     'actions': {'start': {'cmd': '/bin/True'}}
+                            },
+                        }
+                        })
+        svcgrp.resolve_all()
+        service = svcgrp._subservices['dep2']
+        self.assertTrue('dep1' in service.deps())
+
+    def test_resolve_all_with_full_config(self):
+        """Test instantiation of a service group with variables subservices."""
+        sergrp = ServiceGroup('S1')
+        sergrp.add_var('TOUT', 1)
+        sergrp.add_var('RET', 2)
+        sergrp.add_var('FAN', 3)
+        sergrp.add_var('DLY', 4)
+        sergrp.add_var('ERRS', 0)
+        sergrp.add_var('WARN', 5)
+        sergrp.add_var('DSC', 'I am the service')
+        sergrp.add_var('MD', 'delegate')
+        sergrp.add_var('REQUIRES', ["dep1", "dep2"])
+
+        sergrp.fromdict({
+                    'desc':   "Check variables",
+                    'target': "localhost",
+                    'services': {
+                        'dep1':
+                            {'actions': {'start': {'cmd': '/bin/True'}} },
+                        'dep2':
+                            {'actions': {'start': {'cmd': '/bin/True'}} },
+                        'fullvars': {
+                                     'target': 'localhost',
+                                     'require': "%REQUIRES",
+                                     'timeout': "%TOUT",
+                                     'retry': "%RET",
+                                     'fanout': "%FAN",
+                                     'delay': "%DLY",
+                                     'errors': "%ERRS",
+                                     'warnings': "%WARN",
+                                     'mode': "%MD",
+                                     'actions': {
+                                                 'start': {'cmd': '/bin/True'},
+                                                 'stop':  {'cmd': '/bin/False'}
+                                                },
+                                     'desc': "%DSC"
+                                    }
+                         },
+                    })
+        sergrp.resolve_all()
+        service = sergrp._subservices['fullvars']
+        self.assertEqual(service.target, NodeSet('localhost'))
+        self.assertEqual(service.timeout, 1)
+        self.assertEqual(service.maxretry, 2)
+        self.assertEqual(service.fanout, 3)
+        self.assertEqual(service.delay, 4)
+        self.assertEqual(service.errors, 0)
+        self.assertEqual(service.warnings, 5)
+        self.assertEqual(service.mode, 'delegate')
+        self.assertEqual(service.desc, "I am the service")
+        self.assertTrue('dep1' in service.deps())
+        self.assertTrue('dep2' in service.deps())
+
     def test_create_service_imbrications(self):
         '''Test create service with mutliple level of subservices'''
         sergrp = ServiceGroup('groupinit')

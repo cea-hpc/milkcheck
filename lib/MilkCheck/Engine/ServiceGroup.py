@@ -342,6 +342,7 @@ class ServiceGroup(Service):
             for wrap in dep_mapping.values():
                 # Not any dependencies so just attach
                 for dtype in wrap.deps:
+                    wrap.deps[dtype] = wrap.source._resolve(wrap.deps[dtype])
                     for dep in wrap.deps[dtype]:
                         if dep not in self._subservices:
                             raise UnknownDependencyError(dep)
@@ -357,6 +358,12 @@ class ServiceGroup(Service):
 
         for subser in self.iter_subservices():
             subser.inherits_from(self)
+
+    def resolve_all(self):
+        """Resolve all variables in ServiceGroup properties"""
+        BaseEntity.resolve_all(self)
+        for subser in self.iter_subservices():
+            subser.resolve_all()
 
 
 class DepWrapper(object):
