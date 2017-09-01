@@ -305,10 +305,13 @@ class BaseEntity(object):
 
     def add_var(self, varname, value):
         '''Add a new variable within the entity context'''
-        if varname not in self.variables:
-            self.variables[varname] = value
+        if varname in self.LOCAL_VARIABLES:
+            msg = "%s is a reserved variable name" % varname
+            raise VariableAlreadyExistError(msg)
+        elif varname in self.variables:
+            raise VariableAlreadyExistError()
         else:
-            raise VariableAlreadyExistError
+            self.variables[varname] = value
 
     def remove_var(self, varname):
         '''Remove an existing var from the entity'''

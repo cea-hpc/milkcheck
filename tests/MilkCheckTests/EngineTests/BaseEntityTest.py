@@ -370,6 +370,13 @@ class VariableBaseEntityTest(unittest.TestCase):
         svc.add_var('var', 'foo')
         self.assertRaises(VariableAlreadyExistError, svc.add_var, 'var', 'foo')
 
+    def test_add_reserved_var(self):
+        """ Test if reserved local variable can not be overriden """
+        entity = BaseEntity(name='E1')
+        for name in entity.LOCAL_VARIABLES:
+            self.assertRaises(VariableAlreadyExistError, entity.add_var,
+                              varname=name, value='foo')
+
     def test_remove_variable(self):
         '''Remove a variable, defined or not, is fine.'''
         svc = BaseEntity('test_var')
