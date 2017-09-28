@@ -1,3 +1,15 @@
+2017-09-28 Aurelien Cedeyn  <aurelien.cedeyn@cea.fr>
+	* Variables could be used in all properties (ticket #28)
+
+2017-09-22 Aurelien Cedeyn  <aurelien.cedeyn@cea.fr>
+	* Add 'exec' mode for actions (ticket #24)
+
+2017-09-02 Aurelien Cedeyn  <aurelien.cedeyn@cea.fr>
+	* Add support for MilkCheck 'remote' option.
+
+2017-03-29 Aurelien Degremont  <aurelien.degremont@cea.fr>
+	* Graph execution can filter error nodes on dependencies (ticket #6)
+
 2014-07-21 Aurelien Cedeyn  <aurelien.cedeyn@cea.fr>
 	* Display when actions are in progress AND delayed (ticket #18)
 
