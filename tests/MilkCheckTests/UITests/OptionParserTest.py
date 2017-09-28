@@ -22,19 +22,16 @@ class McOptionParserTest(TestCase):
         mop.configure_mop()
         (options, args) = mop.parse_args(['-d'])
         self.assertEqual(options.verbosity, 5)
-        self.assertTrue(options.debug)
 
         mop = McOptionParser()
         mop.configure_mop()
         (options, args) = mop.parse_args(['-d'])
         self.assertEqual(options.verbosity, 5)
-        self.assertTrue(options.debug)
 
         mop = McOptionParser()
         mop.configure_mop()
         (options, args) = mop.parse_args(['-vvv'])
         self.assertEqual(options.verbosity, 4)
-        self.assertFalse(options.debug)
 
     def test_option_onlynodes(self):
         '''Test usage of the only-nodes option'''

@@ -83,8 +83,8 @@ class McOptionParser(OptionParser):
         self.add_option('-v', '--verbose', action='count', dest='verbosity',
                         default=1, help='Increase or decrease verbosity')
 
-        self.add_option('-d', '--debug', action='callback',
-                        callback=self.__config_debug, dest='debug',
+        self.add_option('-d', '--debug', action='store_const',
+                        dest='verbosity', const=5,
                         help='Set debug mode and maximum verbosity')
 
         self.add_option('-g', '--graph', action='store_true',
@@ -137,11 +137,6 @@ class McOptionParser(OptionParser):
     def error(self, msg):
         '''Raise an exception when the parser gets an error.'''
         raise InvalidOptionError(' %s' % msg)
-
-    def __config_debug(self, _option, _opt, _value, _parser):
-        '''Configure the debug mode when the parser gets the option -d.'''
-        self.values.verbosity = 5
-        self.values.debug = True
 
     def __check_dir(self, _option, _opt, _value, _parser):
         '''Check the content of the option -c'''

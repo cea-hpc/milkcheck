@@ -531,8 +531,8 @@ class CommandLine(CoreEvent):
                 self._logger.error(line)
             retcode = RC_EXCEPTION
         except Exception, exc:
-            # In debug mode, propagate the error
-            if (not self._conf or self._conf.get('debug')):
+            # In high verbosity mode, propagate the error
+            if (not self._conf or self._conf.get('verbosity') >= 5):
                 traceback.print_exc(file=sys.stdout)
             else:
                 self._logger.error('Unexpected Exception : %s' % exc)

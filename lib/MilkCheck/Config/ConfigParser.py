@@ -65,7 +65,7 @@ class ConfigParser(object):
         self.fields = dict(self.DEFAULT_FIELDS)
 
         # Logging configuration
-        self.logger = self.install_logger(options.verbosity, options.debug)
+        self.logger = self.install_logger(options.verbosity)
 
         # Read config files
         if os.access(self.CONFIG_PATH, os.F_OK):
@@ -112,7 +112,7 @@ class ConfigParser(object):
         self.fields[key] = { 'value' : value, 'type' : type(value) }
 
     @staticmethod
-    def install_logger(verbose=0, debug=False):
+    def install_logger(verbose=0):
         '''Install the various logging methods.'''
         loglvl = [ logging.CRITICAL,
                    logging.ERROR,
@@ -123,7 +123,7 @@ class ConfigParser(object):
         # create logger
         logger = logging.getLogger('milkcheck')
 
-        # create console handler and set level to debug
+        # create console handler
         console = logging.StreamHandler()
 
         # create formatter
@@ -135,7 +135,7 @@ class ConfigParser(object):
         console.setFormatter(formatter)
 
         # set log level
-        if verbose >= len(loglvl) or debug:
+        if verbose >= len(loglvl):
             verbose = len(loglvl) - 1
         logger.setLevel(loglvl[verbose])
         console.setLevel(loglvl[verbose])

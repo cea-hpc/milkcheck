@@ -256,7 +256,6 @@ verbosity: 5
 summary: False
 fanout: 64
 reverse_actions: ['stop']
-debug: True
 config_dir: 
 [I1]\r[I1]\r[I2]\r[I2]\r""")
 
@@ -305,7 +304,6 @@ only_nodes: HOSTNAME
 summary: False
 fanout: 64
 reverse_actions: ['stop']
-debug: True
 config_dir: 
 [I1]\r[I1]\r[I2]\r[I2]\r[S3]\r[S3]\r""")
 
@@ -386,7 +384,6 @@ summary: False
 excluded_nodes: BADNODE
 fanout: 64
 reverse_actions: ['stop']
-debug: True
 config_dir: 
 [I1]\r[I1]\r[I2]\r[I2]\r[S3]\r[S3]\r""")
 
@@ -414,7 +411,6 @@ summary: False
 excluded_nodes: BADNODE
 fanout: 64
 reverse_actions: ['stop']
-debug: True
 config_dir: 
 [S1]\r[S1]\r[S1]\r[S3]\r[S3]\r""")
 
@@ -1044,7 +1040,6 @@ verbosity: 5
 summary: False
 fanout: 64
 reverse_actions: ['stop']
-debug: True
 config_dir: 
 ''')
 
