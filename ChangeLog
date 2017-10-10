@@ -1,3 +1,6 @@
+2017-10-06 Aurelien Cedeyn  <aurelien.cedeyn@cea.fr>
+	* Flag for a detailed summary output (ticket #25)
+
 2017-09-29 Aurelien Cedeyn  <aurelien.cedeyn@cea.fr>
 	* Add 'tags' feature
 
