@@ -2,18 +2,19 @@
 %define vimdatadir %{_datadir}/vim/vimfiles
 
 
-Name:		milkcheck
-Version:	1.0
-Release:	1%{?dist}
-Summary:	Distributed cluster command management
+Name:          milkcheck
+Version:       1.0
+Release:       1%{?dist}
+Summary:       Distributed cluster command management
 
-Group:		System Environment/Base
-License:	CeCILL
-Source0:	%{name}-%{version}.tar.gz
-BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
-BuildArch:	noarch
-BuildRequires:	python-devel python-setuptools asciidoc
-Requires:	clustershell >= 1.7
+Group:         System Environment/Base
+License:       CeCILL
+Source0:       https://github.com/cea-hpc/milkcheck/archive/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
+BuildArch:     noarch
+BuildRequires: python-devel
+BuildRequires: python-setuptools
+BuildRequires: asciidoc
+Requires:      clustershell >= 1.7
 
 %description
 Manage a cluster-wide system through configuration based commands. It offers a
@@ -27,13 +28,8 @@ actions, all of them based on shell commands.
 make
 
 %install
-rm -rf %{buildroot}
-make install DESTDIR=%{buildroot} PYTHON=%{__python} MANDIR=%{_mandir} \
+make install DESTDIR="%{buildroot}" PYTHON=%{__python} MANDIR=%{_mandir} \
              SYSCONFIGDIR=%{_sysconfdir} VIMDATADIR=%{vimdatadir}
-
-%clean
-rm -rf $RPM_BUILD_ROOT
-
 
 %files
 %defattr(-,root,root,-)
@@ -55,7 +51,7 @@ rm -rf $RPM_BUILD_ROOT
 * Sat May 25 2013 Aurelien Degremont <aurelien.degremont@cea.fr> 1.0-1
 - Update to 1.0 release (UI fixes).
 
-* Thu Mar 18 2013 Aurelien Degremont <aurelien.degremont@cea.fr> 0.11.1-1
+* Mon Mar 18 2013 Aurelien Degremont <aurelien.degremont@cea.fr> 0.11.1-1
 - milkcheck.conf is declared as 'noreplace'.
 - Update to 0.11.1 release. (--nodeps, engine bugfixes, ...)
 
