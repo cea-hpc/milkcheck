@@ -321,6 +321,7 @@ variables:
         self.cfg.build_graph()
 
         srv = service_manager_self().entities['S1']
+        srv.resolve_all()
         self.assertTrue('LUSTRE_FS_LIST' in service_manager_self().variables)
         self.assertTrue('TARGET_VAR' in service_manager_self().variables)
         self.assertEqual(str(srv.target), "foo")
@@ -345,6 +346,21 @@ services:
                     cmd: echo %MY_VAR''')
         self.cfg.build_graph()
         self.assertTrue(manager.variables['MY_VAR'] == 'bar')
+
+    def test_variables_with_escaping_pattern(self):
+        """configuration should not resolve variables"""
+        self.cfg.load_from_stream(textwrap.dedent("""
+                        services:
+                            svc:
+                                variables:
+                                    foo: nice
+                                actions:
+                                    start:
+                                        cmd: shine config -O %%host %foo"""))
+        self.cfg.build_graph()
+        svc = service_manager_self().entities['svc']
+        # Should not resolve variables at this stage. This should be done later.
+        self.assertEqual(svc._actions['start'].command, "shine config -O %%host %foo")
 
     def test_variables_with_dependency(self):
         """
@@ -374,6 +390,7 @@ services:
                             cmd: service %SERVICE start"""))
         self.cfg.build_graph()
         s1 = service_manager_self().entities['s1']
+        s1.resolve_all()
         wrap = self.cfg._parse_deps({'require': "%DEPS"}, s1)
         self.assertTrue('s2' in wrap.deps['require'])
         self.assertTrue('s3' in wrap.deps['require'])

@@ -165,7 +165,6 @@ class MilkCheckConfig(object):
         # Populate the manager and set up inheritance
         for wrap in dependencies.values():
             manager.register_service(wrap.source)
-            wrap.source.resolve_all()
 
     @classmethod
     def _parse_deps(cls, data, service=None):
