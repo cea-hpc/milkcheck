@@ -348,6 +348,11 @@ class ServiceGroup(Service):
                 # Not any dependencies so just attach
                 for dtype in wrap.deps:
                     wrap.deps[dtype] = wrap.source._resolve(wrap.deps[dtype])
+
+                    # For simplicity, supports deps as a single service
+                    if type(wrap.deps[dtype]) is str:
+                        wrap.deps[dtype] = [wrap.deps[dtype]]
+
                     for dep in wrap.deps[dtype]:
                         if dep not in self._subservices:
                             raise UnknownDependencyError(dep)

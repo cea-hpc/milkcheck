@@ -700,6 +700,21 @@ class ServiceGroupFromDictTest(TestCase):
         self.assertTrue(
             sergrp._subservices['test'].has_parent_dep('sink'))
 
+    def test_require_no_list(self):
+        """Test parsing require with a simple singleton (no list)"""
+        grp = ServiceGroup('grp')
+        grp.fromdict({'services': {
+                          'svc1': {
+                              'actions': {'start': {'cmd': '/bin/true'}}
+                          },
+                          'svc2': {
+                              'require': 'svc1',
+                              'actions': {'start': {'cmd': '/bin/true'}}
+                          }
+                      }})
+        svc1 = grp._subservices['svc2'].parents['svc1']
+        self.assertEqual(svc1.dep_type, REQUIRE)
+
     def test_resolve_all_local_variable(self):
         """Variable resolution in 'require' with a local variable."""
         svcgrp = ServiceGroup('group')
