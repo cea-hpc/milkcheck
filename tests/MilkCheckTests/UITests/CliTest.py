@@ -510,7 +510,7 @@ class CommandLineOutputTests(CLICommon):
         group.add_inter_dep(target=service)
 
         # Register services within the manager
-        self.manager.register_services(group, service)
+        self.manager.register_services(group)
 
     def test_command_output_help(self):
         '''Test command line help output'''
