@@ -594,6 +594,7 @@ class ServiceGroupTest(TestCase):
         grp.add_inter_dep(subgrp)
         self.assertEqual(grp.graph(), 'subgraph "cluster_Group" {\nlabel="Group";\nstyle=rounded;\nnode [style=filled];\n"Group.__hook" [style=invis];\nsubgraph "cluster_Group.subGroup" {\nlabel="Group.subGroup";\nstyle=rounded;\nnode [style=filled];\n"Group.subGroup.__hook" [style=invis];\n}\n}\n')
 
+
 class ServiceGroupFromDictTest(TestCase):
     '''Test cases of ServiceGroup.fromdict()'''
 
@@ -786,6 +787,29 @@ class ServiceGroupFromDictTest(TestCase):
         self.assertEqual(service.desc, "I am the service")
         self.assertTrue('dep1' in service.deps())
         self.assertTrue('dep2' in service.deps())
+
+    def test_resolve_target_from_parent(self):
+        """resolve target using a variable declared in parent service group"""
+        # 'target' property is resolved very early and not in resolve_all()
+        data = {
+            'services': {
+                'mygroup': {
+                    'variables': {
+                        'targets': 'foo',
+                    },
+                    'services': {
+                        'svc': {
+                            'target': '%targets',
+                            'actions': {'start': {'cmd': '/bin/true'}}
+                        }
+                    }
+                }
+            }
+        }
+        grp = ServiceGroup('grp')
+        grp.fromdict(data)
+        svc = grp._subservices['mygroup']._subservices['svc']
+        self.assertEqual(str(svc.target), 'foo')
 
     def test_create_service_imbrications(self):
         '''Test create service with mutliple level of subservices'''

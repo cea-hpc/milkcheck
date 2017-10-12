@@ -331,14 +331,15 @@ class ServiceGroup(Service):
                     service = None
                     if 'services' in props:
                         service = ServiceGroup(subservice)
-                        service.fromdict(props)
                     else:
                         service = Service(subservice)
-                        service.fromdict(props)
 
                     # Link the group and its new subservice together
                     self._subservices[subservice] = service
                     service.parent = self
+
+                    # Populate based on dict content
+                    service.fromdict(props)
 
                     wrap.source = service
                     dep_mapping[subservice] = wrap

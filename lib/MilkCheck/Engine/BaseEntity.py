@@ -126,7 +126,7 @@ class UndefinedVariableError(MilkCheckEngineError):
     variable located in a command
     '''
     def __init__(self, varname):
-        msg = "Variable %s undefined" % varname
+        msg = "Undefined variable '%s'" % varname
         MilkCheckEngineError.__init__(self, msg)
 
 class InvalidVariableError(MilkCheckEngineError):
