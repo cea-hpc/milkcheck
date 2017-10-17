@@ -1008,6 +1008,24 @@ class ServiceFromDictTest(TestCase):
         self.assertEqual(svc._actions['wait'].maxretry, 1)
         self.assertEqual(svc._actions['wait'].tries, 0)
 
+    def test_resolve_target_from_parent(self):
+        """resolve action target using variable declared in parent service"""
+        # 'target' property is resolved very early and not in resolve_all()
+        data = {
+            'variables': {
+                'targets': 'foo'
+            },
+            'actions': {
+                'start': {
+                    'target': '%targets',
+                    'cmd': '/bin/true',
+                }
+            }
+        }
+        svc = Service('svc')
+        svc.fromdict(data)
+        self.assertEqual(str(svc._actions['start'].target), 'foo')
+
     def test_resolve_all(self):
         """Test variable resolution in resolve_all()"""
         srv = Service('svc1')

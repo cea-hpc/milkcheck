@@ -246,19 +246,17 @@ class Service(BaseEntity):
 
         if 'actions' in svcdict:
             dependencies = {}
-            actions = {}
             for names, props in svcdict['actions'].items():
                 for name in NodeSet(names):
                     action = Action(name)
+                    self.add_action(action)
                     action.fromdict(props)
 
-                    actions[name] = action
                     dependencies[name] = props.get('check', [])
 
-            for action in actions.values():
+            for action in self._actions.values():
                 for dep in dependencies[action.name]:
-                    action.add_dep(actions[dep])
-                self.add_action(action)
+                    action.add_dep(self._actions[dep])
 
         # Inherits properies between service and actions
         for action in self.iter_actions():
