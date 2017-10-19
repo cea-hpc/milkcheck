@@ -388,6 +388,18 @@ node [style=filled];
         manager.remove_var('var')
         self.assertTrue('foo' not in manager.variables)
 
+    def test_variable_resolution(self):
+        """Resolve top-scope variable"""
+        manager = service_manager_self()
+        manager.add_var('var', '%(echo -n foo)')
+        manager.add_var('var2', '%var')
+        svc = Service('svc')
+        svc.add_action(Action('start', command='start %var2'))
+        manager.register_services(svc)
+        manager._resolve_variables()
+        self.assertEqual(manager.variables['var'], 'foo')
+        self.assertEqual(manager.variables['var2'], 'foo')
+
     def test_empty_only_nodes(self):
         '''Test_apply_config with empty nodeset in only_nodes'''
         empty_ns = NodeSet()

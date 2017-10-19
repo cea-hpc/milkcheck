@@ -169,6 +169,12 @@ class ServiceManager(EntityManager):
             for varname in ('selected_node', 'excluded_nodes'):
                 self.add_var(varname.upper(), '')
 
+    def _resolve_variables(self):
+        if self.entities:
+            resolver = list(self.entities.values())[0]
+            for name, value in self.variables.items():
+                self.variables[name] = resolver._resolve(value)
+
     def _apply_config(self, conf):
         '''
         This apply a sequence of modifications on the graph. A modification
@@ -244,6 +250,7 @@ class ServiceManager(EntityManager):
             self._apply_config(conf)
 
         # Ensure all variables have been resolved
+        self._resolve_variables()
         for service in self.entities.values():
             service.resolve_all()
 

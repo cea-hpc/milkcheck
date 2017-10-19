@@ -736,7 +736,12 @@ class BaseEntity(object):
 
     def resolve_all(self):
         """Resolve all properties from the entity"""
+        # Resolve local variables first.
+        # Ensure they are computed only once and not each time they are used.
+        for name, value in self.variables.items():
+            self.variables[name] = self._resolve(value)
 
+        # Resolve properties
         properties = ['fanout', 'maxretry', 'errors', 'warnings', 'timeout',
                       'delay', 'target', '_target_backup', 'mode', 'desc']
         for item in properties:

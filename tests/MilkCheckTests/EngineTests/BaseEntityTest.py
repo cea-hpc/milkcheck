@@ -628,6 +628,18 @@ class VariableBaseEntityTest(unittest.TestCase):
         self.assertEqual(entity.warnings, 5)
         self.assertEqual(entity.mode, 'delegate')
 
+    def test_resolve_all_variables(self):
+        """resolve_all() resolves variables only once"""
+        entity = BaseEntity('entity')
+        entity.add_var('foo', 'cool')
+        entity.add_var('bar', '%foo')
+        entity.add_var('baz', '%foo')
+        entity.fromdict({'desc': 'New %bar'})
+        entity.resolve_all()
+        self.assertEqual(entity.variables['foo'], entity.variables['bar'])
+        self.assertEqual(entity.variables['foo'], entity.variables['baz'])
+        self.assertEqual(entity.desc, 'New cool')
+
     def test_resolve_list_value(self):
         """resolve a variable with a non-string value (list)"""
         service = BaseEntity('test_service')
