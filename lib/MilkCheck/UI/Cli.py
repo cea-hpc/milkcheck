@@ -51,7 +51,7 @@ from MilkCheck.Config.Configuration import ConfigurationError
 
 # Exceptions
 from yaml.scanner import ScannerError
-from MilkCheck.ServiceManager import ServiceNotFoundError
+from MilkCheck.Engine.ServiceGroup import ServiceNotFoundError
 from MilkCheck.UI.OptionParser import InvalidOptionError
 from MilkCheck.Engine.BaseEntity import UnknownDependencyError
 from MilkCheck.Engine.BaseEntity import InvalidVariableError
@@ -584,7 +584,7 @@ class CommandLine(CoreEvent):
             RC_EXCEPTION = 9: User error (options or configuration)
             RC_UNKNOWN_EXCEPTION = 12: Internal error (this is probably a bug)
         '''
-        if service_manager_self().source.status in (DEP_ERROR, ERROR):
+        if service_manager_self().status in (DEP_ERROR, ERROR):
             return RC_ERROR
         elif service_manager_self().has_warnings():
             return RC_WARNING

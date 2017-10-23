@@ -550,7 +550,7 @@ class BaseEntity(object):
     def fullname(self):
         '''Return the fullname of the current entity'''
         names = []
-        if self.parent:
+        if self.parent and self.parent.fullname():
             names.append(self.parent.fullname())
         names.append(self.name)
         return '.'.join(names)

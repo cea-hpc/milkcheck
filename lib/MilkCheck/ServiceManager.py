@@ -33,124 +33,75 @@
 This module contains the ServiceManager class definition.
 '''
 
-# Classes
-from MilkCheck.EntityManager import EntityManager
-from MilkCheck.Engine.Service import Service
-from MilkCheck.Engine.Action import Action
-
-# Exceptions
-from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
-from MilkCheck.Engine.BaseEntity import VariableAlreadyExistError
-
-# Symbols
+from MilkCheck.Engine.BaseEntity import DependencyAlreadyReferenced
 from MilkCheck.Engine.BaseEntity import LOCKED, WARNING
 
-class ServiceNotFoundError(MilkCheckEngineError):
-    '''
-    Define an exception raised when you are looking for a service
-    that does not exist.
-    '''
-    def __init__(self, message='Service is not referenced by the manager'):
-        MilkCheckEngineError.__init__(self, message)
+from MilkCheck.Engine.ServiceGroup import ServiceGroup
+from MilkCheck.Engine.ServiceGroup import ServiceNotFoundError, \
+                                          ServiceAlreadyReferencedError
 
-class ServiceAlreadyReferencedError(MilkCheckEngineError):
-    '''
-    Define an exception raised when you tried to register a services which
-    is already referenced by the manager.
-    '''
-    def __init__(self, svcname):
-        message = "Service '%s' is already referenced by the manager" % svcname
-        MilkCheckEngineError.__init__(self, message)
 
-class ServiceManager(EntityManager):
+class ServiceManager(ServiceGroup):
     '''
     The service manager has to handle call to services. It implements
     features allowing us to get dependencies of service and so on.
     '''
 
-    def __init__(self):
-        EntityManager.__init__(self)
-        # Variables declared in the global scope
-        self.variables = {}
-        # Top service
-        self.source = Service('root')
-        self.source.simulate = True
+    # For compat with service_manager_self()
+    _instance = None
 
-    def __refresh_graph(self, reverse):
-        '''Reinitialize the right values for the graph of services'''
-        for service in self.entities.values():
-            service.reset()
-        if reverse:
-            self.source.clear_child_deps()
-        else:
-            self.source.clear_parent_deps()
+    def __init__(self, name="MAIN"):
+        ServiceGroup.__init__(self, name)
+        self.simulate = True
 
-    def has_service(self, service):
-        '''Determine if the service is registered within the manager'''
-        return service in self.entities.values()
+        # XXX: Only for compat with tests
+        self.entities = self._subservices
+
+    def fullname(self):
+        return ""
 
     def has_warnings(self):
         '''Determine if the service has one action with the WARNING status'''
-        for ent in self.entities.values():
+        for ent in self.iter_subservices():
             if ent.status is WARNING:
                 return True
         return False
 
-    def add_var(self, varname, value):
-        '''Add a symbol within the service manager'''
-        if varname not in self.variables:
-            self.variables[varname] = value
-        else:
-            raise VariableAlreadyExistError("'%s' already defined" % varname)
+    #
+    # Service management helpers
+    #
 
-    def remove_var(self, varname):
-        '''Remove var from the the service manager'''
-        if varname in self.variables:
-            del self.variables[varname]
-
-    def reset(self):
-        '''Clean object service manager.'''
-        self.variables.clear()
-        self.entities.clear()
+    def has_service(self, service):
+        '''Determine if the service is registered within the manager'''
+        return self.has_subservice(service.name)
 
     def register_service(self, service):
         '''Add a new service to the manager.'''
-        assert service, 'service added cannot be None'
-        if service.name in self.entities:
+        try:
+            self.add_inter_dep(service)
+        except DependencyAlreadyReferenced:
             raise ServiceAlreadyReferencedError(service.name)
-        else:
-            self.entities[service.name] = service
 
     def register_services(self, *args):
         '''Add all services referenced by args'''
         for service in args:
             self.register_service(service)
-        
+
     def forget_service(self, service):
         '''
         Remove the service from the manager. It takes care of the relations
         with others services in order to avoid to get a graph with a bad format.
         '''
-        assert service, 'The service that you want to forget cannot be None'
-        if not self.has_service(service):
-            raise ServiceNotFoundError
-        else:
-            dependencies = []
-            switch = len(service.children)
-            dependencies.extend(service.children.values())
-            dependencies.extend(service.parents.values())
-            for dep in dependencies:
-                switch -= 1
-                if switch > 0:
-                    service.remove_dep(dep.target.name, parent=False)
-                else:
-                    service.remove_dep(dep.target.name)
-            del self.entities[service.name]
+        self.remove_inter_dep(service.name)
 
     def forget_services(self, *args):
         '''Remove all specified services from the manager'''
         for service in args:
             self.forget_service(service)
+
+    #
+    #
+    #
 
     def _variable_config(self, conf):
         '''Automatic variables based on MilckCheck configuration.'''
@@ -169,12 +120,6 @@ class ServiceManager(EntityManager):
             for varname in ('selected_node', 'excluded_nodes'):
                 self.add_var(varname.upper(), '')
 
-    def _resolve_variables(self):
-        if self.entities:
-            resolver = list(self.entities.values())[0]
-            for name, value in self.variables.items():
-                self.variables[name] = resolver._resolve(value)
-
     def _apply_config(self, conf):
         '''
         This apply a sequence of modifications on the graph. A modification
@@ -184,116 +129,93 @@ class ServiceManager(EntityManager):
 
         # Load the configuration located within the directory
         if conf.get('config_dir'):
-            self.entities.clear()
             self.load_config(conf['config_dir'])
 
         # Avoid some of the services referenced in the graph
         if conf.get('excluded_svc'):
-            self.__lock_services(conf['excluded_svc'])
+            for service in self.iter_subservices():
+                if service.name in conf['excluded_svc']:
+                    service.status = LOCKED
 
         if conf.get('tags'):
-            for svc in self.entities.values():
+            for svc in self.iter_subservices():
                 if not svc.match_tags(conf['tags']):
                     svc.skip()
 
         # Use just those nodes
         if conf.get('only_nodes') is not None:
-            self.__update_usable_nodes(conf['only_nodes'], 'INT')
+            self.update_target(conf['only_nodes'], 'INT')
         # Avoid those nodes
         elif conf.get('excluded_nodes') is not None:
-            self.__update_usable_nodes(conf['excluded_nodes'], 'DIF')
+            self.update_target(conf['excluded_nodes'], 'DIF')
 
-    def __lock_services(self, services):
-        '''
-        Lock all services specified in the list. This will assign the LOCKED
-        status on the services. A soon as a service is locked it will never be
-        processed.
-        '''
-        for service in services:
-            if service in self.entities:
-                self.entities[service].status = LOCKED
+    def select_services(self, services):
+        """Disable all services except those from 'services'"""
+        for svcname in services:
+            if not self.has_subservice(svcname):
+                raise ServiceNotFoundError('Undefined service [%s]' % svcname)
 
-    def _lock_services_except(self, services):
-        """Lock all services except those provided."""
-        for service in self.entities:
+        parent = not self._algo_reversed
+        if parent:
+            spot = self._source
+        else:
+            spot = self._sink
+
+        # Remove unused services
+        for service in spot.deps().keys():
             if service not in services:
-                self.entities[service].status = LOCKED
+                spot.remove_dep(service, parent=parent)
+        # Add direct link to important services
+        for service in services:
+            if service not in spot.deps():
+                svc = self._subservices[service]
+                spot.add_dep(svc, parent=parent)
 
-    def __update_usable_nodes(self, nodeset, mode=None):
-        '''
-        Update target value used by the service and the elements linked to
-        the service.
-        '''
-        assert mode in (None, 'DIF', 'INT'), \
-            'Invalid mode, should be DIF, INT or None'
-        for service in self.entities.values():
-            service.update_target(nodeset, mode)
+    def _disable_deps(self):
+        """Clear internal dependencies from enabled services"""
+        if self._algo_reversed:
+            for dep in self._sink.children.values():
+                dep.target.clear_child_deps()
+        else:
+            for dep in self._source.parents.values():
+                dep.target.clear_parent_deps()
 
     def call_services(self, services, action, conf=None):
         '''Allow the user to call one or multiple services.'''
-        assert action, 'action name cannot be None'
 
-        # Manage reverse mode based on configuration
-        reverse = False
-        if conf:
-            reverse = action in conf.get('reverse_actions')
-
+        # Make sure that the graph is usable
+        self.reset()
         self.variables.clear()
 
         # Create global variable from configuration
         self._variable_config(conf)
-
-        # Make sure that the graph is usable
-        self.__refresh_graph(reverse)
-        # Apply configuration over the graph
         if conf:
+            # Apply configuration over the graph
             self._apply_config(conf)
+            # Enable reverse mode if needed, based on config
+            self.algo_reversed = action in conf.get('reverse_actions')
 
         # Ensure all variables have been resolved
-        self._resolve_variables()
-        for service in self.entities.values():
-            service.resolve_all()
+        self.resolve_all()
 
-        self.source.reset()
-        # Enable reverse mode if needed
-        self._reverse_mod(reverse)
-        self.source.algo_reversed = reverse
-
-        if not self.source.has_action(action):
-            self.source.add_action(Action(name=action, command=':'))
-        # Perform all services
-        if not services:
-            for service in self.entities.values():
-                if reverse and not service.parents:
-                    service.add_dep(target=self.source)
-                elif not reverse and not service.children:
-                    self.source.add_dep(target=service)
-        # Perform required services
-        else:
-            for service_name in services:
-                if service_name in self.entities:
-                    if reverse:
-                        self.entities[service_name].add_dep(target=self.source)
-                    else:
-                        self.source.add_dep(target=self.entities[service_name])
-                else:
-                    raise ServiceNotFoundError('Undefined service [%s]'
-                        % service_name)
+        # Adapt the graph for required services
+        if services:
+            self.select_services(services)
 
         if conf and conf.get('nodeps'):
-            self._lock_services_except(self.source.deps().keys())
+            self._disable_deps()
 
-        self.source.run(action)
+        self.run(action)
 
     def output_graph(self, services=None, excluded=None):
-        """Return entities graph (DOT format)"""
+        """Return service graph (DOT format)"""
         grph = "digraph dependency {\n"
         grph += "compound=true;\n"
         #grph += "node [shape=circle];\n"
         grph += "node [style=filled];\n"
-        for service in (services or self.entities):
-            if not self.entities[service].excluded(excluded):
-                grph += self.entities[service].graph(excluded)
+        for service in (services or self._subservices):
+            if not self._subservices[service].excluded(excluded):
+                grph += self._subservices[service].graph(excluded)
         grph += '}\n'
         return grph
 
@@ -305,6 +227,7 @@ class ServiceManager(EntityManager):
         config = MilkCheckConfig()
         config.load_from_dir(directory=conf)
         config.build_graph()
+
 
 def service_manager_self():
     '''Return a singleton instance of a service manager'''

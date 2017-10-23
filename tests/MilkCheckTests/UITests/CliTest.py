@@ -465,6 +465,12 @@ G1                                                                [DEP_ERROR]
 S3 - I am the service S3                                          [  ERROR  ]
 """, "[S3]\r")
 
+    def test_nodeps_service_reverse(self):
+        """--nodeps option with an explicit service and a reverse action"""
+        self._output_check(['S2', 'stop', '--nodeps', '-x', 'BADNODE'], RC_OK,
+"""S2 - I am the service S2                                          [    OK   ]
+""", "[S2]\r")
+
     def test_nodeps_all(self):
         """--nodeps option without specifying an explicit service list"""
         self._output_check(['start', '--nodeps', '-x', 'BADNODE'], RC_OK,

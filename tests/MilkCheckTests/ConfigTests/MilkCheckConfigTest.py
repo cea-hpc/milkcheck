@@ -5,7 +5,7 @@
 from unittest import TestCase
 from MilkCheck.Config.Configuration import MilkCheckConfig, ConfigurationError
 from MilkCheck.Config.Configuration import UnknownDependencyError
-from MilkCheck.ServiceManager import service_manager_self
+from MilkCheck.ServiceManager import service_manager_self, ServiceManager
 
 import textwrap
 import socket
@@ -15,7 +15,7 @@ class MilkCheckConfigTest(TestCase):
     '''Define the test cases of the class MilkCheckConfig'''
 
     def tearDown(self):
-        service_manager_self().reset()
+        ServiceManager._instance = None
 
     def setUp(self):
         self.cfg = MilkCheckConfig()

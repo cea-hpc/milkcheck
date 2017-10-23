@@ -42,9 +42,26 @@ from MilkCheck.Engine.BaseEntity import BaseEntity, DEP_ORDER
 from MilkCheck.Engine.BaseEntity import DONE, SKIPPED, REQUIRE, MISSING, \
                                         DEP_ERROR, NO_STATUS
 
-# Exceptions
 from MilkCheck.Engine.BaseEntity import UnknownDependencyError
-from MilkCheck.ServiceManager import ServiceNotFoundError
+from MilkCheck.Engine.BaseEntity import MilkCheckEngineError
+
+
+class ServiceNotFoundError(MilkCheckEngineError):
+    '''
+    Define an exception raised when you are looking for a service
+    that does not exist.
+    '''
+    def __init__(self, message='Service is not referenced by the manager'):
+        MilkCheckEngineError.__init__(self, message)
+
+class ServiceAlreadyReferencedError(MilkCheckEngineError):
+    '''
+    Define an exception raised when you tried to register a services which
+    is already referenced by the manager.
+    '''
+    def __init__(self, svcname):
+        message = "Service '%s' is already referenced by the manager" % svcname
+        MilkCheckEngineError.__init__(self, message)
 
 class ServiceGroup(Service):
     """
