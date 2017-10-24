@@ -39,12 +39,7 @@ from os import listdir
 from os.path import walk, isdir
 from os.path import isfile
 
-from ClusterShell.NodeSet import NodeSet
-
 from MilkCheck.ServiceManager import service_manager_self
-from MilkCheck.Engine.BaseEntity import UnknownDependencyError
-from MilkCheck.Engine.Service import Service
-from MilkCheck.Engine.ServiceGroup import ServiceGroup, DepWrapper
 
 class ConfigurationError(Exception):
     """Generic error for configuration rule file content error."""
@@ -89,104 +84,37 @@ class MilkCheckConfig(object):
         if content:
             self._flow.extend(content)
 
+    def merge_flow(self):
+        """
+        Build and return only one dict from various streams.
+
+        It is required to call load methods before to call this one. If not
+        self._flow will remain empty.
+        """
+        merged = {}
+        for data in self._flow:
+            for elem, subelems in data.items():
+
+                # Compat with old-style syntax, using 'service' at top scope
+                if elem == 'service':
+                    name = subelems.pop('name')
+                    subelems = {name: subelems}
+                    elem = 'services'
+
+                if elem in ('services', 'variables'):
+                    merged.setdefault(elem, {})
+                    merged[elem].update(subelems)
+                else:
+                    raise ConfigurationError("Bad rule '%s'" % elem)
+        return merged
+
     def build_graph(self):
         '''
         Build the graph from the content found in self._flow. It is required to
         call load methods before to call this one. If so self._flow will remain
         empty.
         '''
-        if self._flow:
-            self._build_services()
-
-    def _build_services(self):
-        '''
-        Instanciate services, variables and service group. This methods
-        also populate the service manager.
-        '''
-        # Get back the manager
-        manager = service_manager_self()
-        dependencies = {}
-
-        # We need to parse variables first to be sure that variables used
-        # in services are already parsed (see #15)
-        for data in self._flow:
-            # Parse variables
-            if 'variables' in data:
-                for varname, value in data['variables'].items():
-                    if varname not in manager.variables:
-                        manager.add_var(varname, value)
-
-        # Go through data registred within flow
-        for data in self._flow:
-            for elem, subelems in data.items():
-                # Parse service
-                if elem == 'service' and 'actions' in subelems:
-                    ser = Service(subelems['name'])
-                    ser.fromdict(subelems)
-                    wrap = self._parse_deps(subelems, ser)
-                    wrap.source = ser
-                    dependencies[ser.name] = wrap
-                # Parse service group
-                elif elem == 'service' and 'services' in subelems:
-                    ser = ServiceGroup(subelems['name'])
-                    ser.fromdict(subelems)
-                    wrap = self._parse_deps(subelems, ser)
-                    wrap.source = ser
-                    dependencies[ser.name] = wrap
-                # Support for new style syntax to declare services
-                # This is a simple mode, for compatibility, with old-style
-                # syntax.
-                elif elem == 'services':
-                    for names, props in subelems.items():
-                        for svcname in NodeSet(names):
-
-                            service = None
-                            if 'services' in props:
-                                service = ServiceGroup(svcname)
-                            else:
-                                service = Service(svcname)
-
-                            service.fromdict(props)
-                            wrap = self._parse_deps(props, service)
-                            wrap.source = service
-                            dependencies[service.name] = wrap
-
-                elif elem != 'variables':
-                    raise ConfigurationError("Bad rule '%s'" % elem)
-
-        # Build relations between services
-        for wrap in dependencies.values():
-            for (dtype, values) in wrap.deps.items():
-                for dep in values:
-                    if dep not in dependencies:
-                        raise UnknownDependencyError(dep)
-                    wrap.source.add_dep(
-                        target=dependencies[dep].source, sgth=dtype.upper())
-        # Populate the manager and set up inheritance
-        for wrap in dependencies.values():
-            manager.register_service(wrap.source)
-
-    @classmethod
-    def _parse_deps(cls, data, service=None):
-        '''Return a DepWrapper containing the different types of dependencies'''
-        wrap = DepWrapper()
-        for content in ('require', 'require_weak', 'require_filter', 'filter',
-                        'check', 'before', 'after'):
-            if content in data:
-                if service is not None:
-                    data[content] = service._resolve(data[content])
-                if content in ('before', 'after'):
-                    data['require_weak'] = data[content]
-                    content = 'require_weak'
-                # Only for compat with v1.1beta versions
-                if content == 'require_filter':
-                    data['filter'] = data[content]
-                    content = 'filter'
-                if type(data[content]) is str:
-                    wrap.deps[content] = [ data[content] ]
-                else:
-                    wrap.deps[content] = data[content]
-        return wrap
+        service_manager_self().fromdict(self.merge_flow())
 
     def get_data_flow(self):
         '''Get parsed data'''

@@ -655,6 +655,40 @@ class ServiceGroupFromDictTest(TestCase):
         svc1 = grp._subservices['svc2'].parents['svc1']
         self.assertEqual(svc1.dep_type, REQUIRE_WEAK)
 
+    def test_before(self):
+        """Test 'before' as an alias of 'after' (only for v1.0 compat)"""
+        grp = ServiceGroup('grp')
+        grp.fromdict({
+            'services': {
+                'svc1': {
+                    'actions': {'start': {'cmd': '/bin/true'}}
+                },
+                'svc2': {
+                    'before': ['svc1'],
+                    'actions': {'start': {'cmd': '/bin/true'}}
+                }
+            }
+        })
+        svc1 = grp._subservices['svc2'].parents['svc1']
+        self.assertEqual(svc1.dep_type, REQUIRE_WEAK)
+
+    def test_filter(self):
+        """Test parsing 'filter' dependency type"""
+        grp = ServiceGroup('grp')
+        grp.fromdict({
+            'services': {
+                'svc1': {
+                    'actions': {'start': {'cmd': '/bin/true'}}
+                },
+                'svc2': {
+                    'filter': ['svc1'],
+                    'actions': {'start': {'cmd': '/bin/true'}}
+                }
+            }
+        })
+        svc1 = grp._subservices['svc2'].parents['svc1']
+        self.assertEqual(svc1.dep_type, FILTER)
+
     def test_fromdict2(self):
         '''
         Test instanciation of a service group with dependencies between
@@ -810,6 +844,24 @@ class ServiceGroupFromDictTest(TestCase):
         grp.fromdict(data)
         svc = grp._subservices['mygroup']._subservices['svc']
         self.assertEqual(str(svc.target), 'foo')
+
+    def test_variable_with_escaping_pattern(self):
+        """fromdict() should not resolve variables"""
+        grp = ServiceGroup('grp')
+        grp.fromdict({
+            'services': {
+                'svc': {
+                    'variables': {
+                        'foo': 'nice'
+                    },
+                    'actions': {
+                        'start': {'cmd': 'shine config -O %%host %foo'}
+                    }
+                }
+            }
+        })
+        action = grp._subservices['svc']._actions['start']
+        self.assertEqual(action.command, 'shine config -O %%host %foo')
 
     def test_create_service_imbrications(self):
         '''Test create service with mutliple level of subservices'''
