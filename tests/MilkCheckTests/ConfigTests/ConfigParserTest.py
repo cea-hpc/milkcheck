@@ -6,6 +6,7 @@
 import logging
 from unittest import TestCase
 from optparse import Values
+from tempfile import NamedTemporaryFile
 
 from MilkCheck.Config.ConfigParser import ConfigParser, ConfigParserError
 
@@ -89,3 +90,14 @@ class ConfigParserTest(TestCase):
         self.assertEqual(config['fanout'], 64)
         self.assertEqual(config['config_dir'], '/etc/milkcheck/conf')
         self.assertEqual(config['reverse_actions'], ['stop'])
+
+    def test_parsing_summary(self):
+        """Parse configuration file with summary option (compat)"""
+        tmpfile = NamedTemporaryFile()
+        tmpfile.write("summary: True\n")
+        tmpfile.flush()
+
+        class MockSummaryLocalConfigParser(MockConfigParser):
+            CONFIG_PATH = tmpfile.name
+        config = MockSummaryLocalConfigParser(self._options)
+        self.assertEqual(config['summary'], True)

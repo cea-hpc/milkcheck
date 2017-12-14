@@ -254,6 +254,7 @@ nodeps: False
 dryrun: False
 tags: set([])
 verbosity: 5
+summary: False
 fanout: 64
 reverse_actions: ['stop']
 report: no
@@ -303,6 +304,7 @@ dryrun: False
 tags: set([])
 verbosity: 5
 only_nodes: HOSTNAME
+summary: False
 fanout: 64
 reverse_actions: ['stop']
 report: no
@@ -383,6 +385,7 @@ nodeps: False
 dryrun: False
 tags: set([])
 verbosity: 5
+summary: False
 excluded_nodes: BADNODE
 fanout: 64
 reverse_actions: ['stop']
@@ -411,6 +414,7 @@ nodeps: False
 dryrun: False
 tags: set([])
 verbosity: 5
+summary: False
 excluded_nodes: BADNODE
 fanout: 64
 reverse_actions: ['stop']
@@ -1189,6 +1193,7 @@ nodeps: False
 dryrun: False
 tags: set([])
 verbosity: 5
+summary: False
 fanout: 64
 reverse_actions: ['stop']
 report: no
