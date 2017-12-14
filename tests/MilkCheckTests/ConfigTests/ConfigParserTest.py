@@ -78,3 +78,14 @@ class ConfigParserTest(TestCase):
         setattr(self._options, 'report', 'full')
         config = MockConfigParser(self._options)
         self.assertEqual(config['report'], 'full')
+
+    def test_parsing_sample_configuration(self):
+        """Parse sample configuration file"""
+        class MockLocalConfigParser(MockConfigParser):
+            CONFIG_PATH = '../conf/milkcheck.conf'
+
+        config = MockLocalConfigParser(self._options)
+        self.assertEqual(config['report'], 'no')
+        self.assertEqual(config['fanout'], 64)
+        self.assertEqual(config['config_dir'], '/etc/milkcheck/conf')
+        self.assertEqual(config['reverse_actions'], ['stop'])
