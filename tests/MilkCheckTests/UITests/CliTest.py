@@ -1,14 +1,20 @@
-# Copyright CEA (2011)
-# Contributor: TATIBOUET Jeremie <tatibouetj@ocre.cea.fr>
+# Copyright CEA (2011-2017)
+# Contributor: TATIBOUET Jeremie
+#
 
 """
 This modules defines the tests cases targeting the class CommandLine
 """
 
-# Classes
-import socket, sys, re, time, select
+import os
+import re
+import select
+import socket
+import sys
+import time
+import tempfile
+import textwrap
 from StringIO import StringIO
-
 from unittest import TestCase
 
 import MilkCheck.UI.Cli
@@ -857,6 +863,38 @@ ServiceGroup                                                      [    OK   ]
  > /bin/echo bar
 one                                                               [    OK   ]
 """)
+
+class CLIConfigDirTests(CLICommon):
+
+    def setUp(self):
+        ServiceManager._instance = None
+        self.manager = service_manager_self()
+        ActionManager._instance = None
+
+        # Setup stdout and stderr as a MyOutput file
+        sys.stdout = MyOutput()
+        sys.stderr = MyOutput()
+
+    def test_config_dir(self):
+        """Test --config-dir command line option"""
+        try:
+            tmpdir = tempfile.mkdtemp(prefix='test-mlk-')
+            tmpfile = tempfile.NamedTemporaryFile(suffix='.yaml', dir=tmpdir)
+            tmpfile.write(textwrap.dedent("""
+                services:
+                  svc:
+                    actions:
+                      start:
+                        cmd: echo ok
+                        """))
+            tmpfile.flush()
+
+            self._output_check(['--config-dir', tmpdir, 'svc', 'start'], RC_OK,
+"""svc                                                               [    OK   ]
+""")
+        finally:
+            tmpfile.close()
+            os.rmdir(tmpdir)
 
 
 class MockInterTerminal(MilkCheck.UI.Cli.Terminal):
