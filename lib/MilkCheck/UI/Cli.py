@@ -45,7 +45,7 @@ from MilkCheck.Callback import CoreEvent, call_back_self
 from MilkCheck.UI.OptionParser import McOptionParser
 from MilkCheck.Engine.Action import Action, action_manager_self
 from MilkCheck.Engine.Service import Service
-from MilkCheck.ServiceManager import service_manager_self
+from MilkCheck.ServiceManager import ServiceManager
 from MilkCheck.Config.ConfigParser import ConfigParser, ConfigParserError
 from MilkCheck.Config.Configuration import ConfigurationError
 
@@ -472,6 +472,9 @@ class CommandLine(CoreEvent):
         # Store interactive mode
         self.interactive = Terminal.isinteractive()
 
+        # Useful for tests
+        self.manager = None
+
         self._logger = ConfigParser.install_logger()
 
         call_back_self().attach(self)
@@ -494,7 +497,7 @@ class CommandLine(CoreEvent):
             action_manager_self().default_fanout = self._conf['fanout']
             action_manager_self().dryrun = self._conf['dryrun']
 
-            manager = service_manager_self()
+            manager = self.manager or ServiceManager()
             # Case 0: build the graph
             if self._conf.get('graph', False):
                 manager.load_config(self._conf['config_dir'])
@@ -584,9 +587,9 @@ class CommandLine(CoreEvent):
             RC_EXCEPTION = 9: User error (options or configuration)
             RC_UNKNOWN_EXCEPTION = 12: Internal error (this is probably a bug)
         '''
-        if service_manager_self().status in (DEP_ERROR, ERROR):
+        if self.manager.status in (DEP_ERROR, ERROR):
             return RC_ERROR
-        elif service_manager_self().has_warnings():
+        elif self.manager.has_warnings():
             return RC_WARNING
         else:
             return RC_OK

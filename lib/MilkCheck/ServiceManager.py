@@ -47,9 +47,6 @@ class ServiceManager(ServiceGroup):
     features allowing us to get dependencies of service and so on.
     '''
 
-    # For compat with service_manager_self()
-    _instance = None
-
     def __init__(self, name="MAIN"):
         ServiceGroup.__init__(self, name)
         self.simulate = True
@@ -226,11 +223,4 @@ class ServiceManager(ServiceGroup):
         from MilkCheck.Config.Configuration import MilkCheckConfig
         config = MilkCheckConfig()
         config.load_from_dir(directory=conf)
-        config.build_graph()
-
-
-def service_manager_self():
-    '''Return a singleton instance of a service manager'''
-    if not ServiceManager._instance:
-        ServiceManager._instance = ServiceManager()
-    return ServiceManager._instance
+        self.fromdict(config.merge_flow())

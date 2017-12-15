@@ -11,7 +11,6 @@ import unittest
 from ClusterShell.NodeSet import NodeSet, NodeSetException
 from MilkCheck.Engine.BaseEntity import BaseEntity, Dependency
 from MilkCheck.Engine.ServiceGroup import ServiceGroup
-from MilkCheck.ServiceManager import service_manager_self
 
 # Symbols
 from MilkCheck.Engine.BaseEntity import CHECK, REQUIRE_WEAK, REQUIRE
@@ -452,12 +451,6 @@ class VariableBaseEntityTest(unittest.TestCase):
         self.assertEqual(service._lookup_variable('GVAR'), 'group')
         self.assertEqual(service._lookup_variable('TARGET'), None)
         self.assertEqual(service._lookup_variable('NAME'), 'test_service')
-
-    def test_lookup_global_variables(self):
-        '''Test global variables resolution'''
-        service = BaseEntity('test_service')
-        service_manager_self().add_var('MGRVAR', 'test')
-        self.assertEqual(service._lookup_variable('MGRVAR'), 'test')
 
     def test_resolve_value1(self):
         '''Test no replacement to do so just return the initial value'''

@@ -563,8 +563,6 @@ class BaseEntity(object):
         parent object.
         If it cannot solve the variable name, it raises UndefinedVariableError.
         '''
-        from MilkCheck.ServiceManager import service_manager_self
-
         if varname in self.variables:
             return self.variables[varname]
         elif varname.upper() in self.LOCAL_VARIABLES:
@@ -572,8 +570,6 @@ class BaseEntity(object):
             return self.resolve_property(value)
         elif self.parent:
             return self.parent._lookup_variable(varname)
-        elif varname in service_manager_self().variables:
-            return service_manager_self().variables[varname]
         else:
             raise UndefinedVariableError(varname)
 

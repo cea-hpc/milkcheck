@@ -62,7 +62,6 @@ class MilkCheckConfigTest(TestCase):
         '''Test graph building from configuration'''
         dty = '../tests/MilkCheckTests/ConfigTests/YamlTestFiles/sample_1/'
         self.cfg.load_from_dir(dty)
-        self.cfg.build_graph()
         merged = self.cfg.merge_flow()
         self.assertTrue('S1' in merged['services'])
         self.assertTrue('S2' in merged['services'])
@@ -95,7 +94,6 @@ services:
                     cmd :  shine status -q -L -f $LUSTRE_FS_LIST
                 check:
                     check: [ status ]''' % HOSTNAME)
-        self.cfg.build_graph()
         self.assertTrue(self.cfg._flow)
         self.assertTrue(len(self.cfg._flow) == 1)
 
@@ -223,7 +221,7 @@ services:
             start:
                 cmd: run %NAME
 badrule: foo''')
-        self.assertRaises(ConfigurationError, self.cfg.build_graph)
+        self.assertRaises(ConfigurationError, self.cfg.merge_flow)
 
     def test_loading_variables_after_services(self):
         """Parse with 'variables' section after service definitions."""

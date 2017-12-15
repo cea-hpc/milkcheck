@@ -19,8 +19,7 @@ from unittest import TestCase
 
 import MilkCheck.UI.Cli
 from MilkCheck.UI.Cli import CommandLine, ConsoleDisplay, MAXTERMWIDTH
-import MilkCheck.ServiceManager
-from MilkCheck.ServiceManager import ServiceManager, service_manager_self
+from MilkCheck.ServiceManager import ServiceManager
 from MilkCheck.Engine.Service import Service
 from MilkCheck.Engine.Action import Action, ActionManager
 from MilkCheck.Engine.ServiceGroup import ServiceGroup
@@ -83,8 +82,7 @@ class CLICommon(TestCase):
         ConfigParser.DEFAULT_FIELDS['config_dir']['value'] = ''
         ConfigParser.CONFIG_PATH = '/dev/null'
 
-        ServiceManager._instance = None 
-        self.manager = service_manager_self()
+        self.manager = ServiceManager()
         ActionManager._instance = None
 
         # Setup stdout and stderr as a MyOutput file
@@ -107,6 +105,7 @@ class CLICommon(TestCase):
          - show_running: True if we want to capture the running tasks
         """
         cli = CommandLine()
+        cli.manager = self.manager
         cli._console.cleanup = False
         cli._console._term_width = term_width
         cli._console._show_running = show_running
@@ -358,7 +357,7 @@ S1 - I am the service S1                                          [    OK   ]
 
     def test_execute_unknown_exception(self):
         """CLI return '12' if an unknown exception is raised."""
-        service_manager_self().call_services = None
+        self.manager.call_services = None
         self._output_check(['S2', 'start'], RC_UNKNOWN_EXCEPTION, "",
 """[00:00:00] ERROR    - Unexpected Exception : 'NoneType'"""\
 """ object is not callable
@@ -867,8 +866,7 @@ one                                                               [    OK   ]
 class CLIConfigDirTests(CLICommon):
 
     def setUp(self):
-        ServiceManager._instance = None
-        self.manager = service_manager_self()
+        self.manager = ServiceManager()
         ActionManager._instance = None
 
         # Setup stdout and stderr as a MyOutput file
@@ -1121,21 +1119,9 @@ def raiser(exception):
 class CommandLineExceptionsOutputTests(CLICommon):
     '''Tests output messages when an exception occurs'''
 
-    def setUp(self):
-        '''
-        Set up mocking to test exceptions
-        '''
-        CLICommon.setUp(self)
-        self.call_services_backup = service_manager_self().call_services
-
-    def tearDown(self):
-        '''Restore ServiceManager'''
-        CLICommon.tearDown(self)
-        service_manager_self().call_services = self.call_services_backup
-
     def test_KeyboardInterrupt_output(self):
         '''Test command line output on KeybordInterrupt'''
-        service_manager_self().call_services = \
+        self.manager.call_services = \
                 lambda services, action, conf=None : raiser(KeyboardInterrupt)
         self._output_check(['start'], (128 + SIGINT),
 '''''',
@@ -1143,7 +1129,7 @@ class CommandLineExceptionsOutputTests(CLICommon):
 ''')
     def test_ScannerError_output(self):
         '''Test command line output on ScannerError'''
-        service_manager_self().call_services = \
+        self.manager.call_services = \
                 lambda services, action, conf=None: raiser(ScannerError)
         self._output_check(['start'], RC_EXCEPTION,
 '''''',
@@ -1151,7 +1137,7 @@ class CommandLineExceptionsOutputTests(CLICommon):
 ''')
     def test_ActionNotFound_output(self):
         '''Test command line output on ActionNotFound'''
-        service_manager_self().call_services = \
+        self.manager.call_services = \
                 lambda services, action, conf=None: raiser(
                                         ActionNotFoundError("Test", "Debug"))
         self._output_check(['start'], RC_EXCEPTION,
@@ -1160,7 +1146,7 @@ class CommandLineExceptionsOutputTests(CLICommon):
 ''')
     def test_InvalidOptionError_output(self):
         '''Test command line output on InvalidOption'''
-        service_manager_self().call_services = \
+        self.manager.call_services = \
                 lambda services, action, conf=None: raiser(InvalidOptionError)
         self._output_check(['start'], RC_EXCEPTION,
 '''Usage: nosetests [options] [SERVICE...] ACTION
@@ -1202,7 +1188,7 @@ Options:
 
     def test_ImportException_output(self):
         """Test command line output on ImportError"""
-        service_manager_self().call_services = \
+        self.manager.call_services = \
                 lambda services, action, conf=None: raiser(ImportError)
         self._output_check(['start'], RC_EXCEPTION, "",
 """[00:00:00] ERROR    - Missing python dependency: 
@@ -1212,7 +1198,7 @@ Options:
 
     def test_UnhandledException_output(self):
         '''Test command line output on UnhandledException'''
-        service_manager_self().call_services = \
+        self.manager.call_services = \
                 lambda services, action, conf=None: raiser(ZeroDivisionError)
         self._output_check(['start'], RC_UNKNOWN_EXCEPTION,
 '''''',
@@ -1220,7 +1206,7 @@ Options:
 ''')
     def test_UnhandledExceptionDebug_output(self):
         '''Test command line output on UnhandledException in debug mode'''
-        service_manager_self().call_services = \
+        self.manager.call_services = \
                 lambda services, action, conf=None: raiser(ZeroDivisionError)
         self._output_check(['start', '-d'], RC_UNKNOWN_EXCEPTION,
 '''Traceback (most recent call last):

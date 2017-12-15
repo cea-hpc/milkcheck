@@ -39,8 +39,6 @@ from os import listdir
 from os.path import walk, isdir
 from os.path import isfile
 
-from MilkCheck.ServiceManager import service_manager_self
-
 class ConfigurationError(Exception):
     """Generic error for configuration rule file content error."""
 
@@ -107,14 +105,6 @@ class MilkCheckConfig(object):
                 else:
                     raise ConfigurationError("Bad rule '%s'" % elem)
         return merged
-
-    def build_graph(self):
-        '''
-        Build the graph from the content found in self._flow. It is required to
-        call load methods before to call this one. If so self._flow will remain
-        empty.
-        '''
-        service_manager_self().fromdict(self.merge_flow())
 
     def get_data_flow(self):
         '''Get parsed data'''
