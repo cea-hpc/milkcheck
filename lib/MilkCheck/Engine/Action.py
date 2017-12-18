@@ -45,7 +45,6 @@ from ClusterShell.Task import task_self
 from ClusterShell.Worker.Exec import ExecWorker
 
 from MilkCheck.Callback import call_back_self
-from MilkCheck.EntityManager import EntityManager
 from MilkCheck.Engine.BaseEntity import BaseEntity
 from MilkCheck.Engine.BaseEntity import DONE, TIMEOUT, ERROR, WAITING_STATUS, \
                                         NO_STATUS, DEP_ERROR, SKIPPED, WARNING
@@ -53,16 +52,18 @@ from MilkCheck.Callback import EV_COMPLETE, EV_STARTED, EV_TRIGGER_DEP, \
                                EV_STATUS_CHANGED, EV_DELAYED, EV_FINISHED
 
 
-class ActionManager(EntityManager):
+class ActionManager(object):
     """
     The action manager handle the evolution of the fanout through the current
     running tasks. It provides two methods which allow the user to use
     Action objects to perform task.This class is the only one where
     clustershell is called
     """
+    _instance = None
 
     def __init__(self):
-        EntityManager.__init__(self)
+        # entities handled by the manager
+        self.entities = {}
         # Current fanout
         self.fanout = None
         # ClusterShell default value
