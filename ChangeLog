@@ -1,3 +1,12 @@
+2017-12-20 Aurelien Degremont  <aurelien.degremont@cea.fr>
+	* Release: 1.1.1
+
+2017-12-14 Aurelien Cedeyn  <aurelien.cedeyn@cea.fr>
+	* Fix bad example config and config parsing (#36, #37)
+
+2017-10-19 Aurelien Degremont  <aurelien.degremont@cea.fr>
+	* Fix variable resolution for service and services.
+
 2017-10-11 Aurelien Degremont  <aurelien.degremont@cea.fr>
 	* Release: 1.1
 

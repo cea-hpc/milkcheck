@@ -3,7 +3,7 @@
 
 
 Name:          milkcheck
-Version:       1.1
+Version:       1.1.1
 Release:       1%{?dist}
 Summary:       Distributed cluster command management
 
@@ -48,6 +48,9 @@ make install DESTDIR="%{buildroot}" PYTHON=%{__python} MANDIR=%{_mandir} \
 %{vimdatadir}/syntax/milkcheck.vim
 
 %changelog
+* Wed Dec 20 2017 Aurelien Degremont <aurelien.degremont@cea.fr> 1.1.1-1
+- Update to 1.1.1 release.
+
 * Wed Oct 11 2017 Aurelien Degremont <aurelien.degremont@cea.fr> 1.1-1
 - Update to 1.1 release.
 
