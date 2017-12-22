@@ -1,17 +1,22 @@
-# Copyright CEA (2011-2014)
-# Contributor: TATIBOUET Jeremie <tatibouetj@ocre.cea.fr>
+# Copyright CEA (2011-2017)
+# Contributor: TATIBOUET Jeremie
+#
 
-'''
-This modules defines the tests cases targeting the internal class
-RunningTasksManager and the ServiceManager itself
-'''
+"""
+Test cases for MilkCheck.ServiceManager
+"""
 
-# Classes
+import os
+import tempfile
+import textwrap
 import time
-from unittest import TestCase
+import unittest
+
 from ClusterShell.NodeSet import NodeSet
 
 from MilkCheck.Engine.BaseEntity import VariableAlreadyExistError
+from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, REQUIRE_WEAK
+from MilkCheck.Engine.BaseEntity import DEP_ERROR, ERROR, WARNING
 from MilkCheck.Engine.Action import Action
 from MilkCheck.Engine.Service import Service
 from MilkCheck.Engine.ServiceGroup import ServiceGroup
@@ -19,11 +24,8 @@ from MilkCheck.ServiceManager import ServiceManager
 from MilkCheck.ServiceManager import ServiceAlreadyReferencedError
 from MilkCheck.ServiceManager import ServiceNotFoundError
 
-# Symbols
-from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, REQUIRE_WEAK
-from MilkCheck.Engine.BaseEntity import DEP_ERROR, ERROR, WARNING
 
-class ServiceManagerTest(TestCase):
+class ServiceManagerTest(unittest.TestCase):
     '''Tests cases for the class ServiceManager'''
 
     def test_service_registration(self):
@@ -82,7 +84,7 @@ class ServiceManagerTest(TestCase):
         self.assertEqual(s2.status, DONE)
         self.assertEqual(s3.status, DONE)
         self.assertEqual(s4.status, DONE)
-    
+
     def test_call_services_case2(self):
         '''Test call of required services (start S3, S4)'''
         manager = ServiceManager()
@@ -341,6 +343,33 @@ node [style=filled];
         self.assertTrue(manager.status not in (ERROR, DEP_ERROR, WARNING))
         self.assertEqual(s1.status, DONE)
         self.assertEqual(s2.status, DONE)
+
+    def test_call_services_conf(self):
+        """test call_services() with an explicit conf object with variables"""
+        try:
+            tmpdir = tempfile.mkdtemp(prefix='test-mlk-')
+            tmpfile = tempfile.NamedTemporaryFile(suffix='.yaml', dir=tmpdir)
+            tmpfile.write(textwrap.dedent("""
+                variables:
+                  foo: bar
+                ---
+                services:
+                  svc:
+                    actions:
+                      start:
+                        cmd: echo %foo
+                        """))
+            tmpfile.flush()
+
+            manager = ServiceManager()
+            manager.call_services(['svc'], 'start',
+                                  conf={'config_dir': tmpdir,
+                                        'reverse_actions': ['stop']})
+        finally:
+            tmpfile.close()
+            os.rmdir(tmpdir)
+        self.assertEqual(manager.status, DONE)
+        self.assertEqual(manager.variables['foo'], 'bar')
 
     def test_variable_config_defines_one(self):
         """Test custom defines in variable_config()"""
