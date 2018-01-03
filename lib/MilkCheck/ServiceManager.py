@@ -220,7 +220,5 @@ class ServiceManager(ServiceGroup):
         '''
         Load the configuration within the manager thanks to MilkCheckConfig
         '''
-        from MilkCheck.Config.Configuration import MilkCheckConfig
-        config = MilkCheckConfig()
-        config.load_from_dir(directory=conf)
-        self.fromdict(config.merge_flow())
+        from MilkCheck.Config.Configuration import load_from_dir
+        self.fromdict(load_from_dir(conf))

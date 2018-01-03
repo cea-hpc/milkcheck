@@ -29,85 +29,63 @@
 # The fact that you are presently reading this means that you have had
 # knowledge of the CeCILL license and that you accept its terms.
 
-'''
-This module contains the
-'''
+"""
+Helpers for loading configuration files.
+"""
 
 import re
+import os
+import os.path
 import yaml
-from os import listdir
-from os.path import walk, isdir
-from os.path import isfile
 
 class ConfigurationError(Exception):
     """Generic error for configuration rule file content error."""
 
-class MilkCheckConfig(object):
-    '''
-    This class load the configuration files located within the specified
-    directory
-    '''
-    def __init__(self):
-        self._flow = []
+def _merge_flow(flow):
+    """Build and return only one dict from various streams."""
+    merged = {}
+    for data in flow:
+        if not data:
+            continue
+        for elem, subelems in data.items():
 
-    def _go_through(self, _arg, dirname=None, names=None):
-        '''List the files in dirname'''
-        for my_file in names:
-            if isfile('%s/%s' %(dirname, my_file)) and \
-                re.match('^[\w]*\.(yaml|yml)$', my_file):
-                self.load_from_stream(
-                    open('%s/%s' % (dirname, my_file),'r'))
+            # Compat with old-style syntax, using 'service' at top scope
+            if elem == 'service':
+                name = subelems.pop('name')
+                subelems = {name: subelems}
+                elem = 'services'
 
-    def load_from_dir(self, directory=None, recursive=False):
-        '''
-        Load configuration files located within a directory. This method
-        will go though the overall file hierarchy.
-        '''
-        if directory and isdir(directory):
-            if recursive:
-                walk(directory, self._go_through, None)
+            if elem in ('services', 'variables'):
+                merged.setdefault(elem, {})
+                merged[elem].update(subelems)
             else:
-                self._go_through(None, dirname=directory,
-                    names=listdir(directory))
-        else:
-            raise ValueError("Invalid directory '%s'" % directory)
+                raise ConfigurationError("Bad rule '%s'" % elem)
+    return merged
 
-    def load_from_stream(self, stream):
-        '''
-        Load configuration from a stream. A stream could be a string or
-        file descriptor
-        '''
-        # removes empty statement.
-        content = [item for item in yaml.safe_load_all(stream) if item]
-        if content:
-            self._flow.extend(content)
+def load_from_stream(stream):
+    """
+    Load configuration from a stream.
 
-    def merge_flow(self):
-        """
-        Build and return only one dict from various streams.
+    A stream could be a string or file descriptor
+    """
+    return _merge_flow(yaml.safe_load_all(stream))
 
-        It is required to call load methods before to call this one. If not
-        self._flow will remain empty.
-        """
-        merged = {}
-        for data in self._flow:
-            for elem, subelems in data.items():
+def load_from_dir(directory, recursive=False):
+    """
+    Load all YAML files in the provided directory.
 
-                # Compat with old-style syntax, using 'service' at top scope
-                if elem == 'service':
-                    name = subelems.pop('name')
-                    subelems = {name: subelems}
-                    elem = 'services'
+    There is no recursion by default.
+    """
+    if not os.path.isdir(directory):
+        raise ValueError("Invalid directory '%s'" % directory)
 
-                if elem in ('services', 'variables'):
-                    merged.setdefault(elem, {})
-                    merged[elem].update(subelems)
-                else:
-                    raise ConfigurationError("Bad rule '%s'" % elem)
-        return merged
+    flow = []
+    for root, dirs, names in os.walk(directory):
+        if not recursive:
+            dirs[:] = []
+        for name in names:
+            fullname = os.path.join(root, name)
+            if os.path.isfile(fullname) and re.search(r'\.ya?ml$', name):
+                flow.append(load_from_stream(open(fullname)))
 
-    def get_data_flow(self):
-        '''Get parsed data'''
-        return self._flow
-
-    data_flow = property(fget=get_data_flow)
+    return _merge_flow(flow)
