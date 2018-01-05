@@ -24,7 +24,7 @@ from MilkCheck.Engine.Service import Service
 from MilkCheck.Engine.Action import Action, ActionManager
 from MilkCheck.Engine.ServiceGroup import ServiceGroup
 from MilkCheck.Callback import CallbackHandler
-from MilkCheck.Config.ConfigParser import ConfigParser
+from MilkCheck.config import ConfigParser
 from ClusterShell.NodeSet import NodeSet
 
 # Symbols

@@ -220,5 +220,5 @@ class ServiceManager(ServiceGroup):
         '''
         Load the configuration within the manager thanks to MilkCheckConfig
         '''
-        from MilkCheck.Config.Configuration import load_from_dir
+        from MilkCheck.config import load_from_dir
         self.fromdict(load_from_dir(conf))

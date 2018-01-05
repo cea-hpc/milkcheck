@@ -1,5 +1,5 @@
 #
-# Copyright CEA (2011-2012)
+# Copyright CEA (2011-2018)
 #
 # Contributors:
 #  Aurelien Degremont <aurelien.degremont@cea.fr>
@@ -37,17 +37,17 @@
 This module contains the Configuration parsing management.
 '''
 
+import re
 import os
+import os.path
 import yaml
 import logging
 
-class ConfigParserError(Exception):
-    '''Error in configuration file.'''
+class ConfigError(Exception):
+    """Generic error for configuration file error."""
 
 class ConfigParser(object):
-    '''
-    Contains all Milkcheck configuration
-    '''
+    """Manage milkcheck.conf"""
 
     CONFIG_PATH = '/etc/milkcheck/milkcheck.conf'
     DEFAULT_FIELDS = {
@@ -110,14 +110,14 @@ class ConfigParser(object):
         if data:
             for element, value in data.iteritems():
                 if element not in self.fields:
-                    raise ConfigParserError("Bad entry '%s'" % element)
+                    raise ConfigError("Bad entry '%s'" % element)
                 if type(value) is not self.fields[element]['type']:
-                    raise ConfigParserError("Wrong value '%s' for '%s'"
-                                            % (value, element))
+                    raise ConfigError("Wrong value '%s' for '%s'"
+                                      % (value, element))
                 if self.fields[element].get('allowed_values') and \
                        value not in self.fields[element]['allowed_values']:
-                    raise ConfigParserError("Value for '%s' should be one of %s"
-                                        " (found '%s')" % (
+                    raise ConfigError("Value for '%s' should be one of %s "
+                                      "(found '%s')" % (
                                         element,
                                         self.fields[element]['allowed_values'],
                                         value))
@@ -172,3 +172,57 @@ class ConfigParser(object):
 
     def __str__(self):
         return "\n".join(["%s: %s" % (opt, self[opt]) for opt in self.fields])
+
+
+#
+# YAML config files management
+#
+
+def _merge_flow(flow):
+    """Build and return only one dict from various streams."""
+    merged = {}
+    for data in flow:
+        if not data:
+            continue
+        for elem, subelems in data.items():
+
+            # Compat with old-style syntax, using 'service' at top scope
+            if elem == 'service':
+                name = subelems.pop('name')
+                subelems = {name: subelems}
+                elem = 'services'
+
+            if elem in ('services', 'variables'):
+                merged.setdefault(elem, {})
+                merged[elem].update(subelems)
+            else:
+                raise ConfigError("Bad rule '%s'" % elem)
+    return merged
+
+def load_from_stream(stream):
+    """
+    Load configuration from a stream.
+
+    A stream could be a string or file descriptor
+    """
+    return _merge_flow(yaml.safe_load_all(stream))
+
+def load_from_dir(directory, recursive=False):
+    """
+    Load all YAML files in the provided directory.
+
+    There is no recursion by default.
+    """
+    if not os.path.isdir(directory):
+        raise ValueError("Invalid directory '%s'" % directory)
+
+    flow = []
+    for root, dirs, names in os.walk(directory):
+        if not recursive:
+            dirs[:] = []
+        for name in names:
+            fullname = os.path.join(root, name)
+            if os.path.isfile(fullname) and re.search(r'\.ya?ml$', name):
+                flow.append(load_from_stream(open(fullname)))
+
+    return _merge_flow(flow)

@@ -46,8 +46,7 @@ from MilkCheck.UI.OptionParser import McOptionParser
 from MilkCheck.Engine.Action import Action, action_manager_self
 from MilkCheck.Engine.Service import Service
 from MilkCheck.ServiceManager import ServiceManager
-from MilkCheck.Config.ConfigParser import ConfigParser, ConfigParserError
-from MilkCheck.Config.Configuration import ConfigurationError
+from MilkCheck.config import ConfigParser, ConfigError
 
 # Exceptions
 from yaml.scanner import ScannerError
@@ -541,8 +540,7 @@ class CommandLine(CoreEvent):
                 DependencyAlreadyReferenced,
                 UnknownDependencyError,
                 IllegalDependencyTypeError,
-                ConfigParserError,
-                ConfigurationError,
+                ConfigError,
                 ScannerError), exc:
             self._logger.error(str(exc))
             retcode = RC_EXCEPTION
