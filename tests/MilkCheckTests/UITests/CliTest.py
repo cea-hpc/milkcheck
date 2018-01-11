@@ -184,7 +184,10 @@ class CLIBigGraphTests(CLICommon):
         group1.add_inter_dep(target=inter2)
 
         # Register services within the manager
-        self.manager.register_services(svc1, svc2, svc3, group1)
+        self.manager.add_service(svc1)
+        self.manager.add_service(svc2)
+        self.manager.add_service(svc3)
+        self.manager.add_service(group1)
 
     def test_execute_std_verbosity(self):
         '''CLI execute() (no option)'''
@@ -430,7 +433,7 @@ config_dir:
     def test_overall_graph(self):
         """CLI execute() with whole graph (-v -x )"""
         # This could be avoided if the graph is simplified
-        self.manager.forget_services(self.svc2)
+        self.manager.remove_inter_dep(self.svc2.name)
         self._output_check(['start', '-v', '-x', 'BADNODE'], RC_ERROR,
 """start G1.I1 on HOSTNAME
  > echo ok
@@ -451,7 +454,7 @@ S1 - I am the service S1                                          [DEP_ERROR]
     def test_overall_graph_reverse(self):
         """CLI reverse execute() with whole graph (-v -x )"""
         # This could be avoided if the graph is simplified
-        self.manager.forget_services(self.svc2)
+        self.manager.remove_inter_dep(self.svc2.name)
         self._output_check(['stop', '-v', '-x', 'BADNODE'], RC_ERROR,
 """stop S1 on HOSTNAME
  > /bin/true
@@ -525,7 +528,7 @@ class CommandLineOutputTests(CLICommon):
         group.add_inter_dep(target=service)
 
         # Register services within the manager
-        self.manager.register_services(group)
+        self.manager.add_service(group)
 
     def test_command_output_help(self):
         '''Test command line help output'''
@@ -721,7 +724,8 @@ ServiceGroup                                                      [    OK   ]
         svc2.add_action(true_action)
 
         # Register services within the manager
-        self.manager.register_services(svc, svc2)
+        self.manager.add_service(svc)
+        self.manager.add_service(svc2)
 
         # FIXME: must return RC_OK
         self._output_check(['service_fail', 'stop', '--report=full'], RC_OK,
@@ -820,7 +824,8 @@ ServiceGroup                                                      [DEP_ERROR]
 
         # Register services within the manager
         svc_ok.add_dep(target=svc_warn, sgth=REQUIRE_WEAK)
-        self.manager.register_services(svc_warn, svc_ok)
+        self.manager.add_service(svc_warn)
+        self.manager.add_service(svc_ok)
 
         self._output_check(['service_ok', 'warning'], RC_OK,
 """warning service_failled ran in 0.00 s
@@ -848,7 +853,7 @@ ServiceGroup                                                      [    OK   ]
         act = Action('go', command='/bin/false')
         act.errors = 1
         svc.add_action(act)
-        self.manager.register_service(svc)
+        self.manager.add_service(svc)
         self._output_check(['warn', 'go', '-q'], RC_WARNING,
 """warn                                                              [ WARNING ]
 """)
@@ -856,7 +861,7 @@ ServiceGroup                                                      [    OK   ]
         '''Test command line output custom variables'''
         svc = Service('one')
         svc.add_action(Action('go', command='/bin/echo %foo'))
-        self.manager.register_service(svc)
+        self.manager.add_service(svc)
         self._output_check(['one', 'go', '-v', '--define=foo=bar'], RC_OK,
 """go one on localhost
  > /bin/echo bar
@@ -943,8 +948,10 @@ class CommandLineInteractiveOutputTests(CLICommon):
         # Service
         service1 = Service('service1')
         service1.desc = 'I am the service 1'
+        self.service1 = service1
         service2 = Service('service2')
         service2.desc = 'I am the service 2'
+        self.service2 = service2
         # Actions
         action = Action('start', command='/bin/sleep 0.1')
         action.inherits_from(service1)
@@ -957,7 +964,8 @@ class CommandLineInteractiveOutputTests(CLICommon):
         service2.add_action(action)
 
         # Register services within the manager
-        self.manager.register_services(service1, service2)
+        self.manager.add_service(service1)
+        self.manager.add_service(service2)
 
     def tearDown(self):
         '''Restore MilkCheck.UI.Cli.Terminal'''
@@ -983,7 +991,7 @@ service2 - I am the service 2                                     [    OK   ]
         srv.desc = 'I am the service'
         action.inherits_from(srv)
         srv.add_action(action)
-        self.manager.register_services(srv)
+        self.manager.add_service(srv)
         self._output_check(['service', 'start'], RC_OK,
 '''
 Actions in progress
@@ -1001,9 +1009,8 @@ service - I am the service                                        [    OK   ]
 
         # Replace start action with a modified one
         act = CustomAction('start', target=HOSTNAME, command='sleep 0.8')
-        svc2 = self.manager.entities['service2']
-        svc2.remove_action('start')
-        svc2.add_action(act)
+        self.service2.remove_action('start')
+        self.service2.add_action(act)
 
         self._output_check(['start'], RC_OK,
 '''service1 - I am the service 1                                     [    OK   ]
@@ -1024,9 +1031,8 @@ service2 - I am the service 2                                     [    OK   ]
 
         # Replace start action with a modified one
         act = CustomAction('start', target=HOSTNAME, command='sleep 0.8')
-        svc2 = self.manager.entities['service2']
-        svc2.remove_action('start')
-        svc2.add_action(act)
+        self.service2.remove_action('start')
+        self.service2.add_action(act)
 
         self._output_check(['start'], RC_OK,
 '''service1 - I am the service 1                                     [    OK   ]
@@ -1039,9 +1045,8 @@ service2 - I am the service 2                                     [    OK   ]
 
     def test_too_large_svc_name(self):
         '''Test output with too large service name is truncated'''
-        # Add a new service
-        self.manager.entities['service1'].name = "S" * 100
-        self.manager.entities['service2'].name = "s" * 100
+        self.service1.name = "S" * 100
+        self.service2.name = "s" * 100
         self._output_check(['start'], RC_OK,
 '''SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS...  [    OK   ]
 
@@ -1050,6 +1055,7 @@ Actions in progress
 
 sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss...  [    OK   ]
 ''')
+
 
 class CommandLineStderrOutputTests(CLICommon):
     '''Tests cases of the command line output on stderr'''
@@ -1064,53 +1070,47 @@ class CommandLineStderrOutputTests(CLICommon):
                  -'             _ start
                   '-- service2 /
         '''
-
         CLICommon.setUp(self)
 
         # Service
-        service1 = Service('service1')
-        service1.desc = 'I am the service 1'
-        service2 = Service('service2')
-        service2.desc = 'I am the service 2'
+        self.service1 = Service('service1')
+        self.service2 = Service('service2')
         # Actions
         action = Action('start', command='/bin/true')
-        action.inherits_from(service1)
-        service1.add_action(action)
+        action.inherits_from(self.service1)
+        self.service1.add_action(action)
 
-        service2.add_dep(target=service1)
+        self.service2.add_dep(target=self.service1)
 
         action = Action('start', command='/bin/true')
-        action.inherits_from(service2)
-        service2.add_action(action)
+        action.inherits_from(self.service2)
+        self.service2.add_action(action)
 
         # Register services within the manager
-        self.manager.register_services(service1, service2)
-
-    def tearDown(self):
-        '''Restore MilkCheck.UI.Cli.Terminal'''
-        CLICommon.tearDown(self)
+        self.manager.add_service(self.service1)
+        self.manager.add_service(self.service2)
 
     def test_stderr_too_large_svc_name(self):
         '''Test stderr output with too large service name is truncated'''
-        # Add a new service
-        self.manager.entities['service1'].name = "S" * 100
-        self.manager.entities['service2'].name = "s" * 100
+        self.service1.name = "S" * 100
+        self.service2.name = "s" * 100
         self._output_check(['start'], RC_OK,
-'''%s...  [    OK   ]\n%s...  [    OK   ]\n''' % ((61 * 'S'), (61 * 's')),
-'''[%s...]\r[%s...]\r''' % ((72 * 'S'), (72 * 's')))
+                           "%s...  [    OK   ]\n%s...  [    OK   ]\n"
+                               % (61 * 'S', 61 * 's'),
+                           "[%s...]\r[%s...]\r" % (72 * 'S', 72 * 's'))
 
     def test_too_large_svc_name_wide_terminal(self):
         '''
         Test output with too large service name is truncated with wide terminal
         '''
-        # Add a new service
-        self.manager.entities['service1'].name = "S" * 200
-        self.manager.entities['service2'].name = "s" * 200
+        self.service1.name = "S" * 200
+        self.service2.name = "s" * 200
         self._output_check(['start'], RC_OK,
-'''%s...  [    OK   ]  \n%s...  [    OK   ]  
-''' % ((104 * 'S'), (104 * 's')),
-'''[%s...]\r[%s...]\r''' % ((117 * 'S'), (117 * 's')),
-term_width=MAXTERMWIDTH + 2)
+                           "%s...  [    OK   ]  \n%s...  [    OK   ]  \n"
+                                % (104 * 'S', 104 * 's'),
+                           "[%s...]\r[%s...]\r" % (117 * 'S', 117 * 's'),
+                           term_width=MAXTERMWIDTH + 2)
+
 
 def raiser(exception):
     '''Raise exception (used in lambda functions)'''

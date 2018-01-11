@@ -1,5 +1,5 @@
 #
-# Copyright CEA (2011-2014)
+# Copyright CEA (2011-2018)
 #
 # This file is part of MilkCheck project.
 #
@@ -33,12 +33,8 @@
 This module contains the ServiceManager class definition.
 '''
 
-from MilkCheck.Engine.BaseEntity import DependencyAlreadyReferenced
 from MilkCheck.Engine.BaseEntity import LOCKED, WARNING
-
-from MilkCheck.Engine.ServiceGroup import ServiceGroup
-from MilkCheck.Engine.ServiceGroup import ServiceNotFoundError, \
-                                          ServiceAlreadyReferencedError
+from MilkCheck.Engine.ServiceGroup import ServiceGroup, ServiceNotFoundError
 
 
 class ServiceManager(ServiceGroup):
@@ -51,11 +47,11 @@ class ServiceManager(ServiceGroup):
         ServiceGroup.__init__(self, name)
         self.simulate = True
 
-        # XXX: Only for compat with tests
-        self.entities = self._subservices
-
     def fullname(self):
         return ""
+
+    # For now, only for tests
+    add_service = ServiceGroup.add_inter_dep
 
     def has_warnings(self):
         '''Determine if the service has one action with the WARNING status'''
@@ -63,38 +59,6 @@ class ServiceManager(ServiceGroup):
             if ent.status is WARNING:
                 return True
         return False
-
-    #
-    # Service management helpers
-    #
-
-    def has_service(self, service):
-        '''Determine if the service is registered within the manager'''
-        return self.has_subservice(service.name)
-
-    def register_service(self, service):
-        '''Add a new service to the manager.'''
-        try:
-            self.add_inter_dep(service)
-        except DependencyAlreadyReferenced:
-            raise ServiceAlreadyReferencedError(service.name)
-
-    def register_services(self, *args):
-        '''Add all services referenced by args'''
-        for service in args:
-            self.register_service(service)
-
-    def forget_service(self, service):
-        '''
-        Remove the service from the manager. It takes care of the relations
-        with others services in order to avoid to get a graph with a bad format.
-        '''
-        self.remove_inter_dep(service.name)
-
-    def forget_services(self, *args):
-        '''Remove all specified services from the manager'''
-        for service in args:
-            self.forget_service(service)
 
     #
     #
