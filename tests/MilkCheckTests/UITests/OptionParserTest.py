@@ -94,6 +94,11 @@ class McOptionParserTest(unittest.TestCase):
         options, _ = self.mop.parse_args(['-t', 'tag1,tag2', '-t', 'tag3'])
         self.assertEqual(options.tags, set(['tag1', 'tag2', 'tag3']))
 
+    def test_option_assume_yes(self):
+        """Test --assumeyes option"""
+        options, _ = self.mop.parse_args(['-y'])
+        self.assertEqual(options.assumeyes, True)
+
     def test_option_report_full(self):
         """Check report configuration option"""
         options, _ = self.mop.parse_args(['--report=full'])

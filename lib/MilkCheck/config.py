@@ -57,6 +57,7 @@ class ConfigParser(object):
          'summary':         { 'value': False, 'type': bool },
          'report':          { 'value': 'no', 'type': str,
                               'allowed_values': ('no', 'default', 'full') },
+         'confirm_actions': { 'value': [], 'type': list },
          }
 
     def __init__(self, options):

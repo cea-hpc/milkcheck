@@ -258,7 +258,9 @@ G1                                                                [DEP_ERROR]
 S3 - I am the service S3                                          [DEP_ERROR]
 """,
 """[00:00:00] DEBUG    - Configuration
+assumeyes: False
 config_dir: 
+confirm_actions: []
 dryrun: False
 fanout: 64
 nodeps: False
@@ -307,7 +309,9 @@ start S3 ran in 0.00 s
 S3 - I am the service S3                                          [  ERROR  ]
 """,
 """[00:00:00] DEBUG    - Configuration
+assumeyes: False
 config_dir: 
+confirm_actions: []
 dryrun: False
 fanout: 64
 nodeps: False
@@ -389,7 +393,9 @@ start S3 ran in 0.00 s
 S3 - I am the service S3                                          [  ERROR  ]
 """,
 """[00:00:00] DEBUG    - Configuration
+assumeyes: False
 config_dir: 
+confirm_actions: []
 dryrun: False
 excluded_nodes: BADNODE
 fanout: 64
@@ -418,7 +424,9 @@ stop S3 ran in 0.00 s
 S3 - I am the service S3                                          [  ERROR  ]
 """,
 """[00:00:00] DEBUG    - Configuration
+assumeyes: False
 config_dir: 
+confirm_actions: []
 dryrun: False
 excluded_nodes: BADNODE
 fanout: 64
@@ -547,6 +555,7 @@ Options:
   -c CONFIG_DIR, --config-dir=CONFIG_DIR
                         Change configuration files directory
   -q, --quiet           Enable quiet mode
+  -y, --assumeyes       Answer yes to any requested confirmation
 
   Engine parameters:
     Those options allow you to configure the behaviour of the engine
@@ -904,11 +913,17 @@ class MockInterTerminal(MilkCheck.UI.Cli.Terminal):
     '''Manage a fake terminal to test interactive mode'''
 
     called = False
+    user_confirm = True
 
     @classmethod
     def isinteractive(cls):
         '''Simulate interactive mode'''
         return True
+
+    @classmethod
+    def confirm(cls, msg):
+        '''Simulate user confirmation'''
+        return cls.user_confirm
 
 class MockInteractiveThread(MilkCheck.UI.Cli.InteractiveThread):
     '''Manage a fake thread to test interactive output'''
@@ -940,6 +955,8 @@ class CommandLineInteractiveOutputTests(CLICommon):
 
         self.backup_terminal = MilkCheck.UI.Cli.Terminal
         self.backup_interactivethr = MilkCheck.UI.Cli.InteractiveThread
+        self.backup_confirm_actions = \
+            ConfigParser.DEFAULT_FIELDS['confirm_actions']['value']
         MilkCheck.UI.Cli.Terminal = MockInterTerminal
         MilkCheck.UI.Cli.InteractiveThread = MockInteractiveThread
         MockInterTerminal.called = False
@@ -972,6 +989,8 @@ class CommandLineInteractiveOutputTests(CLICommon):
         CLICommon.tearDown(self)
         MilkCheck.UI.Cli.Terminal = self.backup_terminal
         MilkCheck.UI.Cli.InteractiveThread = self.backup_interactivethr
+        ConfigParser.DEFAULT_FIELDS['confirm_actions']['value'] = \
+            self.backup_confirm_actions
 
     def test_command_output_interactive(self):
         '''Test command line output in interactive mode'''
@@ -1055,6 +1074,44 @@ Actions in progress
 
 sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss...  [    OK   ]
 ''')
+
+    def test_confirm_interactive(self):
+        """Test confirm_action with user confirmation"""
+        ConfigParser.DEFAULT_FIELDS['confirm_actions']['value'] = ['start']
+        # Simulate user confirmation
+        MockInterTerminal.user_confirm = True
+        self._output_check(['start'], RC_OK,
+"""service1 - I am the service 1                                     [    OK   ]
+
+Actions in progress
+ > service2.start on localhost
+
+service2 - I am the service 2                                     [    OK   ]
+""")
+
+    def test_confirm_assume_yes(self):
+        """Test confirm_action with -y"""
+        ConfigParser.DEFAULT_FIELDS['confirm_actions']['value'] = ['start']
+        # Simulate no user confirmation
+        MockInterTerminal.user_confirm = False
+        # -y specified => start runs
+        self._output_check(['start', '-y'], RC_OK,
+"""service1 - I am the service 1                                     [    OK   ]
+
+Actions in progress
+ > service2.start on localhost
+
+service2 - I am the service 2                                     [    OK   ]
+""")
+
+    def test_confirm_abort(self):
+        """Test confirm_action without confirmation"""
+        ConfigParser.DEFAULT_FIELDS['confirm_actions']['value'] = ['start']
+        # Simulate no user confirmation
+        MockInterTerminal.user_confirm = False
+        # no -y and user don't confirm: user error
+        self._output_check(['start'], RC_EXCEPTION, "",
+            "[00:00:00] ERROR    - Execution aborted by user\n")
 
 
 class CommandLineStderrOutputTests(CLICommon):
@@ -1163,6 +1220,7 @@ Options:
   -c CONFIG_DIR, --config-dir=CONFIG_DIR
                         Change configuration files directory
   -q, --quiet           Enable quiet mode
+  -y, --assumeyes       Answer yes to any requested confirmation
 
   Engine parameters:
     Those options allow you to configure the behaviour of the engine
@@ -1219,7 +1277,9 @@ Options:
 ZeroDivisionError
 ''',
 '''[00:00:00] DEBUG    - Configuration
+assumeyes: False
 config_dir: 
+confirm_actions: []
 dryrun: False
 fanout: 64
 nodeps: False

@@ -60,6 +60,11 @@ from MilkCheck.Engine.BaseEntity import DependencyAlreadyReferenced
 from MilkCheck.Engine.BaseEntity import IllegalDependencyTypeError
 from MilkCheck.Engine.Service import ActionNotFoundError
 
+# Custom Exceptions
+class UserError(Exception):
+    """This exception is for exit cases triggered by user"""
+
+
 # Symbols
 from MilkCheck.Engine.BaseEntity import WARNING, SKIPPED, LOCKED
 from MilkCheck.Engine.BaseEntity import TIMEOUT, ERROR, DEP_ERROR, DONE
@@ -123,6 +128,13 @@ class Terminal(object):
         Return True if Terminal is interactive
         '''
         return cls.isafgtty(sys.stdin) and cls.isafgtty(sys.stdout)
+
+    @classmethod
+    def confirm(cls, msg):
+        """Prompt for confirmation"""
+        choice = raw_input("%s (y/N) " % msg)
+        return choice.strip().lower() in ('y', 'yes')
+
 
 class ConsoleDisplay(object):
     '''
@@ -510,6 +522,12 @@ class CommandLine(CoreEvent):
                 services = self._args[:-1]
                 action = self._args[-1]
 
+                # Ask for confirmation if the configuration requests it.
+                if action in self._conf['confirm_actions'] and \
+                   not self._conf['assumeyes'] and \
+                   not Terminal.confirm("Are you sure to run %s action?" % action):
+                    raise UserError('Execution aborted by user')
+
                 # Create a thread in interactive mode to manage
                 # current running status
                 if self.interactive:
@@ -532,7 +550,7 @@ class CommandLine(CoreEvent):
             # Case 3: Nothing to do so just print MilkCheck help
             else:
                 self._mop.print_help()
-        except (ServiceNotFoundError, 
+        except (ServiceNotFoundError,
                 ActionNotFoundError,
                 InvalidVariableError,
                 UndefinedVariableError,
@@ -541,7 +559,8 @@ class CommandLine(CoreEvent):
                 UnknownDependencyError,
                 IllegalDependencyTypeError,
                 ConfigError,
-                ScannerError), exc:
+                ScannerError,
+                UserError), exc:
             self._logger.error(str(exc))
             retcode = RC_EXCEPTION
         except InvalidOptionError, exc:

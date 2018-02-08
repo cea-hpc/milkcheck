@@ -12,9 +12,9 @@ milkcheck - Parallel and hierachical service manager
 SYNOPSIS
 --------
 
-*milkcheck* [[--verbose] [--debug] [--quiet] [--summary|--report] [--config-dir=directory] [-n nodes] [--tags=TAGS] [-x nodes] [-X service]] [SERVICE...] ACTION
+*milkcheck* [[--verbose] [--debug] [--quiet] [--assumeyes] [--summary|--report] [--config-dir=directory] [-n nodes] [--tags=TAGS] [-x nodes] [-X service]] [SERVICE...] ACTION
 
-*milkcheck* [[-v] [-d] [-q] [-s|-r report_type] [-c directory] [-n nodes] [-x nodes] [-X service] [-t tags]] [SERVICE...] ACTION
+*milkcheck* [[-v] [-d] [-q] [-y] [-s|-r report_type] [-c directory] [-n nodes] [-x nodes] [-X service] [-t tags]] [SERVICE...] ACTION
 
 *milkcheck* -g [-X service]
 
@@ -35,6 +35,9 @@ DESCRIPTION
 
 *-g, --graph*::
          Output dependencies graph
+
+*-y, --assumeyes*::
+         Answer yes to any requested confirmation
 
 *-s, --summary*::
          Display summary of executed actions. This is an alias to --report=default.

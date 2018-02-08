@@ -88,7 +88,6 @@ class McOptionParser(OptionParser):
                         help='Set debug mode and maximum verbosity')
 
         self.add_option('-g', '--graph', action='store_true',
-                        dest='graph',
                         help='Output dependencies graph')
 
         self.add_option('-s', '--summary', action='store_const',
@@ -107,6 +106,9 @@ class McOptionParser(OptionParser):
 
         self.add_option('-q', '--quiet', action='store_const', dest='verbosity',
                         const=0, help='Enable quiet mode')
+
+        self.add_option('-y', '--assumeyes', action="store_true", default=False,
+                        help='Answer yes to any requested confirmation')
 
         # Engine options
         eng = OptionGroup(self, 'Engine parameters',

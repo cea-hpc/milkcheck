@@ -98,6 +98,7 @@ class ConfigParserTest(unittest.TestCase):
         self.assertEqual(config['fanout'], 64)
         self.assertEqual(config['config_dir'], '/etc/milkcheck/conf')
         self.assertEqual(config['reverse_actions'], ['stop'])
+        self.assertEqual(config['confirm_actions'], [])
 
     def test_parsing_summary(self):
         """Parse configuration file with summary option (compat)"""
