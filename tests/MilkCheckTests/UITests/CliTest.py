@@ -258,15 +258,15 @@ G1                                                                [DEP_ERROR]
 S3 - I am the service S3                                          [DEP_ERROR]
 """,
 """[00:00:00] DEBUG    - Configuration
-nodeps: False
+config_dir: 
 dryrun: False
+fanout: 64
+nodeps: False
+report: no
+reverse_actions: ['stop']
+summary: False
 tags: set([])
 verbosity: 5
-summary: False
-fanout: 64
-reverse_actions: ['stop']
-report: no
-config_dir: 
 [I1]\r[I1]\r[I2]\r[I2]\r""")
 
     def test_excluded_node(self):
@@ -307,16 +307,16 @@ start S3 ran in 0.00 s
 S3 - I am the service S3                                          [  ERROR  ]
 """,
 """[00:00:00] DEBUG    - Configuration
-nodeps: False
+config_dir: 
 dryrun: False
+fanout: 64
+nodeps: False
+only_nodes: HOSTNAME
+report: no
+reverse_actions: ['stop']
+summary: False
 tags: set([])
 verbosity: 5
-only_nodes: HOSTNAME
-summary: False
-fanout: 64
-reverse_actions: ['stop']
-report: no
-config_dir: 
 [I1]\r[I1]\r[I2]\r[I2]\r[S3]\r[S3]\r""")
 
     def test_execute_explicit_service(self):
@@ -389,16 +389,16 @@ start S3 ran in 0.00 s
 S3 - I am the service S3                                          [  ERROR  ]
 """,
 """[00:00:00] DEBUG    - Configuration
-nodeps: False
+config_dir: 
 dryrun: False
-tags: set([])
-verbosity: 5
-summary: False
 excluded_nodes: BADNODE
 fanout: 64
-reverse_actions: ['stop']
+nodeps: False
 report: no
-config_dir: 
+reverse_actions: ['stop']
+summary: False
+tags: set([])
+verbosity: 5
 [I1]\r[I1]\r[I2]\r[I2]\r[S3]\r[S3]\r""")
 
     def test_multiple_services_reverse(self):
@@ -418,16 +418,16 @@ stop S3 ran in 0.00 s
 S3 - I am the service S3                                          [  ERROR  ]
 """,
 """[00:00:00] DEBUG    - Configuration
-nodeps: False
+config_dir: 
 dryrun: False
-tags: set([])
-verbosity: 5
-summary: False
 excluded_nodes: BADNODE
 fanout: 64
-reverse_actions: ['stop']
+nodeps: False
 report: no
-config_dir: 
+reverse_actions: ['stop']
+summary: False
+tags: set([])
+verbosity: 5
 [S1]\r[S1]\r[S1]\r[S3]\r[S3]\r""")
 
     def test_overall_graph(self):
@@ -1219,15 +1219,15 @@ Options:
 ZeroDivisionError
 ''',
 '''[00:00:00] DEBUG    - Configuration
-nodeps: False
+config_dir: 
 dryrun: False
+fanout: 64
+nodeps: False
+report: no
+reverse_actions: ['stop']
+summary: False
 tags: set([])
 verbosity: 5
-summary: False
-fanout: 64
-reverse_actions: ['stop']
-report: no
-config_dir: 
 ''')
 
 class ConsoleOutputTest(TestCase):

@@ -171,7 +171,8 @@ class ConfigParser(object):
             return default
 
     def __str__(self):
-        return "\n".join(["%s: %s" % (opt, self[opt]) for opt in self.fields])
+        return "\n".join(["%s: %s" % (opt, self[opt])
+                          for opt in sorted(self.fields)])
 
 
 #
