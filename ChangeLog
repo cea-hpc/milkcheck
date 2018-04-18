@@ -1,3 +1,6 @@
+2018-04-18 Aurelien Degremont  <aurelien.degremont@cea.fr>
+	* Fix 'filter' when using a service group (ticket #39)
+
 2019-07-10 Aurelien Cedeyn  <aurelien.cedeyn@cea.fr>
 	* Release: 1.2.2
 	* Fix variables override (PR #43)

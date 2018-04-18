@@ -582,6 +582,59 @@ class ServiceGroupTest(TestCase):
         self.assertEqual(svc.status, SKIPPED)
         self.assertEqual(grp.status, SKIPPED)
 
+    def test_filter_from_service_group(self):
+        """a service can filter error nodes from a service group"""
+        nodes = "%s,BADNODE" % HOSTNAME
+
+        grp = ServiceGroup('group')
+        subsvc = Service('subsvc')
+        subsvc.add_action(Action('stop', command='true', target=nodes))
+        grp.add_inter_dep(subsvc)
+
+        svc = Service('svc')
+        svc.add_action(Action('stop', command='true', target=nodes))
+        svc.add_dep(grp, sgth=FILTER)
+        svc.run('stop')
+
+        self.assertEqual(subsvc.status, ERROR)
+        self.assertEqual(grp.status, DEP_ERROR)
+        self.assertEqual(svc.status, DONE)
+
+    def test_mix_require_filter_from_service_group(self):
+        """mixing filter and require to a failed service group is ok"""
+        nodes = "%s,BADNODE" % HOSTNAME
+
+        grp = ServiceGroup('group')
+        subsvc = Service('subsvc')
+        subsvc.add_action(Action('stop', command='true', target=nodes))
+        grp.add_inter_dep(subsvc)
+
+        svc1 = Service('svc_require')
+        svc1.add_action(Action('stop', command='true', target=nodes))
+        svc1.add_dep(grp, sgth=REQUIRE)
+
+        svc2 = Service('svc_filter')
+        svc2.add_action(Action('stop', command='true', target=nodes))
+        svc2.add_dep(grp, sgth=FILTER)
+
+        svc3 = Service('svc_before')
+        svc3.add_action(Action('stop', command='true', target=nodes))
+        svc3.add_dep(grp, sgth=REQUIRE_WEAK)
+
+        stop = Service('stop')
+        stop.add_action(Action('stop', command='true', target=nodes))
+        stop.add_dep(svc1)
+        stop.add_dep(svc2)
+        stop.add_dep(svc3)
+        stop.run('stop')
+
+        self.assertEqual(subsvc.status, ERROR)
+        self.assertEqual(grp.status, DEP_ERROR)
+        self.assertEqual(svc1.status, DEP_ERROR)
+        self.assertEqual(svc2.status, DONE)
+        self.assertEqual(svc3.status, ERROR)
+        self.assertEqual(stop.status, DEP_ERROR)
+
     def test_graph_entity(self):
         """Test the DOT graph output"""
         grp = ServiceGroup('Group')

@@ -162,7 +162,7 @@ class Dependency(object):
 
     def filter_nodes(self, nodes):
         """Filter provided nodes to dependency target."""
-        if self.dep_type == FILTER:
+        if self.dep_type != REQUIRE_WEAK:
             self.target.filter_nodes(nodes)
 
     def is_weak(self):
