@@ -610,7 +610,9 @@ class ActionManagerTest(TestCase):
         svc.add_action(action)
         svc.resolve_all()
         svc.run('start')
-        self.assertEqual(action.worker.node_buffer(HOSTNAME),
-                         "%s 0" % HOSTNAME)
-        self.assertEqual(action.worker.node_buffer('localhost'),
-                         'localhost 1')
+
+        # Need 2 checks because we do not know which target will be used first
+        outputs = [action.worker.node_buffer(HOSTNAME),
+                   action.worker.node_buffer('localhost')]
+        self.assertTrue(outputs == ["%s 0" % HOSTNAME, "localhost 1"] or
+                        outputs == ["%s 1" % HOSTNAME, "localhost 0"])

@@ -771,12 +771,14 @@ ServiceGroup                                                      [DEP_ERROR]
     def test_command_output_multiple_dist_timeout(self):
         '''Test command line output with timeout and multiple distant nodes'''
         self.timeout_action._target_backup = "localhost,%s" % HOSTNAME
+        nodestring = re.sub(HOSTNAME, 'HOSTNAME', "%s" %
+                            NodeSet(self.timeout_action._target_backup))
         self._output_check(['ServiceGroup', 'timeout'], RC_ERROR,
 """timeout ServiceGroup.service ran in 0.00 s
- > HOSTNAME,localhost has timeout
+ > %s has timeout
 ServiceGroup.service - I am the service                           [ TIMEOUT ]
 ServiceGroup                                                      [DEP_ERROR]
-""")
+""" % nodestring)
 
     def test_command_output_summary_multiple_dist_timeout(self):
         """
@@ -788,13 +790,13 @@ ServiceGroup                                                      [DEP_ERROR]
                             NodeSet(self.timeout_action._target_backup))
         self._output_check(['ServiceGroup', 'timeout', '-s'], RC_ERROR,
 """timeout ServiceGroup.service ran in 0.00 s
- > HOSTNAME,localhost has timeout
+ > %s has timeout
 ServiceGroup.service - I am the service                           [ TIMEOUT ]
 ServiceGroup                                                      [DEP_ERROR]
 
  SUMMARY - 1 action (1 failed)
  + ServiceGroup.service.timeout
-""")
+""" % nodestring)
 
     def test_command_output_summary_multiple_dist_timeout_full_report(self):
         """
@@ -807,7 +809,7 @@ ServiceGroup                                                      [DEP_ERROR]
         self._output_check(['ServiceGroup', 'timeout', '--report=full'],
                            RC_ERROR,
 """timeout ServiceGroup.service ran in 0.00 s
- > HOSTNAME,localhost has timeout
+ > %s has timeout
 ServiceGroup.service - I am the service                           [ TIMEOUT ]
 ServiceGroup                                                      [DEP_ERROR]
 
@@ -815,7 +817,7 @@ ServiceGroup                                                      [DEP_ERROR]
  + ServiceGroup.service.timeout
     Target: %s
     Command: sleep 1
-""" % nodestring)
+""" % (nodestring, nodestring))
 
     def test_command_output_warning(self):
         '''Test command line output with warning'''
@@ -1031,14 +1033,16 @@ service - I am the service                                        [    OK   ]
         self.service2.remove_action('start')
         self.service2.add_action(act)
 
+        nodestring = re.sub(HOSTNAME, 'HOSTNAME',
+                            str(NodeSet(HOSTNAME + ',foo')))
         self._output_check(['start'], RC_OK,
 '''service1 - I am the service 1                                     [    OK   ]
 
 Actions in progress
- > service2.start on HOSTNAME,foo (2)
+ > service2.start on %s (2)
 
 service2 - I am the service 2                                     [    OK   ]
-''')
+''' % nodestring)
 
     def test_interactive_too_large_nodeset(self):
         '''Test interactive output with too large nodeset is truncated'''
