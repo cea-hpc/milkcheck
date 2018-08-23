@@ -238,7 +238,7 @@ class ActionTest(TestCase):
         service.run('start')
         self.assertEqual(action.tries, 3)
         self.assertEqual(action.status, TIMEOUT)
-        self.assertTrue(0.6 < action.duration < 0.8,
+        self.assertTrue(0.6 <= action.duration <= 0.8,
                         "%.3f is not between 0.6 and 0.8" % action.duration)
 
     def test_schedule(self):
@@ -249,8 +249,10 @@ class ActionTest(TestCase):
         ser.add_actions(a1, a2)
         a1.run()
         a2.run()
-        self.assertTrue(0 < a1.duration and a1.duration < 0.2)
-        self.assertTrue(0.9 < a2.duration and a2.duration < 1.2)
+        self.assertTrue(0 < a1.duration and a1.duration <= 0.2,
+                        "%.3f is not between 0 and 0.2" % a1.duration)
+        self.assertTrue(0.9 <= a2.duration and a2.duration <= 1.2,
+                        "%.3f is not between 0.9 and 1.2" % a2.duration)
 
     def test_prepare_dep_success(self):
         """Test prepare an action with a single successful dependency"""
