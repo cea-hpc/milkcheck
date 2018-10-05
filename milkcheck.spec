@@ -3,7 +3,7 @@
 
 
 Name:          milkcheck
-Version:       1.1
+Version:       1.2
 Release:       1%{?dist}
 Summary:       Distributed cluster command management
 
