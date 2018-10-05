@@ -1,3 +1,15 @@
+2018-02-14 Thomas Leibovici <thomas.leibovici@cea.fr>
+	* Add 'confirm_actions' feature
+
+2017-12-20 Aurelien Cedeyn  <aurelien.cedeyn@cea.fr>
+	* Fix report and summary compat issues (#36, #37)
+
+2017-10-23 Aurelien Degremont  <aurelien.degremont@cea.fr>
+	* Rebase ServiceManager onto ServiceGroup (#1)
+
+2017-10-17 Aurelien Degremont  <aurelien.degremont@cea.fr>
+	* Improve variable resolution and configuration parsing
+
 2017-10-11 Aurelien Degremont  <aurelien.degremont@cea.fr>
 	* Release: 1.1
 
