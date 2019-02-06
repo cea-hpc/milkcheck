@@ -508,12 +508,12 @@ class CommandLine(CoreEvent):
             action_manager_self().default_fanout = self._conf['fanout']
             action_manager_self().dryrun = self._conf['dryrun']
 
-            manager = self.manager or ServiceManager()
+            self.manager = self.manager or ServiceManager()
             # Case 0: build the graph
             if self._conf.get('graph', False):
-                manager.load_config(self._conf['config_dir'])
+                self.manager.load_config(self._conf['config_dir'])
                 # Deps graph generation
-                self._console.output(manager.output_graph(self._args,
+                self._console.output(self.manager.output_graph(self._args,
                                      self._conf.get('excluded_svc', [])))
             # Case 1 : call services referenced in the manager with
             # the required action
@@ -534,7 +534,7 @@ class CommandLine(CoreEvent):
                     self.inter_thread.start()
 
                 # Run tasks
-                manager.call_services(services, action, conf=self._conf)
+                self.manager.call_services(services, action, conf=self._conf)
                 retcode = self.retcode()
 
                 if self._conf.get('report', 'no').lower() != 'no':
@@ -545,7 +545,7 @@ class CommandLine(CoreEvent):
             elif self._conf.get('config_dir', False):
                 self._console.output("No actions specified, "
                                      "checking configuration...")
-                manager.load_config(self._conf['config_dir'])
+                self.manager.load_config(self._conf['config_dir'])
                 self._console.output("%s seems good" % self._conf['config_dir'])
             # Case 3: Nothing to do so just print MilkCheck help
             else:

@@ -75,6 +75,39 @@ class MyOutput(StringIO):
                       'File "source.py", line 000, in \\1', line)
         StringIO.write(self, line)
 
+class CLISimpleTest(TestCase):
+    """ Class to test basic CLI invocation """
+
+    def setUp(self):
+        """ Define configuration file for simple tests """
+        self.configdir = tempfile.mkdtemp(suffix='milktest')
+        self.configfile = tempfile.NamedTemporaryFile(suffix='.yaml', dir=self.configdir)
+        self.configfile.write(textwrap.dedent("""
+                              services:
+                                  basic:
+                                      desc: 'Simple service declaration'
+                                      actions:
+                                          start:
+                                              cmd: /bin/true"""))
+        self.configfile.flush()
+
+    def tearDown(self):
+        """ Cleanup temporary file installed in setUp """
+        self.configfile.close()
+        os.rmdir(self.configdir)
+
+    def _cli_check(self, args, retcode=RC_OK):
+        """Simple wrapper to CLI execute()"""
+        cli = CommandLine()
+        rc = cli.execute(args + ['-c', self.configdir])
+        # Check return code
+        self.assertEqual(rc, retcode)
+
+    def test_basic(self):
+        """ Run basic CLI test """
+        self._cli_check(['basic', 'start'])
+
+
 class CLICommon(TestCase):
     ''' Class to manage Cli in tests'''
 
@@ -1273,7 +1306,7 @@ Options:
         self._output_check(['start', '-d'], RC_UNKNOWN_EXCEPTION,
 '''Traceback (most recent call last):
   File "source.py", line 000, in execute
-    manager.call_services(services, action, conf=self._conf)
+    self.manager.call_services(services, action, conf=self._conf)
   File "source.py", line 000, in <lambda>
     lambda services, action, conf=None: raiser(ZeroDivisionError)
   File "source.py", line 000, in raiser
