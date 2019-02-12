@@ -107,6 +107,9 @@ class CLISimpleTest(TestCase):
         """ Run basic CLI test """
         self._cli_check(['basic', 'start'])
 
+    def test_graph(self):
+        """ Run basic CLI --graph test """
+        self._cli_check(['--graph'])
 
 class CLICommon(TestCase):
     ''' Class to manage Cli in tests'''
