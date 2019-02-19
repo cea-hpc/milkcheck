@@ -38,6 +38,9 @@ from signal import SIGINT
 from MilkCheck.Engine.Service import ActionNotFoundError
 from MilkCheck.UI.OptionParser import InvalidOptionError
 
+# SSH setup
+from MilkCheckTests import setup_sshconfig, cleanup_sshconfig
+
 HOSTNAME = socket.gethostname().split('.')[0]
 
 class MyOutput(StringIO):
@@ -125,11 +128,17 @@ class CLICommon(TestCase):
         sys.stdout = MyOutput()
         sys.stderr = MyOutput()
 
+        # Setup ssh configuration
+        self.ssh_cfg = setup_sshconfig()
+
     def tearDown(self):
         '''Restore sys.stdout and sys.stderr'''
         sys.stdout = sys.__stdout__
         sys.stderr = sys.__stderr__
         CallbackHandler._instance = None
+
+        # Cleanup ssh configuration
+        cleanup_sshconfig(self.ssh_cfg)
 
     def _output_check(self, args, retcode, outexpected,
                       errexpected=None, show_running=True, term_width=77):
@@ -918,6 +927,7 @@ one                                                               [    OK   ]
 class CLIConfigDirTests(CLICommon):
 
     def setUp(self):
+        CLICommon.setUp(self)
         self.manager = ServiceManager()
         ActionManager._instance = None
 

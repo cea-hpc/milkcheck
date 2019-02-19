@@ -17,11 +17,19 @@ from MilkCheck.Engine.BaseEntity import NO_STATUS, DONE, ERROR, TIMEOUT, \
                                         DEP_ERROR, SKIPPED, WARNING
 from MilkCheck.Engine.Action import Action, ActionManager, action_manager_self
 from MilkCheck.Engine.Service import Service
+from MilkCheckTests import setup_sshconfig, cleanup_sshconfig
 
 HOSTNAME = socket.gethostname().split('.')[0]
 
+
 class ActionTest(TestCase):
     """Define the unit tests for the object action."""
+
+    def setUp(self):
+        self.ssh_cfg = setup_sshconfig()
+
+    def tearDown(self):
+        cleanup_sshconfig(self.ssh_cfg)
 
     def test_desc(self):
         """Test action inherits 'desc'"""
@@ -183,25 +191,25 @@ class ActionTest(TestCase):
 
     def test_mix_errors_timeout(self):
         """Test the result of mixed timeout and error actions."""
-        cmd = 'echo "${SSH_CLIENT%% *}" | egrep "^(127.0.0.1|::1)$" || sleep 1'
-        action = Action(name='start', target='badname,%s,localhost' % HOSTNAME,
-                        command=cmd, timeout=0.6)
+
+        action = Action(name='start', target='badname,timeout,localhost',
+                        command='/bin/true', timeout=0.9)
         action.errors = 1
         service = Service('test_service')
         service.add_action(action)
         service.run('start')
-        self.assertEqual(action.nodes_error(), NodeSet("badname"))
+        self.assertEqual(action.nodes_error(), NodeSet('badname'))
         self.assertEqual(action.nb_errors(), 1)
-        self.assertEqual(action.nodes_timeout(), NodeSet(HOSTNAME))
+        self.assertEqual(action.nodes_timeout(), NodeSet('timeout'))
         self.assertEqual(action.nb_timeout(), 1)
         self.assertEqual(action.status, ERROR)
 
         service.reset()
         action.errors = 2
         service.run('start')
-        self.assertEqual(action.nodes_error(), NodeSet("badname"))
+        self.assertEqual(action.nodes_error(), NodeSet('badname'))
         self.assertEqual(action.nb_errors(), 1)
-        self.assertEqual(action.nodes_timeout(), NodeSet(HOSTNAME))
+        self.assertEqual(action.nodes_timeout(), NodeSet('timeout'))
         self.assertEqual(action.nb_timeout(), 1)
         self.assertEqual(action.status, WARNING)
 
@@ -209,9 +217,9 @@ class ActionTest(TestCase):
         action.errors = 2
         action.warnings = 2
         service.run('start')
-        self.assertEqual(action.nodes_error(), NodeSet("badname"))
+        self.assertEqual(action.nodes_error(), NodeSet('badname'))
         self.assertEqual(action.nb_errors(), 1)
-        self.assertEqual(action.nodes_timeout(), NodeSet(HOSTNAME))
+        self.assertEqual(action.nodes_timeout(), NodeSet('timeout'))
         self.assertEqual(action.nb_timeout(), 1)
         self.assertEqual(action.status, DONE)
 

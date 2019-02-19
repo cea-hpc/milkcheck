@@ -22,11 +22,19 @@ from MilkCheck.Engine.BaseEntity import ERROR, SKIPPED
 from MilkCheck.Engine.BaseEntity import LOCKED, MISSING, CHECK, REQUIRE_WEAK, \
                                         FILTER, REQUIRE
 
+from MilkCheckTests import setup_sshconfig, cleanup_sshconfig
+
 import socket
 HOSTNAME = socket.gethostname().split('.')[0]
 
 class ServiceTest(TestCase):
     """Define the unit tests for the object service."""
+
+    def setUp(self):
+        self.ssh_cfg = setup_sshconfig()
+
+    def tearDown(self):
+        cleanup_sshconfig(self.ssh_cfg)
 
     def assert_near(self, target, delta, value):
         """Like self.assertTrue(target - delta < value < target + delta)"""
