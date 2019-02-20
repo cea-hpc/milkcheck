@@ -19,7 +19,7 @@ before_script:
     - "echo -e '[Main]\\ndefault: local\\n[local]\\nmap: echo' > ~/.local/etc/clustershell/groups.conf"
 
 script:
-    - export PYTHONPATH=$PWD/lib/; nosetests --exe --all-modules -w tests -e test_mix_errors_timeout --with-coverage
+    - export PYTHONPATH=$PWD/lib/; nosetests --exe --all-modules -w tests --with-coverage
 
 # Push the results back to codecov
 after_success:
