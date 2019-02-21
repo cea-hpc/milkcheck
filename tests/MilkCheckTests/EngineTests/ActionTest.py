@@ -246,8 +246,8 @@ class ActionTest(TestCase):
         service.run('start')
         self.assertEqual(action.tries, 3)
         self.assertEqual(action.status, TIMEOUT)
-        self.assertTrue(0.6 <= action.duration <= 0.8,
-                        "%.3f is not between 0.6 and 0.8" % action.duration)
+        self.assertTrue(0.59 <= action.duration <= 0.8,
+                        "%.3f is not between 0.59 and 0.8" % action.duration)
 
     def test_schedule(self):
         """Test behaviour method schedule"""
