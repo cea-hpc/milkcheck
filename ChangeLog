@@ -1,3 +1,8 @@
+2018-10-05 Aurelien Cedeyn  <aurelien.cedeyn@cea.fr>
+	* Release: 1.2.1
+	* Fix Milkcheck 1.2 ends with "ERROR - Unexpected Exception..." (#40)
+	* Improve ssh related tests
+
 2018-10-05 Aurelien Degremont  <aurelien.degremont@cea.fr>
 	* Release: 1.2
 
