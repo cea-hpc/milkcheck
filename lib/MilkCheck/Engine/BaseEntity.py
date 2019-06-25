@@ -322,6 +322,15 @@ class BaseEntity(object):
         if varname in self.variables:
             del self.variables[varname]
 
+    def update_var(self, varname, value):
+        """ Update existing variable """
+        # Debugging
+        logger = logging.getLogger('milkcheck')
+        logger.info("Variable '%s' updating '%s' (was '%s')",
+                    varname, value, self.variables[varname])
+        self.remove_var(varname)
+        self.add_var(varname, value)
+
     def update_target(self, nodeset, mode=None):
         '''Update the attribute target of an entity'''
         assert nodeset is not None

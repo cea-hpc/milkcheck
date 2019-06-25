@@ -33,7 +33,7 @@
 This module contains the ServiceManager class definition.
 '''
 
-from MilkCheck.Engine.BaseEntity import LOCKED, WARNING
+from MilkCheck.Engine.BaseEntity import LOCKED, WARNING, VariableAlreadyExistError
 from MilkCheck.Engine.ServiceGroup import ServiceGroup, ServiceNotFoundError
 
 
@@ -76,7 +76,10 @@ class ServiceManager(ServiceGroup):
             for defines in conf.get('defines', []):
                 for define in defines.split():
                     key, value = define.split('=', 1)
-                    self.add_var(key, value)
+                    try:
+                        self.add_var(key, value)
+                    except VariableAlreadyExistError:
+                        self.update_var(key, value)
         else:
             for varname in ('selected_node', 'excluded_nodes'):
                 self.add_var(varname.upper(), '')
@@ -148,13 +151,14 @@ class ServiceManager(ServiceGroup):
         self.reset()
         self.variables.clear()
 
-        # Create global variable from configuration
-        self._variable_config(conf)
         if conf:
             # Apply configuration over the graph
             self._apply_config(conf)
             # Enable reverse mode if needed, based on config
             self.algo_reversed = action in conf.get('reverse_actions')
+
+        # Create global variable from configuration
+        self._variable_config(conf)
 
         # Ensure all variables have been resolved
         self.resolve_all()
