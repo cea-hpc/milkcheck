@@ -1,5 +1,6 @@
-# Copyright CEA (2011-2017)
+# Copyright CEA (2011-2019)
 # Contributor: TATIBOUET Jeremie
+# Contributor: CEDEYN Aurelien
 #
 
 """
@@ -913,6 +914,7 @@ ServiceGroup                                                      [    OK   ]
         self._output_check(['warn', 'go', '-q'], RC_WARNING,
 """warn                                                              [ WARNING ]
 """)
+
     def test_custom_defines(self):
         '''Test command line output custom variables'''
         svc = Service('one')
@@ -922,6 +924,28 @@ ServiceGroup                                                      [    OK   ]
 """go one on localhost
  > /bin/echo bar
 one                                                               [    OK   ]
+""")
+
+    def test_overriding_defines(self):
+        """Test command line with overriden variables"""
+        tmpdir = tempfile.mkdtemp(prefix='test-mlk-')
+        tmpfile = tempfile.NamedTemporaryFile(suffix='.yaml', dir=tmpdir)
+        tmpfile.write(textwrap.dedent("""
+            variables:
+                foo: pub
+
+            services:
+              svc:
+                actions:
+                  start:
+                    cmd: echo %foo
+                    """))
+        tmpfile.flush()
+
+        self._output_check(['svc', 'start', '-v', '-c', tmpdir, '--define', 'foo=bar'], RC_OK,
+"""start svc on localhost
+ > echo bar
+svc                                                               [    OK   ]
 """)
 
 class CLIConfigDirTests(CLICommon):
