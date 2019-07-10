@@ -1,3 +1,7 @@
+2019-07-10 Aurelien Cedeyn  <aurelien.cedeyn@cea.fr>
+	* Release: 1.2.2
+	* Fix variables override (PR #43)
+
 2018-10-05 Aurelien Cedeyn  <aurelien.cedeyn@cea.fr>
 	* Release: 1.2.1
 	* Fix Milkcheck 1.2 ends with "ERROR - Unexpected Exception..." (#40)
