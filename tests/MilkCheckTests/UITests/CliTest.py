@@ -43,6 +43,7 @@ from MilkCheck.UI.OptionParser import InvalidOptionError
 from MilkCheckTests import setup_sshconfig, cleanup_sshconfig
 
 HOSTNAME = socket.gethostname().split('.')[0]
+PROGNAME = os.path.basename(sys.argv[0])
 
 class MyOutput(StringIO):
     ''' Class replacing stdout to manage output in nosetest '''
@@ -587,7 +588,7 @@ class CommandLineOutputTests(CLICommon):
     def test_command_output_help(self):
         '''Test command line help output'''
         self._output_check([], RC_OK,
-"""Usage: nosetests [options] [SERVICE...] ACTION
+"""Usage: {prog} [options] [SERVICE...] ACTION
 
 Options:
   --version             show program's version number and exit
@@ -618,7 +619,7 @@ Options:
     --nodeps            Do not run dependencies
     -t TAGS, --tags=TAGS
                         Run services matching these tags
-""")
+""".format(prog=PROGNAME))
 
     def test_command_output_checkconfig(self):
         '''Test command line output checking config'''
@@ -1280,7 +1281,7 @@ class CommandLineExceptionsOutputTests(CLICommon):
         self.manager.call_services = \
                 lambda services, action, conf=None: raiser(InvalidOptionError)
         self._output_check(['start'], RC_EXCEPTION,
-'''Usage: nosetests [options] [SERVICE...] ACTION
+'''Usage: {prog} [options] [SERVICE...] ACTION
 
 Options:
   --version             show program's version number and exit
@@ -1311,7 +1312,7 @@ Options:
     --nodeps            Do not run dependencies
     -t TAGS, --tags=TAGS
                         Run services matching these tags
-''',
+'''.format(prog=PROGNAME),
 '''[00:00:00] CRITICAL - Invalid options: 
 
 [00:00:00] CRITICAL - Invalid options: 
