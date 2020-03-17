@@ -156,9 +156,9 @@ class McOptionParser(OptionParser):
 
     def __check_service_mode(self, _option, _opt, _value, _parser):
         '''Check whether we are in the service execution mode.'''
-        if self.values.only_nodes and _option.dest is 'excluded_nodes':
+        if self.values.only_nodes and _option.dest == 'excluded_nodes':
             self.values.only_nodes.difference_update(_value)
-        elif self.values.excluded_nodes and _option.dest is 'only_nodes':
+        elif self.values.excluded_nodes and _option.dest == 'only_nodes':
             _value.difference_update(self.values.excluded_nodes)
         setattr(self.values, _option.dest, _value)
 
