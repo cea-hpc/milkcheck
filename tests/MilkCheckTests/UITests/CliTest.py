@@ -314,9 +314,9 @@ nodeps: False
 report: no
 reverse_actions: ['stop']
 summary: False
-tags: set([])
+tags: {setoutput}
 verbosity: 5
-[I1]\r[I1]\r[I2]\r[I2]\r""")
+[I1]\r[I1]\r[I2]\r[I2]\r""".format(setoutput=str(set())))
 
     def test_excluded_node(self):
         '''Execute with a node exclusion (-vvv -x ...)'''
@@ -366,9 +366,9 @@ only_nodes: HOSTNAME
 report: no
 reverse_actions: ['stop']
 summary: False
-tags: set([])
+tags: {setoutput}
 verbosity: 5
-[I1]\r[I1]\r[I2]\r[I2]\r[S3]\r[S3]\r""")
+[I1]\r[I1]\r[I2]\r[I2]\r[S3]\r[S3]\r""".format(setoutput=str(set())))
 
     def test_execute_explicit_service(self):
         '''Execute a service from the CLI (-vvv -x ...)'''
@@ -450,9 +450,9 @@ nodeps: False
 report: no
 reverse_actions: ['stop']
 summary: False
-tags: set([])
+tags: {setoutput}
 verbosity: 5
-[I1]\r[I1]\r[I2]\r[I2]\r[S3]\r[S3]\r""")
+[I1]\r[I1]\r[I2]\r[I2]\r[S3]\r[S3]\r""".format(setoutput=str(set())))
 
     def test_multiple_services_reverse(self):
         """CLI reverse execute() with explicit services (S1 S3 -d)"""
@@ -481,9 +481,9 @@ nodeps: False
 report: no
 reverse_actions: ['stop']
 summary: False
-tags: set([])
+tags: {setoutput}
 verbosity: 5
-[S1]\r[S1]\r[S1]\r[S3]\r[S3]\r""")
+[S1]\r[S1]\r[S1]\r[S3]\r[S3]\r""".format(setoutput=str(set())))
 
     def test_overall_graph(self):
         """CLI execute() with whole graph (-v -x )"""
@@ -1361,9 +1361,9 @@ nodeps: False
 report: no
 reverse_actions: ['stop']
 summary: False
-tags: set([])
+tags: {setoutput}
 verbosity: 5
-''')
+'''.format(setoutput=str(set())))
 
 class ConsoleOutputTest(TestCase):
     '''Tests console output'''
