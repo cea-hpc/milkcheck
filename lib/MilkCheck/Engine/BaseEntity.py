@@ -336,9 +336,9 @@ class BaseEntity(object):
         assert nodeset is not None
         if not mode:
             self.target = NodeSet(nodeset)
-        elif mode is 'DIF' and self.target:
+        elif mode == 'DIF' and self.target:
             self.target.difference_update(nodeset)
-        elif mode is 'INT' and self.target:
+        elif mode == 'INT' and self.target:
             self.target.intersection_update(nodeset)
 
     def _get_target(self):
