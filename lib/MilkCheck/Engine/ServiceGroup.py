@@ -100,7 +100,8 @@ class ServiceGroup(Service):
 
     def iter_subservices(self):
         '''Return an iterator over the subservices'''
-        return self._subservices.itervalues()
+        for svc in self._subservices.values():
+            yield svc
 
     def reset(self):
         '''Reset values of attributes in order to perform multiple exec'''

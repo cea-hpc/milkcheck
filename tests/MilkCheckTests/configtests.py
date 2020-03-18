@@ -44,7 +44,7 @@ class ConfigParserTest(unittest.TestCase):
     def test_no_configuration_file(self):
         '''Test if can not access to the configuration file'''
         config = MockConfigParser(self._options)
-        for key in ConfigParser.DEFAULT_FIELDS.iterkeys():
+        for key in ConfigParser.DEFAULT_FIELDS.keys():
             self.assertEqual(config[key], ConfigParser.DEFAULT_FIELDS[key]['value'])
             self.assertEqual(type(config[key]), ConfigParser.DEFAULT_FIELDS[key]['type'])
 
