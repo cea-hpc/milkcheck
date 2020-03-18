@@ -93,7 +93,7 @@ class CLISimpleTest(TestCase):
                                       desc: 'Simple service declaration'
                                       actions:
                                           start:
-                                              cmd: /bin/true"""))
+                                              cmd: /bin/true""").encode())
         self.configfile.flush()
 
     def tearDown(self):
@@ -940,7 +940,7 @@ one                                                               [    OK   ]
                 actions:
                   start:
                     cmd: echo %foo
-                    """))
+                    """).encode())
         tmpfile.flush()
 
         self._output_check(['svc', 'start', '-v', '-c', tmpdir, '--define', 'foo=bar'], RC_OK,
@@ -971,7 +971,7 @@ class CLIConfigDirTests(CLICommon):
                     actions:
                       start:
                         cmd: echo ok
-                        """))
+                        """).encode())
             tmpfile.flush()
 
             self._output_check(['--config-dir', tmpdir, 'svc', 'start'], RC_OK,

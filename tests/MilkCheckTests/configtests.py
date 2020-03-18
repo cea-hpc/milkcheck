@@ -17,7 +17,7 @@ from MilkCheck.config import ConfigParser, ConfigError, load_from_stream, \
 
 def _mktmpfile(content, dir=None, suffix='.yaml'):
     tmpfile = tempfile.NamedTemporaryFile(suffix=suffix, dir=dir)
-    tmpfile.write(textwrap.dedent(content))
+    tmpfile.write(textwrap.dedent(content).encode())
     tmpfile.flush()
     return tmpfile
 
@@ -103,7 +103,7 @@ class ConfigParserTest(unittest.TestCase):
     def test_parsing_summary(self):
         """Parse configuration file with summary option (compat)"""
         tmpfile = tempfile.NamedTemporaryFile()
-        tmpfile.write("summary: True\n")
+        tmpfile.write("summary: True\n".encode())
         tmpfile.flush()
 
         class MockSummaryLocalConfigParser(MockConfigParser):
@@ -255,7 +255,7 @@ class LoadFromStreamTest(unittest.TestCase):
                 bar:
                     actions:
                         start:
-                            cmd: '%command'"""))
+                            cmd: '%command'""").encode())
         tmp.flush()
         flow = load_from_stream(open(tmp.name))
         merged = {

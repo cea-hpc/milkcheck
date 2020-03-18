@@ -15,7 +15,7 @@ def setup_sshconfig():
     # Create a ssh_config file to manage timeout
     # Get first default configuration
     with (open('/etc/ssh/ssh_config', 'r')) as dflt_ssh_cfg:
-        ssh_cfg.write(dflt_ssh_cfg.read())
+        ssh_cfg.write(dflt_ssh_cfg.read().encode())
         dflt_ssh_cfg.close()
     # Add custom configuration
     ssh_cfg.write(textwrap.dedent("""
@@ -26,7 +26,7 @@ def setup_sshconfig():
                                   LogLevel ERROR
                               Host timeout
                                   proxycommand sleep 3
-                                      """))
+                                      """).encode())
     ssh_cfg.flush()
     task = task_self()
     task.set_info('ssh_options', '-F {0}'.format(ssh_cfg.name))

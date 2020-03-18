@@ -314,7 +314,7 @@ class ConsoleDisplay(object):
             if nodes and out:
                 for lbuf in out.splitlines():
                     output.append(' > %s: %s' %
-                                  (self.string_color(nodes, 'CYAN'), lbuf))
+                                  (self.string_color(nodes, 'CYAN'), lbuf.decode()))
 
         for retcode, nodes in retcodes:
             if retcode == 0 and not error_only:

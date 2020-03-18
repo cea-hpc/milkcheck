@@ -609,7 +609,7 @@ class ActionManagerTest(TestCase):
         mytopo.close()
 
         svc.run('start')
-        buff = action.worker.node_buffer('node1')
+        buff = action.worker.node_buffer('node1').decode()
         self.assertEqual(buff, HOSTNAME)
 
     def test_exec_mode(self):
@@ -623,7 +623,7 @@ class ActionManagerTest(TestCase):
         svc.run('start')
 
         # Need 2 checks because we do not know which target will be used first
-        outputs = [action.worker.node_buffer(HOSTNAME),
-                   action.worker.node_buffer('localhost')]
+        outputs = [action.worker.node_buffer(HOSTNAME).decode(),
+                   action.worker.node_buffer('localhost').decode()]
         self.assertTrue(outputs == ["%s 0" % HOSTNAME, "localhost 1"] or
                         outputs == ["%s 1" % HOSTNAME, "localhost 0"])
