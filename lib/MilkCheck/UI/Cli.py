@@ -560,25 +560,25 @@ class CommandLine(CoreEvent):
                 IllegalDependencyTypeError,
                 ConfigError,
                 ScannerError,
-                UserError), exc:
+                UserError) as exc:
             self._logger.error(str(exc))
             retcode = RC_EXCEPTION
-        except InvalidOptionError, exc:
+        except InvalidOptionError as exc:
             self._logger.critical('Invalid options: %s\n' % exc)
             self._mop.print_help()
             retcode = RC_EXCEPTION
-        except KeyboardInterrupt, exc:
+        except KeyboardInterrupt as exc:
             self._logger.error('Keyboard Interrupt')
             retcode = (128 + SIGINT)
-        except ScannerError, exc:
+        except ScannerError as exc:
             self._logger.error('Bad syntax in config file :\n%s' % exc)
             retcode = RC_EXCEPTION
-        except ImportError, exc:
+        except ImportError as exc:
             self._logger.error('Missing python dependency: %s' % exc)
             for line in traceback.format_exc().splitlines()[-3:-1]:
                 self._logger.error(line)
             retcode = RC_EXCEPTION
-        except Exception, exc:
+        except Exception as exc:
             # In high verbosity mode, propagate the error
             if (not self._conf or self._conf.get('verbosity') >= 5):
                 traceback.print_exc(file=sys.stdout)
