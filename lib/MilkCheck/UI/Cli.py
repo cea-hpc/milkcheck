@@ -38,6 +38,7 @@ specificities.
 '''
 
 # classes
+from __future__ import print_function
 import fcntl, termios, struct, os, sys, traceback, threading, select
 from signal import SIGINT
 from ClusterShell.NodeSet import NodeSet
@@ -132,7 +133,7 @@ class Terminal(object):
     @classmethod
     def confirm(cls, msg):
         """Prompt for confirmation"""
-        choice = raw_input("%s (y/N) " % msg)
+        choice = input("%s (y/N) " % msg)
         return choice.strip().lower() in ('y', 'yes')
 
 
@@ -446,7 +447,7 @@ class InteractiveThread(threading.Thread):
                                             action_manager_self())
                     # Unexpected or not wanted event
                     else:
-                        print "Unexpected event on interactive thread"
+                        print("Unexpected event on interactive thread")
                         runnable = False
 
     def join(self, timeout=None):
