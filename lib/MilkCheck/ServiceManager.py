@@ -126,7 +126,7 @@ class ServiceManager(ServiceGroup):
             spot = self._sink
 
         # Remove unused services
-        for service in spot.deps().keys():
+        for service in list(spot.deps().keys()):
             if service not in services:
                 spot.remove_dep(service, parent=parent)
         # Add direct link to important services
