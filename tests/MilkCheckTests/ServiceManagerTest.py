@@ -247,10 +247,10 @@ node [style=filled];
 """digraph dependency {
 compound=true;
 node [style=filled];
-"E1" -> "D0";
-"E1" -> "D1";
 "D0";
 "D1";
+"E1" -> "D0";
+"E1" -> "D1";
 }
 """)
         self.assertEqual(manager.output_graph(excluded=['D0']),

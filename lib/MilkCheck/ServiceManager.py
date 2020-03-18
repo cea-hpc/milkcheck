@@ -178,7 +178,7 @@ class ServiceManager(ServiceGroup):
         grph += "compound=true;\n"
         #grph += "node [shape=circle];\n"
         grph += "node [style=filled];\n"
-        for service in (services or self._subservices):
+        for service in (services or sorted(self._subservices.keys())):
             if not self._subservices[service].excluded(excluded):
                 grph += self._subservices[service].graph(excluded)
         grph += '}\n'
