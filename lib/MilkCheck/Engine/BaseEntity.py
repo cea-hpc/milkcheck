@@ -603,7 +603,7 @@ class BaseEntity(object):
             '''Replace a command execution pattern by its result.'''
             logger = logging.getLogger('milkcheck')
             cmd = Popen(raw, stdout=PIPE, stderr=PIPE, shell=True)
-            stdout = cmd.communicate()[0]
+            stdout = cmd.communicate()[0].decode()
             logger.debug("External command exited with %d: '%s'" %
                          (cmd.returncode, stdout))
             if cmd.returncode >= 126:

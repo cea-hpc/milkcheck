@@ -332,7 +332,7 @@ node [style=filled];
                     actions:
                       start:
                         cmd: echo %foo
-                        """))
+                        """).encode())
             tmpfile.flush()
 
             manager = ServiceManager()
