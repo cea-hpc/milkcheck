@@ -421,13 +421,13 @@ class BaseEntity(object):
 
     def clear_parent_deps(self):
         '''Remove all parent dependencies of an entity'''
-        for dpname in self.parents.keys():
-            self.remove_dep(dpname)
+        dpnames = self.parents.copy().keys()
+        dpnames = [self.remove_dep(dpname) for dpname in dpnames]
 
     def clear_child_deps(self):
         '''Remove all child dependencies of an entity'''
-        for dpname in self.children.keys():
-            self.remove_dep(dep_name=dpname, parent=False)
+        dpnames = self.children.copy().keys()
+        dpnames = [self.remove_dep(dep_name=dpname, parent=False) for dpname in dpnames]
 
     def has_child_dep(self, dep_name=None):
         '''

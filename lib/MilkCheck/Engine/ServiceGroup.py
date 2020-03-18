@@ -191,7 +191,7 @@ class ServiceGroup(Service):
                     deps = abs_ser.parents
                 else:
                     deps = abs_ser.children
-                for dep in deps.values():
+                for dep in deps.copy().values():
                     # If direct dependency of source have more than one child
                     # remove this dependency
                     if abs_ser is self._source and len(dep.target.children) > 1:
@@ -210,9 +210,9 @@ class ServiceGroup(Service):
         if not self.has_subservice(dep_name):
             raise ServiceNotFoundError()
         else:
-            for dep in self._subservices[dep_name].parents.values():
+            for dep in self._subservices[dep_name].parents.copy().values():
                 dep.target.remove_dep(dep_name, parent=False)
-            for dep in self._subservices[dep_name].children.values():
+            for dep in self._subservices[dep_name].children.copy().values():
                 dep.target.remove_dep(dep_name)
             del self._subservices[dep_name]
             self.__update_edges(True)
