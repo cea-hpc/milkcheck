@@ -15,7 +15,12 @@ import sys
 import time
 import tempfile
 import textwrap
-from StringIO import StringIO
+try:
+    from StringIO import StringIO
+except ImportError:
+    # Python 3 new name
+    from io import StringIO
+
 from unittest import TestCase
 
 import MilkCheck.UI.Cli
