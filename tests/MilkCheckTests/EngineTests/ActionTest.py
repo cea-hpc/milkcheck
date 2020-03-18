@@ -191,7 +191,7 @@ class ActionTest(TestCase):
 
     def test_mix_errors_timeout(self):
         """Test the result of mixed timeout and error actions."""
-
+        # timeout host configuration is in setup_sshconfig (__init__.py)
         action = Action(name='start', target='badname,timeout,localhost',
                         command='/bin/true', timeout=0.9)
         action.errors = 1
