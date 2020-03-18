@@ -128,7 +128,7 @@ class ActionManager(object):
             # No fanout or invalid value, fanout gets the default value
             fnt = task.fanout or self.default_fanout
             # Create the category if it does not exist
-            if not self.entities.has_key(fnt):
+            if not self.entities.get(fnt):
                 self.entities[fnt] = set()
             # New fnt is lower than the current fanout
             if not self.fanout or fnt < self.fanout:
@@ -173,10 +173,8 @@ class ActionManager(object):
         """
         assert task, 'Task cannot be None'
         if not task.fanout or task.fanout < 1:
-            return self.entities.has_key(self.default_fanout) and \
-                task in self.entities[self.default_fanout]
-        return self.entities.has_key(task.fanout) and \
-                task in self.entities[task.fanout]
+            return task in self.entities.get(self.default_fanout, [])
+        return task in self.entities.get(task.fanout, [])
 
     def run(self):
         """ Run the action manager task"""
