@@ -502,6 +502,7 @@ class ActionManagerTest(TestCase):
         task_manager.add_task(task2)
         task_manager.add_task(task3)
         task_manager.add_task(task4)
+        self.assertEqual(task_manager.fanout, 85)
         task_manager.remove_task(task2)
         self.assertEqual(task_manager.fanout, 85)
         task_manager.remove_task(task3)

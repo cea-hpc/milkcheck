@@ -158,7 +158,7 @@ class ActionManager(object):
             if len(self.entities[fnt]) == 0:
                 del self.entities[fnt]
                 if self.entities:
-                    self.fanout = self.entities.keys()[0]
+                    self.fanout = sorted(self.entities.keys())[0]
                     self._master_task.set_info('fanout', self.fanout)
                 else:
                     self.fanout = None
