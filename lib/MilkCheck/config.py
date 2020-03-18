@@ -109,7 +109,7 @@ class ConfigParser(object):
         overridden.
         '''
         if data:
-            for element, value in data.iteritems():
+            for element, value in data.items():
                 if element not in self.fields:
                     raise ConfigError("Bad entry '%s'" % element)
                 if type(value) is not self.fields[element]['type']:
