@@ -123,7 +123,8 @@ class Service(BaseEntity):
 
     def iter_actions(self):
         '''Return an iterator over actions'''
-        return self._actions.itervalues()
+        for key, act in self._actions.items():
+            yield act
 
     def remove_action(self, action_name):
         '''Remove the specified action from those available in the service.'''
