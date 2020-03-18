@@ -51,7 +51,7 @@ def check_nodeset(_option, _opt, _value):
         return NodeSet(_value)
     except NodeSetException:
         raise InvalidOptionError('%s is not a valid nodeset' % _value)
-    except GroupResolverError, msg:
+    except GroupResolverError as msg:
         raise InvalidOptionError('%s uses a wrong group' % msg)
 
 
