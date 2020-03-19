@@ -128,7 +128,7 @@ class ActionManager(object):
             # No fanout or invalid value, fanout gets the default value
             fnt = task.fanout or self.default_fanout
             # Create the category if it does not exist
-            if not self.entities.get(fnt):
+            if not fnt in self.entities:
                 self.entities[fnt] = set()
             # New fnt is lower than the current fanout
             if not self.fanout or fnt < self.fanout:
