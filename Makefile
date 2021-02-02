@@ -1,6 +1,7 @@
 
+PYTHON=python
 NAME=milkcheck
-VERSION=1.2.2
+VERSION=$(shell cd lib ; $(PYTHON) -c "from MilkCheck import __version__ ; print(__version__)")
 TARBALL=$(NAME)-$(VERSION).tar.gz
 SPECFILE=$(NAME).spec
 RPMTOPDIR=$$PWD/RPMBUILD
@@ -10,7 +11,6 @@ MANSOURCE=doc/$(NAME).asciidoc
 DESTDIR=/
 MANDIR=/usr/share/man
 SYSCONFIGDIR=/etc
-PYTHON=python
 VIMDATADIR=/usr/share/vim/vimfiles
 
 all: $(MANPAGE)
