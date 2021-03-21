@@ -192,13 +192,13 @@ class ActionTest(TestCase):
     def test_mix_errors_timeout(self):
         """Test the result of mixed timeout and error actions."""
         # timeout host configuration is in setup_sshconfig (__init__.py)
-        action = Action(name='start', target='badname,timeout,localhost',
+        action = Action(name='start', target='badname.example.org.,timeout,localhost',
                         command='/bin/true', timeout=0.9)
         action.errors = 1
         service = Service('test_service')
         service.add_action(action)
         service.run('start')
-        self.assertEqual(action.nodes_error(), NodeSet('badname'))
+        self.assertEqual(str(action.nodes_error()), str(NodeSet('badname.example.org.')))
         self.assertEqual(action.nb_errors(), 1)
         self.assertEqual(action.nodes_timeout(), NodeSet('timeout'))
         self.assertEqual(action.nb_timeout(), 1)
@@ -207,7 +207,7 @@ class ActionTest(TestCase):
         service.reset()
         action.errors = 2
         service.run('start')
-        self.assertEqual(action.nodes_error(), NodeSet('badname'))
+        self.assertEqual(action.nodes_error(), NodeSet('badname.example.org.'))
         self.assertEqual(action.nb_errors(), 1)
         self.assertEqual(action.nodes_timeout(), NodeSet('timeout'))
         self.assertEqual(action.nb_timeout(), 1)
@@ -217,7 +217,7 @@ class ActionTest(TestCase):
         action.errors = 2
         action.warnings = 2
         service.run('start')
-        self.assertEqual(action.nodes_error(), NodeSet('badname'))
+        self.assertEqual(action.nodes_error(), NodeSet('badname.example.org.'))
         self.assertEqual(action.nb_errors(), 1)
         self.assertEqual(action.nodes_timeout(), NodeSet('timeout'))
         self.assertEqual(action.nb_timeout(), 1)

@@ -758,7 +758,7 @@ class ServiceTest(TestCase):
     def test_filter_dep_error_propagation(self):
         """error nodes are propagated along 'filter' dependencies (one node)"""
         svc1 = Service('first')
-        tgt = '%s,fakenode' % HOSTNAME
+        tgt = '%s,fakenode.' % HOSTNAME
         svc1.add_action(Action('start', command='true', target=tgt))
 
         svc2 = Service('second')
@@ -789,7 +789,7 @@ class ServiceTest(TestCase):
     def test_filter_two_deps(self):
         """error nodes are send even with multiple filter deps"""
         svc1 = Service('top')
-        tgt = '%s,fakenode' % HOSTNAME
+        tgt = '%s,fakenode.' % HOSTNAME
         svc1.add_action(Action('start', command='true', target=tgt))
 
         svc2 = Service('bottom1')
@@ -797,7 +797,7 @@ class ServiceTest(TestCase):
         svc2.add_dep(svc1, sgth=FILTER)
 
         svc3 = Service('bottom2')
-        svc3.add_action(Action('start', command='true', target='fakenode'))
+        svc3.add_action(Action('start', command='true', target='fakenode.'))
         svc3.add_dep(svc1, sgth=FILTER)
 
         svc4 = Service('src')
@@ -813,14 +813,14 @@ class ServiceTest(TestCase):
     def test_filter_mixed(self):
         """test filter and regular deps works fine together"""
         svc1 = Service('top1')
-        tgt = '%s,fakenode' % HOSTNAME
+        tgt = '%s,fakenode.' % HOSTNAME
         svc1.add_action(Action('start', command='true', target=tgt))
 
         svc2 = Service('top2')
         svc2.add_action(Action('start', command='true', target=HOSTNAME))
 
         svc3 = Service('bottom')
-        svc3.add_action(Action('start', command='true', target='fakenode'))
+        svc3.add_action(Action('start', command='true', target='fakenode.'))
         svc3.add_dep(svc1, sgth=REQUIRE)
         svc3.add_dep(svc2, sgth=FILTER)
 
