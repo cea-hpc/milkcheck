@@ -1142,3 +1142,184 @@ class ServiceGroupFromDictTest(TestCase):
                 }
             }
         })
+
+    def test_inter_subservice_deps_dict(self):
+        '''Test create service with mutliple level of subservices dependencies'''
+        sergrp = ServiceGroup('group')
+        sergrp.fromdict(
+            {'services': {
+                'subgroupA': {
+                    'services': {
+                        'svcA':
+                            {'actions':
+                                {
+                                    'act1,act2': {'cmd': '/bin/true'},
+                                },
+                                'desc': 'I am the subservice $NAME'
+                            },
+                        'svcB':
+                            {'require': ['svcA'],
+                             'actions':
+                                 {
+                                     'act1': {'cmd': '/bin/true'},
+                                     'act2': {'cmd': '/bin/false'},
+                                 },
+                             'desc': 'I am the subservice $NAME'
+                             }
+                    }
+                },
+                'subgroupB': {
+                    'require_weak': ['subgroupA'],
+                    'services': {
+                        'svcA': {
+                            'require': ['subgroupA.svcB'],
+                            'actions':
+                                {
+                                    'act1,act2': {'cmd': '/bin/true'}
+                                },
+                            'desc': 'I am the subservice $NAME'
+                        },
+                        'svcB': {
+                            'actions':
+                                {
+                                    'act1,act2': {'cmd': '/bin/true'}
+                                },
+                            'desc': 'I am the subservice $NAME'
+                        }
+                    }
+                }
+
+                },
+            'desc': 'I am a first group',
+            'target': 'localhost',
+        })
+
+        self.assertTrue(sergrp.has_subservice('subgroupA'))
+        self.assertTrue(sergrp.has_subservice('subgroupB'))
+        for subservice in ('svcA', 'svcB'):
+            self.assertTrue(sergrp._subservices['subgroupA'].has_subservice(subservice))
+            self.assertTrue(sergrp._subservices['subgroupB'].has_subservice(subservice))
+
+
+        sergrp.run('act1')
+        self.assertEqual(sergrp.status, DONE)
+        sergrp.reset()
+        sergrp.run('act2')
+        self.assertEqual(sergrp.status, DEP_ERROR)
+
+    def test_inter_subservice_deps_dict_unknown_dep(self):
+        '''Test create service with mutliple level of subservices dependencies'''
+        sergrp = ServiceGroup('group')
+        self.assertRaises(UnknownDependencyError, sergrp.fromdict, {
+            'services': {
+                'subgroupA': {
+                    'services': {
+                        'svcA':
+                            {'actions':
+                                {
+                                    'act1,act2': {'cmd': '/bin/true'},
+                                },
+                                'desc': 'I am the subservice $NAME'
+                            },
+                        'svcB':
+                            {'require': ['svcA'],
+                             'actions':
+                                 {
+                                     'act1': {'cmd': '/bin/true'},
+                                     'act2': {'cmd': '/bin/false'},
+                                 },
+                             'desc': 'I am the subservice $NAME'
+                             }
+                    }
+                },
+                'subgroupB': {
+                    'services': {
+                        'svcA': {
+                            'require': ['subgroupA.svcB'],
+                            'actions':
+                                {
+                                    'act1,act2': {'cmd': '/bin/true'}
+                                },
+                            'desc': 'I am the subservice $NAME'
+                        },
+                        'svcB': {
+                            'actions':
+                                {
+                                    'act1,act2': {'cmd': '/bin/true'}
+                                },
+                            'desc': 'I am the subservice $NAME'
+                        }
+                    }
+                }
+
+            },
+            'desc': 'I am a first group',
+            'target': 'localhost',
+        })
+
+    def test_inter_subservice_deps_dict_nested(self):
+        '''Test create service with mutliple level of subservices dependencies'''
+        sergrp = ServiceGroup('group')
+        sergrp.fromdict(
+            {'services': {
+                'subgroupA': {
+                    'services': {
+                        'svcA':
+                            {'actions':
+                                {
+                                    'act1,act2': {'cmd': '/bin/true'},
+                                },
+                                'desc': 'I am the subservice $NAME'
+                            },
+                        'svcB':
+                            {'require': ['svcA'],
+                             'services': {
+                                 'subsvc': {
+                                     'actions':{
+                                         'act1': {'cmd': '/bin/true'},
+                                         'act2': {'cmd': '/bin/false'},
+                                     }
+                                 }
+                             },
+                             'desc': 'I am the subservice $NAME'
+                             }
+                    }
+                },
+                'subgroupB': {
+                    'require_weak': ['subgroupA'],
+                    'services': {
+                        'svcA': {
+                            'require': ['svcB.subsvc'],
+                            'actions':
+                                {
+                                    'act1,act2': {'cmd': '/bin/true'}
+                                },
+                            'desc': 'I am the subservice $NAME'
+                        },
+                        'svcB': {
+                            'actions':
+                                {
+                                    'act1,act2': {'cmd': '/bin/true'}
+                                },
+                            'desc': 'I am the subservice $NAME'
+                        }
+                    }
+                }
+
+                },
+            'desc': 'I am a first group',
+            'target': 'localhost',
+        })
+
+        self.assertTrue(sergrp.has_subservice('subgroupA'))
+        self.assertTrue(sergrp.has_subservice('subgroupB'))
+        for subservice in ('svcA', 'svcB'):
+            self.assertTrue(sergrp._subservices['subgroupA'].has_subservice(subservice))
+            self.assertTrue(sergrp._subservices['subgroupB'].has_subservice(subservice))
+
+
+        sergrp.run('act1')
+        self.assertEqual(sergrp.status, DONE)
+        sergrp.reset()
+        sergrp.run('act2')
+        self.assertEqual(sergrp.status, DEP_ERROR)
