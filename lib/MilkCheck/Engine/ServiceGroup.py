@@ -113,6 +113,12 @@ class ServiceGroup(Service):
         
     def search(self, name, reverse=False):
         """Look for a node through the overall graph"""
+        if "." in name:
+            _grp_name, _sub_name = name.split('.', 2)
+            _grp = self.search(_grp_name, reverse)
+            if isinstance(_grp, ServiceGroup) and _grp.has_subservice(_sub_name):
+                return _grp._subservices[_sub_name]
+
         target = None
         if reverse:
             target = self._sink.search(name, reverse)
