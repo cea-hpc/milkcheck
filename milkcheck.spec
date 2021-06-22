@@ -4,7 +4,7 @@
 %global vimdatadir %{_datadir}/vim/vimfiles
 
 Name:          milkcheck
-Version:       1.2.3
+Version:       1.2.4
 Release:       1%{?dist}
 Summary:       Distributed cluster command management
 
@@ -65,6 +65,9 @@ make install DESTDIR="%{buildroot}" PYTHON=%{__python_name} MANDIR=%{_mandir} \
 %doc Licence_CeCILL_V2-fr.txt
 
 %changelog
+* Tue Jun 22 2021 Aurelien Cedeyn <aurelien.cedeyn@cea.fr> 1.2.4-1
+- Update to 1.2.4 release (fix pkg_resources version).
+
 * Tue Feb 02 2021 Aurelien Cedeyn <aurelien.cedeyn@cea.fr> 1.2.3-1
 - Update to 1.2.3 release (python3 support).
 
