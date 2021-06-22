@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 
+import sys
+sys.path.append('lib')
+
 from setuptools import setup, find_packages
+from MilkCheck import __version__
 
 setup(name='MilkCheck',
-      version='1.2.1',
+      version=__version__,
       license='CeCILL',
       description='Parallel command execution manager',
       author='Aurelien Degremont',

@@ -1,3 +1,6 @@
+2021-06-22 Aurelien Cedeyn  <aurelien.cedeyn@cea.fr>
+	* Fix milkcheck version in setup.py (useful for pkg_resources)
+
 2021-02-02 Aurelien Cedeyn  <aurelien.cedeyn@cea.fr>
 	* Release: 1.2.3
 	* Python3 support

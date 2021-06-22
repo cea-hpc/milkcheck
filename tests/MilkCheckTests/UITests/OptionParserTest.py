@@ -1,4 +1,5 @@
-# Copyright CEA (2011-2017)
+# Copyright CEA (2011-2021)
+# Contributor: CEDEYN Aurelien
 # Contributor: TATIBOUET Jeremie
 
 """
@@ -6,11 +7,13 @@ This modules defines the tests cases targeting the class MilkCheckOptionParser
 """
 
 import os
+import sys
 import tempfile
 import unittest
 
 from ClusterShell.NodeSet import NodeSet
 
+from MilkCheck import __version__
 from MilkCheck.UI.OptionParser import McOptionParser, InvalidOptionError
 
 class McOptionParserTest(unittest.TestCase):
@@ -28,6 +31,12 @@ class McOptionParserTest(unittest.TestCase):
         """Test configuration of the verbose mode"""
         options, _ = self.mop.parse_args(['-vvv'])
         self.assertEqual(options.verbosity, 4)
+
+    def test_version(self):
+        """Test --version option"""
+        self.assertEqual(self.mop.get_version(),
+                         '{} {}'.format(os.path.basename(sys.argv[0]),
+                                        __version__))
 
     def test_option_onlynodes_simple(self):
         """Test simple usage of the only-nodes option"""
