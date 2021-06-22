@@ -1,6 +1,7 @@
-%{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
-%define vimdatadir %{_datadir}/vim/vimfiles
+%{!?__python_name: %global __python_name python3}
+%{!?__python_sitelib: %global __python_sitelib %(%{__python_name} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 
+%global vimdatadir %{_datadir}/vim/vimfiles
 
 Name:          milkcheck
 Version:       1.2.3
@@ -11,32 +12,39 @@ Group:         System Environment/Base
 License:       CeCILL
 Source0:       https://github.com/cea-hpc/milkcheck/archive/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
 BuildArch:     noarch
-BuildRequires: python-devel
-BuildRequires: python-setuptools
+Requires:      %{__python_name}-%{name} = %{version}
+
+%global _description %{expand:
+Manage a cluster-wide system through configuration based commands. It offers a
+easy to use interface to manage services, with dependencies and various
+actions, all of them based on shell commands.}
+
+%description %{_description}
+
+%package -n %{__python_name}-%{name}
+Summary:       Distributed cluster command management
+BuildRequires: %{__python_name}-devel
+BuildRequires: %{__python_name}-setuptools
 BuildRequires: asciidoc
 Requires:      clustershell >= 1.7
 
-%description
-Manage a cluster-wide system through configuration based commands. It offers a
-easy to use interface to manage services, with dependencies and various
-actions, all of them based on shell commands.
+
+%description -n %{__python_name}-%{name} %{_description}
 
 %prep
 %setup -q
 
 %build
-make
+make PYTHON=%{__python_name}
 
 %install
-make install DESTDIR="%{buildroot}" PYTHON=%{__python} MANDIR=%{_mandir} \
+make install DESTDIR="%{buildroot}" PYTHON=%{__python_name} MANDIR=%{_mandir} \
              SYSCONFIGDIR=%{_sysconfdir} VIMDATADIR=%{vimdatadir}
 
 %files
 %defattr(-,root,root,-)
 %config %{_sysconfdir}/%{name}/conf
 %config(noreplace) %{_sysconfdir}/%{name}/milkcheck.conf
-%{python_sitelib}/MilkCheck/
-%{python_sitelib}/MilkCheck-*-py?.?.egg-info
 %{_bindir}/milkcheck
 %{_mandir}/man8/*
 %doc AUTHORS
@@ -46,6 +54,15 @@ make install DESTDIR="%{buildroot}" PYTHON=%{__python} MANDIR=%{_mandir} \
 %doc Licence_CeCILL_V2-fr.txt
 %{vimdatadir}/ftdetect/milkcheck.vim
 %{vimdatadir}/syntax/milkcheck.vim
+
+%files -n %{__python_name}-%{name}
+%{__python_sitelib}/MilkCheck/
+%{__python_sitelib}/MilkCheck-*-py?.?.egg-info
+%doc AUTHORS
+%doc README.md
+%doc ChangeLog
+%doc Licence_CeCILL_V2-en.txt
+%doc Licence_CeCILL_V2-fr.txt
 
 %changelog
 * Tue Feb 02 2021 Aurelien Cedeyn <aurelien.cedeyn@cea.fr> 1.2.3-1

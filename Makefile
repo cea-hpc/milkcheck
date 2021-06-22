@@ -1,5 +1,5 @@
 
-PYTHON=python
+PYTHON=python3
 NAME=milkcheck
 VERSION=$(shell cd lib ; $(PYTHON) -c "from MilkCheck import __version__ ; print(__version__)")
 TARBALL=$(NAME)-$(VERSION).tar.gz
@@ -34,7 +34,7 @@ $(RPMTOPDIR):
 	mkdir -p $(RPMTOPDIR)/{BUILD,RPMS,SRPMS,SPECS}
 
 rpm: $(TARBALL) $(SPECFILE) $(RPMTOPDIR) $(MANPAGE)
-	rpmbuild --define "_topdir $(RPMTOPDIR)" --define "_sourcedir $$PWD" -ba $(SPECFILE)
+	rpmbuild --define "_topdir $(RPMTOPDIR)" --define "__python_name $(PYTHON)" --define "_sourcedir $$PWD" -ba $(SPECFILE)
 
 $(TARBALL):
 	git archive --prefix=$(NAME)-$(VERSION)/ HEAD | gzip -9 >$@

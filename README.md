@@ -12,16 +12,25 @@ Requirements
 Installation
 ------------
 
-From source:
+First, define your python version:
 
-    # python setup.py install
+    # export PYTHON=python2
+
+Or :
+
+    # export PYTHON=python3
+
+Next, build Milkcheck from source:
+
+    # ${PYTHON} setup.py install
     # mkdir -p /etc/milkcheck/conf
     # cp conf/milkcheck.conf /etc/milkcheck
     # cp -r conf/samples /etc/milkcheck/conf
 
 Or, build RPM and install it:
 
-    $ make rpm
+    $ yum install git rpm-build make
+    $ make PYTHON=$PYTHON rpm
     $ rpm -ivh RPMBUILD/RPMS/noarch/milkcheck-*.rpm
 
 Tests
