@@ -1,4 +1,5 @@
 2021-06-22 Aurelien Cedeyn  <aurelien.cedeyn@cea.fr>
+	* Release: 1.2.4
 	* Fix milkcheck version in setup.py (useful for pkg_resources)
 	* Fix packaging issues (Makefile and Specfile) (ticket #55)
 
