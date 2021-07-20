@@ -356,8 +356,8 @@ class ServiceGroup(Service):
                     self._subservices[subservice] = service
                     service.parent = self
 
-                    # Populate based on dict content
-                    service.fromdict(props)
+                    # Populate service variables present in YAML
+                    service.fromdict({'variables': props.get('variables', {})})
 
                     wrap.source = service
                     dep_mapping[subservice] = wrap
@@ -384,6 +384,13 @@ class ServiceGroup(Service):
                     service.add_dep(self._source, parent=False)
                 if not service.parents:
                     service.add_dep(self._sink)
+
+            # Build the sub-services from YAML, excluding already populated variables
+            for names, props in grpdict['services'].items():
+                for subservice in NodeSet(names):
+                    assert(subservice in self._subservices)
+                    props.pop('variables', None)
+                    self._subservices[subservice].fromdict(props)
 
         for subser in self.iter_subservices():
             subser.inherits_from(self)
