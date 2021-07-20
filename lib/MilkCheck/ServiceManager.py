@@ -44,7 +44,7 @@ class ServiceManager(ServiceGroup):
     '''
 
     def __init__(self, name="MAIN"):
-        ServiceGroup.__init__(self, name)
+        ServiceGroup.__init__(self, name, root=True)
         self.simulate = True
 
     def fullname(self):

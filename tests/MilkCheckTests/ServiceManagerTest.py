@@ -48,6 +48,7 @@ class ServiceManagerTest(unittest.TestCase):
         self.assertEqual(s2.status, DONE)
         self.assertEqual(s3.status, DONE)
         self.assertEqual(s4.status, DONE)
+        self.assertTrue(manager.root)
 
     def test_call_services_case2(self):
         '''Test call of required services (start S3, S4)'''

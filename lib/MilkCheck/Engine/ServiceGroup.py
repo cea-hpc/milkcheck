@@ -70,8 +70,8 @@ class ServiceGroup(Service):
     subservices
     """
 
-    def __init__(self, name, target=None):
-        Service.__init__(self, name, target)
+    def __init__(self, name, target=None, root=False):
+        Service.__init__(self, name, target, root=root)
         # Entry point of the group
         self._source = Service('source')
         self._source.simulate = True
