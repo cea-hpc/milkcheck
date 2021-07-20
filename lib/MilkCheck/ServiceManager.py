@@ -126,13 +126,11 @@ class ServiceManager(ServiceGroup):
             spot = self._sink
 
         # Remove unused services
-        for service in list(spot.deps().keys()):
-            if service not in services:
-                spot.remove_dep(service, parent=parent)
+        self.cleanup_unused(services)
         # Add direct link to important services
         for service in services:
             if service not in spot.deps():
-                svc = self._subservices[service]
+                svc = self.search(service)
                 spot.add_dep(svc, parent=parent)
 
     def _disable_deps(self):
