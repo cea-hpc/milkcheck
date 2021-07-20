@@ -361,6 +361,21 @@ class BaseEntity(object):
         self.failed_nodes = NodeSet()
         self.algo_reversed = False
 
+    def _get_root(self, reverse=False):
+        """
+        Get the root service from the Entity graph.
+        """
+        target = None
+        deps = self.children
+        if reverse:
+            deps = self.parents
+        for dep in deps.values():
+            if dep.target.root:
+                return dep.target
+            else:
+                target = dep.target._get_root(reverse)
+        return target
+
     def search(self, name, reverse=False):
         '''
         Search an entity through the overall graph. This recursive algorithm

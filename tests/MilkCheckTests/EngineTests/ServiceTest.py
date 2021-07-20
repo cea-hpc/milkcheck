@@ -48,6 +48,9 @@ class ServiceTest(TestCase):
         service = Service('brutus')
         self.assertNotEqual(service, None, 'should be none')
         self.assertEqual(service.name, 'brutus', 'wrong name')
+        self.assertFalse(service.root)
+        service = Service('ROOT', root=True)
+        self.assertTrue(service.root)
 
     def test_inheritance(self):
         '''Test inheritance between action and services'''

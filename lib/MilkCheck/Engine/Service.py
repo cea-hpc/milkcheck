@@ -77,7 +77,7 @@ class Service(BaseEntity):
     LOCAL_VARIABLES = BaseEntity.LOCAL_VARIABLES.copy()
     LOCAL_VARIABLES['SERVICE'] = 'name'
 
-    def __init__(self, name, target=None):
+    def __init__(self, name, target=None, root=False):
         BaseEntity.__init__(self, name, target)
 
         # Define a flag allowing us to specify that this service is the
@@ -90,6 +90,9 @@ class Service(BaseEntity):
         # Actions of the service
         self._actions = {}
         self._last_action = None
+
+        # Is this Service the root Service
+        self.root = root
 
     def update_target(self, nodeset, mode=None):
         '''Update the attribute target of a service'''
