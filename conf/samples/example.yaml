@@ -106,6 +106,7 @@ services:
     # requires it. Also, if service 'svc1' fails, svc2 will not be launched as
     # its dependencies are not fulfilled.
     svc1:
+        require: [ group.svc3 ]
         actions:
            run:
               cmd: service svc1 start
@@ -114,6 +115,12 @@ services:
         actions:
            run:
               cmd: service svc2 start
+    group:
+      services:
+        scv3:
+          actions:
+             run:
+                cmd: service svc3 start
 
     #
     # Filtered service dependency
