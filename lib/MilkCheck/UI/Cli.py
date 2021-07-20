@@ -452,7 +452,7 @@ class InteractiveThread(threading.Thread):
 
     def join(self, timeout=None):
         '''Only join if thread is alive'''
-        if self.isAlive():
+        if self.is_alive():
             threading.Thread.join(self, timeout)
 
     def quit(self):
