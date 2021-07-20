@@ -388,6 +388,14 @@ class BaseEntity(object):
         if name in deps:
             return deps[name].target
         else:    
+            if '.' in name:
+                _grp_name, sub_name = name.split('.', 1)
+                # Search from the root Service/ServiceGroup
+                _main_svc_grp = self._get_root()
+                if _main_svc_grp:
+                    _grp = _main_svc_grp.search(_grp_name, reverse)
+                    if _grp is not None:
+                        return _grp.search(sub_name, reverse)
             for dep in deps.values():
                 target = dep.target.search(name, reverse)
                 if target:
