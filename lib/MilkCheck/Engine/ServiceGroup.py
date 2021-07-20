@@ -373,10 +373,12 @@ class ServiceGroup(Service):
                         wrap.deps[dtype] = [wrap.deps[dtype]]
 
                     for dep in wrap.deps[dtype]:
-                        if dep not in self._subservices:
+                        dep_obj = self.search(dep)
+                        if dep in self._subservices:
+                            dep_obj = self._subservices[dep]
+                        elif dep_obj is None:
                             raise UnknownDependencyError(dep)
-                        wrap.source.add_dep(self._subservices[dep],
-                                                         sgth=dtype.upper())
+                        wrap.source.add_dep(dep_obj, sgth=dtype.upper())
 
             # Bind subgraph to the service group
             for service in self.iter_subservices():
