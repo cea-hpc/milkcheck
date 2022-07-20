@@ -209,23 +209,23 @@ class CLIBigGraphTests(CLICommon):
         inter2.desc = 'I am the service I2'
 
         # Actions S1
-        start_svc1 = Action('start', HOSTNAME + ', BADNODE', '/bin/true')
+        start_svc1 = Action('start', HOSTNAME + ', BADNODE.EXAMPLE.ORG.', '/bin/true')
         start_svc1.delay = 1
-        stop_svc1 = Action('stop', HOSTNAME + ',BADNODE', '/bin/true')
+        stop_svc1 = Action('stop', HOSTNAME + ',BADNODE.EXAMPLE.ORG.', '/bin/true')
         stop_svc1.delay = 1
         svc1.add_actions(start_svc1, stop_svc1)
         # Actions S2
-        svc2.add_action(Action('start', HOSTNAME + ',BADNODE', '/bin/true'))
-        svc2.add_action(Action('stop', HOSTNAME + ',BADNODE', '/bin/true'))
+        svc2.add_action(Action('start', HOSTNAME + ',BADNODE.EXAMPLE.ORG.', '/bin/true'))
+        svc2.add_action(Action('stop', HOSTNAME + ',BADNODE.EXAMPLE.ORG.', '/bin/true'))
         # Actions S3
-        svc3.add_action(Action('start', HOSTNAME + ',BADNODE', '/bin/false'))
-        svc3.add_action(Action('stop', HOSTNAME + ',BADNODE', '/bin/false'))
+        svc3.add_action(Action('start', HOSTNAME + ',BADNODE.EXAMPLE.ORG.', '/bin/false'))
+        svc3.add_action(Action('stop', HOSTNAME + ',BADNODE.EXAMPLE.ORG.', '/bin/false'))
         # Actions I1
         inter1.add_action(Action('start', HOSTNAME, 'echo ok'))
         inter1.add_action(Action('stop', HOSTNAME, 'echo ok'))
         # Actions I2
-        inter2.add_action(Action('start', HOSTNAME + ',BADNODE', '/bin/true'))
-        inter2.add_action(Action('stop', HOSTNAME + ',BADNODE', '/bin/true'))
+        inter2.add_action(Action('start', HOSTNAME + ',BADNODE.EXAMPLE.ORG.', '/bin/true'))
+        inter2.add_action(Action('stop', HOSTNAME + ',BADNODE.EXAMPLE.ORG.', '/bin/true'))
 
         # Build graph
         svc1.add_dep(target=svc2)
@@ -246,8 +246,8 @@ class CLIBigGraphTests(CLICommon):
         self._output_check(['S3', 'start'], RC_ERROR,
 """G1.I1 - I am the service I1                                       [    OK   ]
 start G1.I2 ran in 0.00 s
- > BADNODE: ssh: Could not resolve hostname badnode: Name or service not known
- > BADNODE exited with 255
+ > BADNODE.EXAMPLE.ORG.: ssh: Could not resolve hostname badnode.example.org.: Name or service not known
+ > BADNODE.EXAMPLE.ORG. exited with 255
 G1.I2 - I am the service I2                                       [  ERROR  ]
 G1                                                                [DEP_ERROR]
 S3 - I am the service S3                                          [DEP_ERROR]
@@ -259,12 +259,12 @@ S3 - I am the service S3                                          [DEP_ERROR]
 """start G1.I1 on HOSTNAME
  > echo ok
 G1.I1 - I am the service I1                                       [    OK   ]
-start G1.I2 on BADNODE,HOSTNAME
+start G1.I2 on BADNODE.EXAMPLE.ORG.,HOSTNAME
  > /bin/true
 start G1.I2 ran in 0.00 s
- > BADNODE: ssh: Could not resolve hostname badnode: Name or service not known
+ > BADNODE.EXAMPLE.ORG.: ssh: Could not resolve hostname badnode.example.org.: Name or service not known
  > HOSTNAME exited with 0
- > BADNODE exited with 255
+ > BADNODE.EXAMPLE.ORG. exited with 255
 G1.I2 - I am the service I2                                       [  ERROR  ]
 G1                                                                [DEP_ERROR]
 S3 - I am the service S3                                          [DEP_ERROR]
@@ -279,12 +279,12 @@ start G1.I1 ran in 0.00 s
  > HOSTNAME: ok
  > HOSTNAME exited with 0
 G1.I1 - I am the service I1                                       [    OK   ]
-start G1.I2 on BADNODE,HOSTNAME
+start G1.I2 on BADNODE.EXAMPLE.ORG.,HOSTNAME
  > /bin/true
 start G1.I2 ran in 0.00 s
- > BADNODE: ssh: Could not resolve hostname badnode: Name or service not known
+ > BADNODE.EXAMPLE.ORG.: ssh: Could not resolve hostname badnode.example.org.: Name or service not known
  > HOSTNAME exited with 0
- > BADNODE exited with 255
+ > BADNODE.EXAMPLE.ORG. exited with 255
 G1.I2 - I am the service I2                                       [  ERROR  ]
 G1                                                                [DEP_ERROR]
 S3 - I am the service S3                                          [DEP_ERROR]
@@ -299,12 +299,12 @@ start G1.I1 ran in 0.00 s
  > HOSTNAME: ok
  > HOSTNAME exited with 0
 G1.I1 - I am the service I1                                       [    OK   ]
-start G1.I2 on BADNODE,HOSTNAME
+start G1.I2 on BADNODE.EXAMPLE.ORG.,HOSTNAME
  > /bin/true
 start G1.I2 ran in 0.00 s
- > BADNODE: ssh: Could not resolve hostname badnode: Name or service not known
+ > BADNODE.EXAMPLE.ORG.: ssh: Could not resolve hostname badnode.example.org.: Name or service not known
  > HOSTNAME exited with 0
- > BADNODE exited with 255
+ > BADNODE.EXAMPLE.ORG. exited with 255
 G1.I2 - I am the service I2                                       [  ERROR  ]
 G1                                                                [DEP_ERROR]
 S3 - I am the service S3                                          [DEP_ERROR]
@@ -325,7 +325,7 @@ verbosity: 5
 
     def test_excluded_node(self):
         '''Execute with a node exclusion (-vvv -x ...)'''
-        self._output_check(['S3', 'stop', '-vvv', '-x', 'BADNODE'], RC_ERROR,
+        self._output_check(['S3', 'stop', '-vvv', '-x', 'BADNODE.EXAMPLE.ORG.'], RC_ERROR,
 """stop S1 will fire in 1 s
 stop S1 on HOSTNAME
  > /bin/true
@@ -377,7 +377,7 @@ verbosity: 5
 
     def test_execute_explicit_service(self):
         '''Execute a service from the CLI (-vvv -x ...)'''
-        self._output_check(['G1', 'stop', '-vvv', '-x', 'BADNODE'], RC_ERROR,
+        self._output_check(['G1', 'stop', '-vvv', '-x', 'BADNODE.EXAMPLE.ORG.'], RC_ERROR,
 """stop S1 will fire in 1 s
 stop S1 on HOSTNAME
  > /bin/true
@@ -394,7 +394,7 @@ G1                                                                [DEP_ERROR]
 
     def test_execute_services_exclusion(self):
         '''CLI execute() (-X S3 -x ... -vvv)'''
-        self._output_check(['S1', 'start', '-vvv', '-X', 'S3', '-x', 'BADNODE'],
+        self._output_check(['S1', 'start', '-vvv', '-X', 'S3', '-x', 'BADNODE.EXAMPLE.ORG.'],
                            RC_OK,
 """start S2 on HOSTNAME
  > /bin/true
@@ -424,7 +424,7 @@ S1 - I am the service S1                                          [    OK   ]
 
     def test_multiple_services(self):
         """CLI execute() with explicit services (S1 G1 -d)"""
-        self._output_check(['S3', 'G1', 'start', '-d', '-x', 'BADNODE'],
+        self._output_check(['S3', 'G1', 'start', '-d', '-x', 'BADNODE.EXAMPLE.ORG.'],
                            RC_ERROR,
 """start G1.I1 on HOSTNAME
  > echo ok
@@ -449,7 +449,7 @@ assumeyes: False
 config_dir: 
 confirm_actions: []
 dryrun: False
-excluded_nodes: BADNODE
+excluded_nodes: BADNODE.EXAMPLE.ORG.
 fanout: 64
 nodeps: False
 report: no
@@ -461,7 +461,7 @@ verbosity: 5
 
     def test_multiple_services_reverse(self):
         """CLI reverse execute() with explicit services (S1 S3 -d)"""
-        self._output_check(['S1', 'S3', 'stop', '-d', '-x', 'BADNODE'],
+        self._output_check(['S1', 'S3', 'stop', '-d', '-x', 'BADNODE.EXAMPLE.ORG.'],
                            RC_ERROR,
 """stop S1 will fire in 1 s
 stop S1 on HOSTNAME
@@ -480,7 +480,7 @@ assumeyes: False
 config_dir: 
 confirm_actions: []
 dryrun: False
-excluded_nodes: BADNODE
+excluded_nodes: BADNODE.EXAMPLE.ORG.
 fanout: 64
 nodeps: False
 report: no
@@ -494,7 +494,7 @@ verbosity: 5
         """CLI execute() with whole graph (-v -x )"""
         # This could be avoided if the graph is simplified
         self.manager.remove_inter_dep(self.svc2.name)
-        self._output_check(['start', '-v', '-x', 'BADNODE'], RC_ERROR,
+        self._output_check(['start', '-v', '-x', 'BADNODE.EXAMPLE.ORG.'], RC_ERROR,
 """start G1.I1 on HOSTNAME
  > echo ok
 G1.I1 - I am the service I1                                       [    OK   ]
@@ -515,7 +515,7 @@ S1 - I am the service S1                                          [DEP_ERROR]
         """CLI reverse execute() with whole graph (-v -x )"""
         # This could be avoided if the graph is simplified
         self.manager.remove_inter_dep(self.svc2.name)
-        self._output_check(['stop', '-v', '-x', 'BADNODE'], RC_ERROR,
+        self._output_check(['stop', '-v', '-x', 'BADNODE.EXAMPLE.ORG.'], RC_ERROR,
 """stop S1 on HOSTNAME
  > /bin/true
 S1 - I am the service S1                                          [    OK   ]
@@ -530,7 +530,7 @@ G1                                                                [DEP_ERROR]
 
     def test_nodeps_service(self):
         """--nodeps option specifying an explicit service"""
-        self._output_check(['S3', 'start', '--nodeps', '-x', 'BADNODE'],
+        self._output_check(['S3', 'start', '--nodeps', '-x', 'BADNODE.EXAMPLE.ORG.'],
                            RC_ERROR,
 """start S3 ran in 0.00 s
  > HOSTNAME exited with 1
@@ -539,19 +539,19 @@ S3 - I am the service S3                                          [  ERROR  ]
 
     def test_nodeps_service_reverse(self):
         """--nodeps option with an explicit service and a reverse action"""
-        self._output_check(['S2', 'stop', '--nodeps', '-x', 'BADNODE'], RC_OK,
+        self._output_check(['S2', 'stop', '--nodeps', '-x', 'BADNODE.EXAMPLE.ORG.'], RC_OK,
 """S2 - I am the service S2                                          [    OK   ]
 """, "[S2]\r")
 
     def test_nodeps_all(self):
         """--nodeps option without specifying an explicit service list"""
-        self._output_check(['start', '--nodeps', '-x', 'BADNODE'], RC_OK,
+        self._output_check(['start', '--nodeps', '-x', 'BADNODE.EXAMPLE.ORG.'], RC_OK,
 """S1 - I am the service S1                                          [    OK   ]
 """, "[S1]\r")
 
     def test_no_running_status(self):
         """Test if we don't have stderr output when terminal is not a tty"""
-        self._output_check(['S2', 'start', '-x', 'BADNODE'], RC_OK,
+        self._output_check(['S2', 'start', '-x', 'BADNODE.EXAMPLE.ORG.'], RC_OK,
 """S2 - I am the service S2                                          [    OK   ]
 """, "", show_running=False)
 

@@ -632,7 +632,7 @@ class ServiceGroupTest(TestCase):
 
     def test_filter_from_service_group(self):
         """a service can filter error nodes from a service group"""
-        nodes = "%s,BADNODE" % HOSTNAME
+        nodes = "%s,BADNODE.EXAMPLE.ORG." % HOSTNAME
 
         grp = ServiceGroup('group')
         subsvc = Service('subsvc')
@@ -650,7 +650,7 @@ class ServiceGroupTest(TestCase):
 
     def test_mix_require_filter_from_service_group(self):
         """mixing filter and require to a failed service group is ok"""
-        nodes = "%s,BADNODE" % HOSTNAME
+        nodes = "%s,BADNODE.EXAMPLE.ORG." % HOSTNAME
 
         grp = ServiceGroup('group')
         subsvc = Service('subsvc')
