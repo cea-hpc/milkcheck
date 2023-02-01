@@ -1,0 +1,63 @@
+---
+name: Milkcheck
+run-name: Milkcheck tests suite
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: ["ubuntu-latest"]
+        ## Milkcheck need fixes to be built on > 3.12
+        ## Milkcheck need to switch to pytest to be built on > 3.10
+        #python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.8", "3.9"]
+        include:
+          - os: "ubuntu-20.04"
+            python-version: "3.6"
+          - os: "ubuntu-22.04"
+            python-version: "3.7"
+
+    runs-on: ${{matrix.os}}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install nose clustershell pylint
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Setup SSH keys and configuration
+        run: |
+          ssh-keygen -t rsa -f ~/.ssh/id_rsa -N ""
+          cat ~/.ssh/id_rsa.pub >>~/.ssh/authorized_keys
+          echo  -e "StrictHostKeyChecking no\nNoHostAuthenticationForLocalhost yes\n" >> ~/.ssh/config
+
+      - name: Setup new linter (python > 3.6)
+        if: ${{ matrix.python-version != '3.6' }}
+        run: |
+          # Tiny hack to make fail-under works with pylint...
+          failunder="8.71"
+          echo "fail-under=${failunder}" >pylintrc
+      - name: Lint with pylint
+        run: |
+          export PYTHONPATH=$PWD/lib/
+          failunder="8.71"
+          pylint lib/ -ry --fail-under=${failunder}
+      - name: Test with nosetests
+        run: |
+          export PYTHONPATH=$PWD/lib/
+          nosetests --exe --all-modules -w tests
