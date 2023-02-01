@@ -72,7 +72,7 @@ class ConfigParser(object):
 
         # Read config files
         if os.access(self.CONFIG_PATH, os.F_OK):
-            data = yaml.load(open(self.CONFIG_PATH))
+            data = yaml.load(open(self.CONFIG_PATH), yaml.FullLoader)
             # Parse read content
             self._check_data(data)
         else:
