@@ -71,13 +71,15 @@ class MyOutput(StringIO):
         # We modify the output to match those from OpenSSH 5.x
         line = re.sub('ssh: (\w+): (Name or service not known)',
                       'ssh: Could not resolve hostname \\1: \\2', line)
+        line = re.sub('ssh: (\w+): (Temporary failure in name resolution)',
+                      'ssh: Could not resolve hostname \\1: \\2', line)
 
         # SSH output is different with OpenSSH (>= 6.6)
         # The output gives a lower hostname, we convert it to lower case
         # by default
         def lower_hostname(match):
-            return "ssh: Could not resolve hostname %s:" % match.group(1).lower()
-        line = re.sub('ssh: Could not resolve hostname (\w+):',
+            return "ssh: Could not resolve hostname %s" % match.group(1).lower()
+        line = re.sub('ssh: Could not resolve hostname (\w+):.*',
                       lower_hostname, line)
 
         # Traceback output doesn't need line number and source location
@@ -246,7 +248,7 @@ class CLIBigGraphTests(CLICommon):
         self._output_check(['S3', 'start'], RC_ERROR,
 """G1.I1 - I am the service I1                                       [    OK   ]
 start G1.I2 ran in 0.00 s
- > BADNODE: ssh: Could not resolve hostname badnode: Name or service not known
+ > BADNODE: ssh: Could not resolve hostname badnode
  > BADNODE exited with 255
 G1.I2 - I am the service I2                                       [  ERROR  ]
 G1                                                                [DEP_ERROR]
@@ -262,7 +264,7 @@ G1.I1 - I am the service I1                                       [    OK   ]
 start G1.I2 on BADNODE,HOSTNAME
  > /bin/true
 start G1.I2 ran in 0.00 s
- > BADNODE: ssh: Could not resolve hostname badnode: Name or service not known
+ > BADNODE: ssh: Could not resolve hostname badnode
  > HOSTNAME exited with 0
  > BADNODE exited with 255
 G1.I2 - I am the service I2                                       [  ERROR  ]
@@ -282,7 +284,7 @@ G1.I1 - I am the service I1                                       [    OK   ]
 start G1.I2 on BADNODE,HOSTNAME
  > /bin/true
 start G1.I2 ran in 0.00 s
- > BADNODE: ssh: Could not resolve hostname badnode: Name or service not known
+ > BADNODE: ssh: Could not resolve hostname badnode
  > HOSTNAME exited with 0
  > BADNODE exited with 255
 G1.I2 - I am the service I2                                       [  ERROR  ]
@@ -302,7 +304,7 @@ G1.I1 - I am the service I1                                       [    OK   ]
 start G1.I2 on BADNODE,HOSTNAME
  > /bin/true
 start G1.I2 ran in 0.00 s
- > BADNODE: ssh: Could not resolve hostname badnode: Name or service not known
+ > BADNODE: ssh: Could not resolve hostname badnode
  > HOSTNAME exited with 0
  > BADNODE exited with 255
 G1.I2 - I am the service I2                                       [  ERROR  ]
