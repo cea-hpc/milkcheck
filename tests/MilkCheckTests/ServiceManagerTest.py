@@ -406,3 +406,28 @@ node [style=filled];
         self.assertFalse(srv.to_skip('start'))
         manager._apply_config({'tags': set(['bar'])})
         self.assertTrue(srv.to_skip('start'))
+
+    def test_subservice_lauch(self):
+        """ Test that we can launch an action on a subservice """
+        manager = ServiceManager()
+        sergrp = ServiceGroup('S1')
+        sergrp.fromdict(
+           {'services':
+                {'srv1':
+                     {'actions':
+                        {'start': {'cmd':'/bin/True'}},
+                      'desc': "I'm the service srv1"
+                    },
+                'subgroup':
+                    {'services':
+                        {'subservice':
+                            {
+                            'actions':
+                                {'start': {'cmd': '/bin/True'}},
+                            'desc': 'I am the subservice $NAME'},
+                        'desc': "I'm the service $NAME"}},
+                        }})
+        manager.add_service(sergrp)
+        manager.call_services(['subgroup.subservice'], 'start')
+        self.assertEqual(sergrp['subgroup']['subservice'].status, DONE)
+        self.assertEqual(sergrp['srv1'].status, DONE)

@@ -127,7 +127,7 @@ class ServiceGroup(Service):
         """
         Check if the service is referenced within the group
         """
-        return name in self._subservices
+        return self.search(name) is not None
 
     def has_action(self, action_name):
         """
@@ -202,6 +202,27 @@ class ServiceGroup(Service):
                     elif abs_ser is self._sink and len(dep.target.parents) > 1:
                         dep.target.remove_dep('sink')
                 
+    def cleanup_unused(self, services):
+        """
+        Cleanup unused dependencies recursively
+        """
+        parent = not self._algo_reversed
+        if parent:
+            spot = self._source
+        else:
+            spot = self._sink
+
+        # Remove unused services
+        for service in list(spot.deps().keys()):
+            for target_service in services:
+                if '.' in target_service:
+                    subservice, subservice_tree = target_service.split('.', 1)
+                    self._subservices[subservice].cleanup_unused([subservice_tree])
+                    if subservice != service:
+                        spot.remove_dep(service, parent=parent)
+                else:
+                    if target_service != service:
+                        spot.remove_dep(service, parent=parent)
                 
     def remove_inter_dep(self, dep_name):
         """
