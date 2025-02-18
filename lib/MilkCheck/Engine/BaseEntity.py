@@ -299,6 +299,9 @@ class BaseEntity(object):
         # Tags the entity. The tags set define if the entity should run
         self.tags = set()
 
+        # ssh_user
+        self.ssh_user = None
+
     def filter_nodes(self, nodes):
         """
         Add error nodes to skip list.
@@ -731,6 +734,7 @@ class BaseEntity(object):
         self.delay = self.delay or entity.delay
         self.maxretry = self.maxretry or entity.maxretry
         self.tags = self.tags or entity.tags
+        self.ssh_user = self.ssh_user or entity.ssh_user
 
     def fromdict(self, entdict):
         """Populate entity attributes from dict."""
@@ -758,6 +762,8 @@ class BaseEntity(object):
                 self.desc = prop
             elif item == 'tags':
                 self.tags = set(prop)
+            elif item == 'ssh_user':
+                self.ssh_user = prop
             elif item == 'variables':
                 for varname, value in prop.items():
                     self.add_var(varname, value)
