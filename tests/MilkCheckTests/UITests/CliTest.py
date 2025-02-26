@@ -61,17 +61,17 @@ class MyOutput(StringIO):
         line = re.sub('\noptions:\n', '\nOptions:\n', line)
 
         # Clear secounds elapsed
-        line = re.sub(' [0-9]+\.[0-9]+ s', ' 0.00 s', line)
+        line = re.sub(r' [0-9]+\.[0-9]+ s', ' 0.00 s', line)
         # All time related to midnight
-        line = re.sub('\[[0-9]{2}:[0-9]{2}:[0-9]{2}\] ', '[00:00:00] ', line)
+        line = re.sub(r'\[[0-9]{2}:[0-9]{2}:[0-9]{2}\] ', '[00:00:00] ', line)
         # Replace local hostname by "HOSTNAME"
         line = re.sub(HOSTNAME, 'HOSTNAME', line)
 
         # SSH output is different with OpenSSH (4.x ?)
         # We modify the output to match those from OpenSSH 5.x
-        line = re.sub('ssh: (\w+): (Name or service not known)',
+        line = re.sub(r'ssh: (\w+): (Name or service not known)',
                       'ssh: Could not resolve hostname \\1: \\2', line)
-        line = re.sub('ssh: (\w+): (Temporary failure in name resolution)',
+        line = re.sub(r'ssh: (\w+): (Temporary failure in name resolution)',
                       'ssh: Could not resolve hostname \\1: \\2', line)
 
         # SSH output is different with OpenSSH (>= 6.6)
@@ -79,11 +79,11 @@ class MyOutput(StringIO):
         # by default
         def lower_hostname(match):
             return "ssh: Could not resolve hostname %s" % match.group(1).lower()
-        line = re.sub('ssh: Could not resolve hostname (\w+):.*',
+        line = re.sub(r'ssh: Could not resolve hostname (\w+):.*',
                       lower_hostname, line)
 
         # Traceback output doesn't need line number and source location
-        line = re.sub('File .*, line .*, in (.*)',
+        line = re.sub(r'File .*, line .*, in (.*)',
                       'File "source.py", line 000, in \\1', line)
         StringIO.write(self, line)
 
@@ -167,15 +167,15 @@ class CLICommon(TestCase):
 
         # STDOUT
         msg = sys.stdout.getvalue()
-        for line1, line2 in zip(outexpected.splitlines(), msg.splitlines()):
-            self.assertEqual(line1, line2)
+        for expected, output in zip(outexpected.splitlines(), msg.splitlines()):
+            self.assertEqual(expected, output)
         self.assertEqual(outexpected, msg)
 
         # STDERR
         if errexpected is not None:
             msg = sys.stderr.getvalue()
-            for line1, line2 in zip(errexpected.splitlines(), msg.splitlines()):
-                self.assertEqual(line1, line2)
+            for expected, output in zip(errexpected.splitlines(), msg.splitlines()):
+                self.assertEqual(expected, output)
             self.assertEqual(errexpected, msg)
 
         # Check return code
@@ -261,7 +261,7 @@ S3 - I am the service S3                                          [DEP_ERROR]
 """start G1.I1 on HOSTNAME
  > echo ok
 G1.I1 - I am the service I1                                       [    OK   ]
-start G1.I2 on BADNODE,HOSTNAME
+start G1.I2 on {}
  > /bin/true
 start G1.I2 ran in 0.00 s
  > BADNODE: ssh: Could not resolve hostname badnode
@@ -270,7 +270,7 @@ start G1.I2 ran in 0.00 s
 G1.I2 - I am the service I2                                       [  ERROR  ]
 G1                                                                [DEP_ERROR]
 S3 - I am the service S3                                          [DEP_ERROR]
-""")
+""".format(NodeSet('BADNODE,HOSTNAME')))
 
     def test_execute_verbosity_2(self):
         '''CLI execute() (-vv)'''
@@ -281,7 +281,7 @@ start G1.I1 ran in 0.00 s
  > HOSTNAME: ok
  > HOSTNAME exited with 0
 G1.I1 - I am the service I1                                       [    OK   ]
-start G1.I2 on BADNODE,HOSTNAME
+start G1.I2 on {}
  > /bin/true
 start G1.I2 ran in 0.00 s
  > BADNODE: ssh: Could not resolve hostname badnode
@@ -290,7 +290,7 @@ start G1.I2 ran in 0.00 s
 G1.I2 - I am the service I2                                       [  ERROR  ]
 G1                                                                [DEP_ERROR]
 S3 - I am the service S3                                          [DEP_ERROR]
-""")
+""".format(NodeSet('BADNODE,HOSTNAME')))
 
     def test_execute_debug(self):
         '''CLI execute() (-d)'''
@@ -1348,6 +1348,10 @@ Options:
         '''Test command line output on UnhandledException in debug mode'''
         self.manager.call_services = \
                 lambda services, action, conf=None: raiser(ZeroDivisionError)
+        # remove decoration from traceback
+        import traceback
+        traceback._Anchors=[]
+        # python2 didn't have line decoration (~~~~~^^^^)
         self._output_check(['start', '-d'], RC_UNKNOWN_EXCEPTION,
 '''Traceback (most recent call last):
   File "source.py", line 000, in execute
