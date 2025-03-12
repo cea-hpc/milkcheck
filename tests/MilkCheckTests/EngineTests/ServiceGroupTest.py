@@ -617,11 +617,11 @@ class ServiceGroupTest(TestCase):
     def test_filter(self):
         """ServiceGroup supports filter dependency"""
         dep = Service('dep')
-        dep.add_action(Action('stop', command='false', target=HOSTNAME))
+        dep.add_action(Action('stop', command='/bin/false', target=HOSTNAME))
 
         grp = ServiceGroup('group')
         svc = Service('svc')
-        svc.add_action(Action('stop', command='true', target=HOSTNAME))
+        svc.add_action(Action('stop', command='/bin/true', target=HOSTNAME))
         grp.add_inter_dep(svc)
         grp.add_dep(dep, sgth=FILTER)
         grp.run('stop')
@@ -636,11 +636,11 @@ class ServiceGroupTest(TestCase):
 
         grp = ServiceGroup('group')
         subsvc = Service('subsvc')
-        subsvc.add_action(Action('stop', command='true', target=nodes))
+        subsvc.add_action(Action('stop', command='/bin/true', target=nodes))
         grp.add_inter_dep(subsvc)
 
         svc = Service('svc')
-        svc.add_action(Action('stop', command='true', target=nodes))
+        svc.add_action(Action('stop', command='/bin/true', target=nodes))
         svc.add_dep(grp, sgth=FILTER)
         svc.run('stop')
 
@@ -654,23 +654,23 @@ class ServiceGroupTest(TestCase):
 
         grp = ServiceGroup('group')
         subsvc = Service('subsvc')
-        subsvc.add_action(Action('stop', command='true', target=nodes))
+        subsvc.add_action(Action('stop', command='/bin/true', target=nodes))
         grp.add_inter_dep(subsvc)
 
         svc1 = Service('svc_require')
-        svc1.add_action(Action('stop', command='true', target=nodes))
+        svc1.add_action(Action('stop', command='/bin/true', target=nodes))
         svc1.add_dep(grp, sgth=REQUIRE)
 
         svc2 = Service('svc_filter')
-        svc2.add_action(Action('stop', command='true', target=nodes))
+        svc2.add_action(Action('stop', command='/bin/true', target=nodes))
         svc2.add_dep(grp, sgth=FILTER)
 
         svc3 = Service('svc_before')
-        svc3.add_action(Action('stop', command='true', target=nodes))
+        svc3.add_action(Action('stop', command='/bin/true', target=nodes))
         svc3.add_dep(grp, sgth=REQUIRE_WEAK)
 
         stop = Service('stop')
-        stop.add_action(Action('stop', command='true', target=nodes))
+        stop.add_action(Action('stop', command='/bin/true', target=nodes))
         stop.add_dep(svc1)
         stop.add_dep(svc2)
         stop.add_dep(svc3)
