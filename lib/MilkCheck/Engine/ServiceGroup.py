@@ -110,7 +110,7 @@ class ServiceGroup(Service):
             service.reset()
         self._sink.reset()
         self._source.reset()
-        
+
     def search(self, name, reverse=False):
         """Look for a node through the overall graph"""
         target = None
@@ -120,9 +120,8 @@ class ServiceGroup(Service):
             target = self._source.search(name)
         if target:
             return target
-        else:
-            return Service.search(self, name, reverse)
-    
+        return Service.search(self, name, reverse)
+
     def has_subservice(self, name):
         """
         Check if the service is referenced within the group
@@ -201,8 +200,8 @@ class ServiceGroup(Service):
                     # remove this dependency
                     elif abs_ser is self._sink and len(dep.target.parents) > 1:
                         dep.target.remove_dep('sink')
-                
-                
+
+
     def remove_inter_dep(self, dep_name):
         """
         Remove a dependency on both side, in the current object and in the
@@ -210,14 +209,13 @@ class ServiceGroup(Service):
         """
         if not self.has_subservice(dep_name):
             raise ServiceNotFoundError()
-        else:
-            for dep in list(self._subservices[dep_name].parents.values()):
-                dep.target.remove_dep(dep_name, parent=False)
-            for dep in list(self._subservices[dep_name].children.values()):
-                dep.target.remove_dep(dep_name)
-            del self._subservices[dep_name]
-            self.__update_edges(True)
-            
+        for dep in list(self._subservices[dep_name].parents.values()):
+            dep.target.remove_dep(dep_name, parent=False)
+        for dep in list(self._subservices[dep_name].children.values()):
+            dep.target.remove_dep(dep_name)
+        del self._subservices[dep_name]
+        self.__update_edges(True)
+
     def graph_info(self):
         """ Return a tuple to manage dependencies output """
         return ("%s.__hook" % self.fullname(), "cluster_%s" % self.fullname())
@@ -252,7 +250,7 @@ class ServiceGroup(Service):
         Evaluate the result of the dependencies in order to check
         if we have to continue in normal mode or in a degraded mode.
         """
-        extd_status = Service.eval_deps_status(self)
+        extd_status = super().eval_deps_status()
         intd_status = DONE
         if self._algo_reversed:
             intd_status = self._sink.eval_deps_status()
@@ -261,15 +259,14 @@ class ServiceGroup(Service):
 
         if DEP_ORDER[extd_status] > DEP_ORDER[intd_status]:
             return extd_status
-        else:
-            return intd_status
+        return intd_status
 
     def _launch_action(self, action, status):
         """
         ServiceGroup does not have real action, but internal services instead.
 
         Launch internal services if needed or just set group status.
-        Group status is based on its internal status. 
+        Group status is based on its internal status.
         """
 
         # Check if the action is MISSING in the whole group.
