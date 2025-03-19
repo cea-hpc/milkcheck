@@ -53,7 +53,7 @@ class ActionTest(TestCase):
         dep = Service('dep')
         dep.add_action(Action('start', command='/bin/false'))
         # A service running on empty nodeset...
-        svc = Service('foo', target='@NOTEXIST')
+        svc = Service('foo', target='')
         # ... with an action overloading the empty nodeset
         svc.add_action(Action('start', target=HOSTNAME, command=':'))
 
