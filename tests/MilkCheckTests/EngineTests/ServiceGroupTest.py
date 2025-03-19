@@ -565,9 +565,9 @@ class ServiceGroupTest(TestCase):
         """A group with only SKIPPED services should be SKIPPED"""
         grp = ServiceGroup('group')
         svc1 = Service('svc1')
-        svc1.add_action(Action('start', target="@NOTHING", command=':'))
+        svc1.add_action(Action('start', target="", command=':'))
         svc2 = Service('svc2')
-        svc2.add_action(Action('start', target="@NOTHING", command=':'))
+        svc2.add_action(Action('start', target="", command=':'))
         grp.add_inter_dep(target=svc1)
         grp.add_inter_dep(target=svc2)
         grp.run('start')
@@ -579,9 +579,9 @@ class ServiceGroupTest(TestCase):
         svc.add_action(Action('start', command='/bin/false'))
         grp = ServiceGroup('group')
         svc1 = Service('svc1')
-        svc1.add_action(Action('start', target="@NOTHING", command=':'))
+        svc1.add_action(Action('start', target="", command=':'))
         svc2 = Service('svc2')
-        svc2.add_action(Action('start', target="@NOTHING", command=':'))
+        svc2.add_action(Action('start', target="", command=':'))
         grp.add_inter_dep(target=svc1)
         grp.add_inter_dep(target=svc2)
         grp.add_dep(svc, sgth=REQUIRE)
@@ -1127,7 +1127,7 @@ class ServiceGroupFromDictTest(TestCase):
                     'actions': {
                         'start': {'cmd': '/bin/True'},
                     },
-                  'target': '@none',
+                  'target': '',
                 }}})
         self.assertEqual(sergrp._subservices['svc1'].target, NodeSet())
 
