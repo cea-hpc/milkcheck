@@ -281,7 +281,7 @@ class BaseEntityTest(unittest.TestCase):
         '''
         ent1 = BaseEntity(name='parent')
         ent1.desc = "foo"
-        ent2 = BaseEntity(name='child', target="@none")
+        ent2 = BaseEntity(name='child', target="")
         ent2.desc = ""
         ent2.inherits_from(ent1)
         self.assertEqual(ent2.target, NodeSet())
