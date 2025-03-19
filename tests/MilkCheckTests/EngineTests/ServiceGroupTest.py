@@ -1151,29 +1151,30 @@ class ServiceGroupFromDictTest(TestCase):
         sergrp.fromdict({
             'services': {
                 'subgroupA': {
+                    'desc': 'I am a first group',
                     'services': {
                         'svcA':
                             {'actions':
                                 {
                                     'act1': {'cmd': '/bin/true'},
                                 },
-                                'desc': 'I am the subservice $NAME'
+                                'desc': 'I am the subservice %NAME'
                             },
                         'subsubgrpA': {
                             'services': {
                                 'depA': {
-                                    #'require': ['subgroupB.svcA'],
                                     'actions':
                                         {
                                             'act1': {'cmd': '/bin/true'},
                                         },
-                                    'desc': 'I am the subservice $NAME'
+                                    'desc': 'I am the subservice %NAME'
                                 },
                             },
                         },
                     },
                 },
                 'subgroupB': {
+                    'desc': 'I am another group',
                     'services': {
                         'svcA': {
                             'require': ['subgroupA.subsubgrpA.depA'],
@@ -1181,14 +1182,12 @@ class ServiceGroupFromDictTest(TestCase):
                                 {
                                     'act1': {'cmd': '/bin/true'}
                                 },
-                            'desc': 'I am the subservice $NAME'
+                            'desc': 'I am the subservice %NAME'
                         },
                     },
                 },
 
             },
-            'desc': 'I am a first group',
-            'target': 'localhost',
         })
 
         self.assertTrue(sergrp.has_subservice('subgroupA'))
@@ -1207,13 +1206,14 @@ class ServiceGroupFromDictTest(TestCase):
         sergrp.fromdict(
             {'services': {
                 'subgroupA': {
+                    'desc': 'I am a first group',
                     'services': {
                         'svcA':
                             {'actions':
                                 {
                                     'act1,act2': {'cmd': '/bin/true'},
                                 },
-                                'desc': 'I am the subservice $NAME'
+                                'desc': 'I am the subservice %NAME'
                             },
                         'svcB':
                             {'require': ['svcA'],
@@ -1222,11 +1222,12 @@ class ServiceGroupFromDictTest(TestCase):
                                      'act1': {'cmd': '/bin/true'},
                                      'act2': {'cmd': '/bin/false'},
                                  },
-                             'desc': 'I am the subservice $NAME'
+                             'desc': 'I am the subservice %NAME'
                              }
                     }
                 },
                 'subgroupB': {
+                    'desc': 'I am another group',
                     'services': {
                         'svcA': {
                             'require': ['subgroupA.svcB'],
@@ -1234,21 +1235,19 @@ class ServiceGroupFromDictTest(TestCase):
                                 {
                                     'act1,act2': {'cmd': '/bin/true'}
                                 },
-                            'desc': 'I am the subservice $NAME'
+                            'desc': 'I am the subservice %NAME'
                         },
                         'svcB': {
                             'actions':
                                 {
                                     'act1,act2': {'cmd': '/bin/true'}
                                 },
-                            'desc': 'I am the subservice $NAME'
+                            'desc': 'I am the subservice %NAME'
                         }
                     }
                 }
 
                 },
-            'desc': 'I am a first group',
-            'target': 'localhost',
         })
 
         self.assertTrue(sergrp.has_subservice('subgroupA'))
@@ -1270,13 +1269,14 @@ class ServiceGroupFromDictTest(TestCase):
         self.assertRaises(UnknownDependencyError, sergrp.fromdict, {
             'services': {
                 'subgroupA': {
+                    'desc': 'I am a first group',
                     'services': {
                         'svcA':
                             {'actions':
                                 {
                                     'act1,act2': {'cmd': '/bin/true'},
                                 },
-                                'desc': 'I am the subservice $NAME'
+                                'desc': 'I am the subservice %NAME'
                             },
                         'svcB':
                             {'require': ['svcA'],
@@ -1285,11 +1285,12 @@ class ServiceGroupFromDictTest(TestCase):
                                      'act1': {'cmd': '/bin/true'},
                                      'act2': {'cmd': '/bin/false'},
                                  },
-                             'desc': 'I am the subservice $NAME'
+                             'desc': 'I am the subservice %NAME'
                              }
                     }
                 },
                 'subgroupB': {
+                    'desc': 'I am another group',
                     'services': {
                         'svcA': {
                             'require': ['subgroupA.svcB'],
@@ -1297,21 +1298,19 @@ class ServiceGroupFromDictTest(TestCase):
                                 {
                                     'act1,act2': {'cmd': '/bin/true'}
                                 },
-                            'desc': 'I am the subservice $NAME'
+                            'desc': 'I am the subservice %NAME'
                         },
                         'svcB': {
                             'actions':
                                 {
                                     'act1,act2': {'cmd': '/bin/true'}
                                 },
-                            'desc': 'I am the subservice $NAME'
+                            'desc': 'I am the subservice %NAME'
                         }
                     }
                 }
 
             },
-            'desc': 'I am a first group',
-            'target': 'localhost',
         })
 
     def test_inter_subservice_deps_dict_nested(self):
@@ -1326,19 +1325,20 @@ class ServiceGroupFromDictTest(TestCase):
                                 {
                                     'act1,act2': {'cmd': '/bin/true'},
                                 },
-                                'desc': 'I am the subservice $NAME'
+                                'desc': 'I am the subservice %NAME'
                             },
                         'svcB':
-                            {'require': ['svcA'],
+                            {
                              'services': {
                                  'subsvc': {
+                                     'require': ['subgroupA.svcA'],
                                      'actions':{
                                          'act1': {'cmd': '/bin/true'},
                                          'act2': {'cmd': '/bin/false'},
                                      }
                                  }
                              },
-                             'desc': 'I am the subservice $NAME'
+                             'desc': 'I am the subservice %NAME'
                              }
                     }
                 },
@@ -1348,23 +1348,21 @@ class ServiceGroupFromDictTest(TestCase):
                             'require': ['svcB.subsvc'],
                             'actions':
                                 {
-                                    'act1,act2': {'cmd': '/bin/true'}
+                                    'act1,act2': {'cmd': '/bin/true'},
                                 },
-                            'desc': 'I am the subservice $NAME'
+                            'desc': 'I am the subservice %NAME'
                         },
                         'svcB': {
                             'actions':
                                 {
-                                    'act1,act2': {'cmd': '/bin/true'}
+                                    'act1,act2': {'cmd': '/bin/true'},
                                 },
-                            'desc': 'I am the subservice $NAME'
+                            'desc': 'I am the subservice %NAME'
                         }
                     }
                 }
 
                 },
-            'desc': 'I am a first group',
-            'target': 'localhost',
         })
 
         self.assertTrue(sergrp.has_subservice('subgroupA'))
