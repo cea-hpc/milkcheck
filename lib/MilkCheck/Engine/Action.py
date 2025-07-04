@@ -94,6 +94,9 @@ class ActionManager(object):
         if not self.dryrun:
             command = action.command
 
+        if action.ssh_user:
+            self._master_task.set_info("ssh_user", action.ssh_user)
+
         if action.mode == 'exec':
             wkr = ExecWorker(nodes=nodes, handler=ActionEventHandler(action),
                              timeout=action.timeout, command=command,

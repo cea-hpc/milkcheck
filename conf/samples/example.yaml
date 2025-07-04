@@ -351,3 +351,14 @@ services:
             on_gateway:
                 remote: False
                 cmd: /bin/gw_action
+    #
+    # Run a command with a non logged in user
+    #
+    # The SSH command will be executed with a specific user
+    #
+    non-logged-in-user:
+        desc: Connect via a non logged in user
+        ssh_user: "admin"
+        actions:
+            status:
+                cmd: id
