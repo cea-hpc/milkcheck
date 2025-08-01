@@ -725,7 +725,8 @@ class BaseEntity(object):
         if self.target is None:
             self.target = entity.target
         self.mode = self.mode or entity.mode
-        self.remote = self.remote and entity.remote
+        if self.remote is None:
+            self.remote = entity.remote
         if self.desc is None:
             self.desc = entity.desc
         self.delay = self.delay or entity.delay
