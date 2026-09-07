@@ -88,7 +88,7 @@ class Terminal(object):
     def _ioctl_gwinsz(cls, fds):
         '''Try to determine terminal width'''
         try:
-            data = fcntl.ioctl(fds, termios.TIOCGWINSZ, '1234')
+            data = fcntl.ioctl(fds, termios.TIOCGWINSZ, 1234)
             crt = struct.unpack('hh', data)
         except (IOError, struct.error, ValueError):
             return None
